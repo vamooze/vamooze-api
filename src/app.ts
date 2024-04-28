@@ -9,6 +9,7 @@ import express, {
   notFound,
   errorHandler
 } from '@feathersjs/express'
+import 'dotenv/config';
 import configuration from '@feathersjs/configuration'
 import socketio from '@feathersjs/socketio'
 
