@@ -25,7 +25,7 @@ jobs:
       MAXIMUM_PAGINATION_LIMIT: 50
       USERNAME_FIELD: 'email'
       PASSWORD_FIELD: 'password'
-      DB_URL: postgres://postgres:postgres@localhost:5432/vamooze
+      DB_URL: postgres://vamooze:Vmooz$321@loystar-logisticsdb-stage.postgres.database.azure.com/vamooze
       DB_CLIENT: pg
       TEST_DB_URL: postgres://postgres:postgres@localhost:5432/vamooze_test
 
@@ -68,7 +68,7 @@ jobs:
       MAXIMUM_PAGINATION_LIMIT: 50
       USERNAME_FIELD: 'email'
       PASSWORD_FIELD: 'password'
-      DB_URL: postgres://postgres:postgres@localhost:5432/vamooze
+      DB_URL: postgres://vamooze:Vmooz$321@loystar-logisticsdb-stage.postgres.database.azure.com/vamooze
       DB_CLIENT: pg
       TEST_DB_URL: postgres://postgres:postgres@localhost:5432/vamooze
 
