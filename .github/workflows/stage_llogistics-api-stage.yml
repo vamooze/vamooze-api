@@ -12,6 +12,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      HOSTNAME: localhost
+      PORT: 3000
+      AUTH_SECRET_KEY: 4aTLYHRaqHVtCxLCtbKZH7p4ykT2eEWa
+      APP_URL: https://llogistics-api-stage.azurewebsites.net/
+      AUTH_ALGORITHM: HS256
+      AUTH_EXPIRES_IN: 1y
+      AUTH_MODEL: users
+      AUTH_SERVICE: user
+      DEFAULT_PAGINATION_LIMIT: 10
+      MAXIMUM_PAGINATION_LIMIT: 50
+      USERNAME_FIELD: 'email'
+      PASSWORD_FIELD: 'password'
+      DB_URL: postgres://postgres:postgres@localhost:5432/vamooze
+      DB_CLIENT: pg
+      TEST_DB_URL: postgres://postgres:postgres@localhost:5432/vamooze_test
 
     steps:
       - uses: actions/checkout@v4
@@ -35,19 +51,32 @@ jobs:
         with:
           name: node-app
           path: release.zip
-
         
-  
-
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    env:
+      HOSTNAME: localhost
+      PORT: 3000
+      AUTH_SECRET_KEY: 4aTLYHRaqHVtCxLCtbKZH7p4ykT2eEWa
+      APP_URL: https://yourdomain.com
+      AUTH_ALGORITHM: HS256
+      AUTH_EXPIRES_IN: 1y
+      AUTH_MODEL: users
+      AUTH_SERVICE: user
+      DEFAULT_PAGINATION_LIMIT: 10
+      MAXIMUM_PAGINATION_LIMIT: 50
+      USERNAME_FIELD: 'email'
+      PASSWORD_FIELD: 'password'
+      DB_URL: postgres://postgres:postgres@localhost:5432/vamooze
+      DB_CLIENT: pg
+      TEST_DB_URL: postgres://postgres:postgres@localhost:5432/vamooze
+
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
-  
 
     steps:
       - name: Download artifact from build job
@@ -72,4 +101,3 @@ jobs:
           app-name: 'llogistics-api-stage'
           slot-name: 'Production'
           package: .
-          
