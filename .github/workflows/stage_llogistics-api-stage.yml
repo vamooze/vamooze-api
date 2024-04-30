@@ -27,8 +27,6 @@ jobs:
       PASSWORD_FIELD: 'password'
       DB_URL: postgres://vamooze:Vmooz$321@loystar-logisticsdb-stage.postgres.database.azure.com/vamooze
       DB_CLIENT: pg
-      TEST_DB_URL: postgres://vamooze:Vmooz$321@loystar-logisticsdb-stage.postgres.database.azure.com/vamooze
-
     steps:
       - uses: actions/checkout@v4
 
@@ -70,7 +68,6 @@ jobs:
       PASSWORD_FIELD: 'password'
       DB_URL: postgres://vamooze:Vmooz$321@loystar-logisticsdb-stage.postgres.database.azure.com/vamooze
       DB_CLIENT: pg
-      TEST_DB_URL: postgres://vamooze:Vmooz$321@loystar-logisticsdb-stage.postgres.database.azure.com/vamooze
 
     environment:
       name: 'Production'
