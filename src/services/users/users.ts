@@ -47,14 +47,14 @@ export const user = (app: Application) => {
     },
     before: {
       all: [schemaHooks.validateQuery(userQueryValidator), schemaHooks.resolveQuery(userQueryResolver)],
-      find: [authenticate('jwt'), isVerified()],
-      get: [authenticate('jwt'), isVerified()],
+      find: [authenticate('jwt')],
+      get: [authenticate('jwt')],
       create: [schemaHooks.validateData(userDataValidator), schemaHooks.resolveData(userDataResolver)],
       patch: [hashPassword('password'), authenticate('jwt'), schemaHooks.validateData(userPatchValidator), schemaHooks.resolveData(userPatchResolver)],
       remove: []
     },
     after: {
-      all: [protect('pin')]
+      all: [protect('pin', 'otp', 'password')],
     },
     error: {
       all: []

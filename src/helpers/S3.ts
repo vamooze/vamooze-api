@@ -1,5 +1,5 @@
 import AWS from 'aws-sdk';
-import { constants } from '../../config/constants'
+import { constants } from './constants'
 const ID = constants.amazonAccessKeyId;
 const SECRET = constants.amazonSecretAccessKey;
 

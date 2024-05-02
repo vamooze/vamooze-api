@@ -1,4 +1,4 @@
-import { constants } from '../../config/constants';
+import { constants } from './constants';
 import axios from 'axios';
 import OneSignal from 'onesignal-node';
 import { Forbidden } from '@feathersjs/errors';

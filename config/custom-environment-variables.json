@@ -4,7 +4,32 @@
     "__format": "number"
   },
   "host": "HOSTNAME",
+  "paginate": {
+    "default": {
+      "__name": "DEFAULT_PAGINATION_LIMIT",
+      "__format": "number"
+    },
+    "max": {
+      "__name": "MAXIMUM_PAGINATION_LIMIT",
+      "__format": "number"
+    }
+  },
+  "postgresql": {
+    "client": "DB_CLIENT",
+    "connection": "DB_URL"
+  },
   "authentication": {
-    "secret": "FEATHERS_SECRET"
+    "entity": "AUTH_SERVICE",
+    "service": "AUTH_MODEL",
+    "secret": "AUTH_SECRET_KEY",
+    "jwtOptions": {
+      "audience": "APP_URL",
+      "algorithm": "AUTH_ALGORITHM",
+      "expiresIn": "AUTH_EXPIRES_IN"
+    },
+    "local": {
+      "usernameField": "USERNAME_FIELD",
+      "passwordField": "PASSWORD_FIELD"
+    }
   }
 }

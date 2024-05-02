@@ -14,11 +14,19 @@ export const userSchema = Type.Object(
     id: Type.Number(),
     first_name: Type.String(),
     last_name: Type.String(),
+      phone_number: Type.String(),
     pin: Type.Optional(Type.String()),
-    role: Type.Optional(Type.String()),
+    role: Type.Optional(Type.Number()),
     merchant_id: Type.Optional(Type.String()),
     email: Type.String(),
-    password: Type.String()
+    password: Type.String(),
+      is_logged_in: Type.Optional(Type.Boolean()),
+      is_verified: Type.Boolean(),
+      address: Type.Optional(Type.String()),
+      local_government_area: Type.Optional(Type.String()),
+      state: Type.Optional(Type.String()),
+      one_signal_player_id: Type.Optional(Type.String()),
+      otp: Type.Optional(Type.Number())
   },
   { $id: 'User', additionalProperties: false }
 )
@@ -32,7 +40,7 @@ export const userExternalResolver = resolve<User, HookContext<UserService>>({
 })
 
 // Schema for creating new entries
-export const userDataSchema = Type.Pick(userSchema, ['email', 'password', 'first_name', 'last_name', 'pin', 'role', 'merchant_id'], {
+export const userDataSchema = Type.Pick(userSchema, ['email', 'password', 'first_name', 'last_name', 'pin', 'phone_number', 'role', 'merchant_id', 'state', 'local_government_area', 'address', 'is_logged_in', 'is_verified', 'one_signal_player_id', 'otp'], {
   $id: 'UserData'
 })
 export type UserData = Static<typeof userDataSchema>
@@ -52,7 +60,7 @@ export const userPatchResolver = resolve<User, HookContext<UserService>>({
 })
 
 // Schema for allowed query properties
-export const userQueryProperties = Type.Pick(userSchema, ['id', 'email', 'role', 'merchant_id', 'first_name', 'last_name'])
+export const userQueryProperties = Type.Pick(userSchema, ['id', 'email', 'role', 'merchant_id', 'first_name', 'last_name', 'is_logged_in', 'is_verified'])
 export const userQuerySchema = Type.Intersect(
   [
     querySyntax(userQueryProperties),
