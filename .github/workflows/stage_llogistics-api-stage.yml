@@ -55,7 +55,7 @@ jobs:
     needs: build
     env:
       HOSTNAME: localhost
-      PORT: 3000
+      PORT: 8080
       AUTH_SECRET_KEY: 4aTLYHRaqHVtCxLCtbKZH7p4ykT2eEWa
       APP_URL: https://llogistics-api-stage.azurewebsites.net/
       AUTH_ALGORITHM: HS256
