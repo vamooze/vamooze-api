@@ -12,6 +12,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      HOSTNAME: localhost
+      PORT: 3000
+      AUTH_SECRET_KEY: 4aTLYHRaqHVtCxLCtbKZH7p4ykT2eEWa
+      APP_URL: https://llogistics-api-stage.azurewebsites.net/
+      AUTH_ALGORITHM: HS256
+      AUTH_EXPIRES_IN: 1y
+      AUTH_MODEL: users
+      AUTH_SERVICE: user
+      DEFAULT_PAGINATION_LIMIT: 10
+      MAXIMUM_PAGINATION_LIMIT: 50
+      USERNAME_FIELD: 'email'
+      PASSWORD_FIELD: 'password'
+      DB_URL: postgres://vamooze:Vmooz$321@loystar-logisticsdb-stage.postgres.database.azure.com/vamooze
+      DB_CLIENT: pg
 
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +53,21 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    env:
+      HOSTNAME: localhost
+      PORT: 3000
+      AUTH_SECRET_KEY: 4aTLYHRaqHVtCxLCtbKZH7p4ykT2eEWa
+      APP_URL: https://llogistics-api-stage.azurewebsites.net/
+      AUTH_ALGORITHM: HS256
+      AUTH_EXPIRES_IN: 1y
+      AUTH_MODEL: users
+      AUTH_SERVICE: user
+      DEFAULT_PAGINATION_LIMIT: 10
+      MAXIMUM_PAGINATION_LIMIT: 50
+      USERNAME_FIELD: 'email'
+      PASSWORD_FIELD: 'password'
+      DB_URL: postgres://vamooze:Vmooz$321@loystar-logisticsdb-stage.postgres.database.azure.com/vamooze
+      DB_CLIENT: pg
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
