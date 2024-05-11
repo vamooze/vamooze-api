@@ -77,7 +77,7 @@ export const sendEmail = (content: any, to: any, subject: any, type: any) => {
 
 
 export const sendSms = async (phone: any, msg: any) => {
-
+return 200
 };
 
 

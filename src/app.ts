@@ -48,6 +48,21 @@ app.configure(channels)
 
 // Configure a middleware for 404s and the error handler
 app.use(notFound())
+app.use((err: any, req: any, res: any, next: any) => {
+  if (err?.error?.isJoi) {
+    // we had a joi error, let's return a custom 400 json response
+    // @ts-ignore
+    const errorMessage = Object.values(err?.error)[1][0].message;
+    res.status(400).json({
+      type: err.type, // will be "query" here, but could be "headers", "body", or "params"
+      //  err.error.toString()
+      message: errorMessage.replace(/[^a-zA-Z0-9]/g,' ')
+    });
+  } else {
+    // pass on to another error handler
+    next(err);
+  }
+});
 app.use(errorHandler({ logger }))
 
 // Register hooks that run on all service methods

@@ -4,6 +4,17 @@ import type { TransportConnection, Application } from '@feathersjs/feathers'
 import authenticationClient from '@feathersjs/authentication-client'
 import type { AuthenticationClientOptions } from '@feathersjs/authentication-client'
 
+import { assetsClient } from './services/assets/assets.shared'
+export type { Assets, AssetsData, AssetsQuery, AssetsPatch } from './services/assets/assets.shared'
+
+import { assetTypeClient } from './services/asset-type/asset-type.shared'
+export type {
+  AssetType,
+  AssetTypeData,
+  AssetTypeQuery,
+  AssetTypePatch
+} from './services/asset-type/asset-type.shared'
+
 import { rolesClient } from './services/roles/roles.shared'
 export type { Roles, RolesData, RolesQuery, RolesPatch } from './services/roles/roles.shared'
 
@@ -38,5 +49,7 @@ export const createClient = <Configuration = any,>(
 
   client.configure(userClient)
   client.configure(rolesClient)
+  client.configure(assetTypeClient)
+  client.configure(assetsClient)
   return client
 }

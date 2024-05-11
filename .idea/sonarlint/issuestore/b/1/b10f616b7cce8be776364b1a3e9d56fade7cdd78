@@ -1,0 +1,18 @@
+
+ptypescript:S6557"'Use 'String#startsWith' method instead.(üÿåÛ8šû€ÿô1J$2677fb9a-6608-4b31-be16-64f76b75ff3d
+utypescript:S6557
+"'Use 'String#startsWith' method instead.(Òàâ«þÿÿÿÿ8šû€ÿô1J$743d2e4d-5a5c-4f79-a347-c71d7fd726cd
+otypescript:S6557"'Use 'String#startsWith' method instead.(ˆ©˜u8šû€ÿô1J$b44077e7-9d71-4b28-ba2d-234edc32fc1c
+•typescript:S12260"LIntroduce a new variable or use its initial value before reassigning "type".(‚¥…¯8›û€ÿô1J$1d5495f2-54b2-4480-b856-87c720141575
+{typescript:S18540"2Remove this useless assignment to variable "type".(‚¥…¯8œû€ÿô1J$c8fc77b1-35aa-49b3-be46-c145d69ba3e8
+typescript:S11210"6Extract the assignment of "type" from this expression.(‚¥…¯8œû€ÿô1J$c4e86529-6aea-48fa-a023-39d745e65e49
+€typescript:S18544"2Remove this useless assignment to variable "type".(Ë¡Ã°ûÿÿÿÿ8œû€ÿô1J$f46a7f88-6208-48c9-b515-3573d62dc645
+„typescript:S11214"6Extract the assignment of "type" from this expression.(Ë¡Ã°ûÿÿÿÿ8œû€ÿô1J$eb06ffe5-2a85-464f-a3f8-03df6e8561b3
+‡typescript:S1854D"9Remove this useless assignment to variable "sendPromise".(’ñÄ…ÿÿÿÿÿ8œû€ÿô1J$22c2cb4e-1a56-42bc-80c0-bb515881fc7e
+©typescript:S3923j"[Remove this conditional structure or edit its code blocks so that they're not all the same.(ðÝÆéûÿÿÿÿ8ªû€ÿô1J$2d51bd4c-5018-4736-99d3-67f3c2517e2a
+–typescript:S1871m"MThis branch's code block is the same as the block for the branch on line 106.(å¥ž‡8«û€ÿô1J$888093a6-ea01-4747-b178-eff230a916b8
+”typescript:S1764w"KCorrect one of the identical sub-expressions on both sides of operator "&&"(î´ŒÛ8¬û€ÿô1J$bae26c3d-3aa9-496e-8021-7a8e8fa2539f
+¥typescript:S6582“"[Prefer using an optional chain expression instead, as it's more concise and easier to read.(Ïì·‡8¬û€ÿô1J$ba48f3f4-0709-44ed-9247-11eb002862fa
+…typescript:S1125”"6Refactor the code to avoid using this boolean literal.(‰™©Âÿÿÿÿÿ8®û€ÿô1J$6136d378-32ea-47d5-925c-a7191a1c503c
+¡typescript:S2737¥"WAdd logic to this catch clause or eliminate it and rethrow the exception automatically.(‚Œ·É8¯û€ÿô1J$2376bf23-fa40-4635-b4dd-eccb63e39874
+¡typescript:S2737³"WAdd logic to this catch clause or eliminate it and rethrow the exception automatically.(‚Œ·É8¯û€ÿô1J$c7b294f6-ff9c-49a5-bdee-f11abef8cd77
