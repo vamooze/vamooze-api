@@ -14,11 +14,12 @@ import {
   userQueryResolver
 } from './users.schema'
 
-import type { Application } from '../../declarations'
+import {Application, HookContext} from '../../declarations'
 import { UserService, getOptions } from './users.class'
 import { userPath, userMethods } from './users.shared'
 import { checkPermission } from '../../helpers/checkPermission'
-import { isVerified } from '../../helpers/functions'
+import {getOtp, isVerified, sendEmail} from '../../helpers/functions'
+import {TemplateName, TemplateType} from "../../interfaces/constants";
 
 const { protect, hashPassword } = require('@feathersjs/authentication-local').hooks;
 
@@ -49,12 +50,37 @@ export const user = (app: Application) => {
       all: [schemaHooks.validateQuery(userQueryValidator), schemaHooks.resolveQuery(userQueryResolver)],
       find: [authenticate('jwt')],
       get: [authenticate('jwt')],
-      create: [schemaHooks.validateData(userDataValidator), schemaHooks.resolveData(userDataResolver)],
+      create: [schemaHooks.validateData(userDataValidator), schemaHooks.resolveData(userDataResolver), async (context: HookContext) => {
+        const role = await context.app.service('roles').find({query: { $limit: 1,slug: 'user'}});
+        const numb = getOtp();
+        context.data = {
+          ...context.data,
+          otp: numb,
+          role: role.data[0].id
+        }
+      }],
       patch: [hashPassword('password'), authenticate('jwt'), schemaHooks.validateData(userPatchValidator), schemaHooks.resolveData(userPatchResolver)],
       remove: []
     },
     after: {
-      all: [protect('pin', 'otp', 'password')],
+      all: [protect('pin', 'password')],
+      create: [async (context: HookContext) => {
+        const role = await context.app.service('roles').get(context.result.role)
+        if(role.slug === 'user') {
+            sendEmail({
+              toEmail: context.result.email,
+              subject: 'Verify your email',
+              templateName: TemplateType.Otp,
+              templateData: [{ name: TemplateName.Otp, content: context.result.otp }]
+            });
+        }
+        context.result.otp = null;
+      }],
+      find: [protect('otp')],
+      get: [protect('otp')],
+      update: [],
+      patch: [],
+      remove: []
     },
     error: {
       all: []

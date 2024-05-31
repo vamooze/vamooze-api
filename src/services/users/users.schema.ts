@@ -21,7 +21,7 @@ export const userSchema = Type.Object(
     email: Type.String({ format: 'email' }),
     password: Type.String(),
       is_logged_in: Type.Optional(Type.Boolean()),
-      is_verified: Type.Boolean(),
+      is_verified: Type.Optional(Type.Boolean()),
       address: Type.Optional(Type.String()),
       local_government_area: Type.Optional(Type.String()),
       state: Type.Optional(Type.String()),

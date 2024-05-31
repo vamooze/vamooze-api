@@ -16,64 +16,37 @@ export const formatPhoneNumber = (phoneNumber: string) => {
   }
 };
 
-/**
- * @argument content @argument to @argument subject @argument type
- * @param to
- * @param subject
- * @param type
- */
-export const sendEmail = (content: any, to: any, subject: any, type: any) => {
-  const AWS = require('aws-sdk')
-  // Set the region
-  AWS.config.update({
-    region: constants.awsRegion,
-    accessKeyId: constants.amazonAccessKeyId,
-    secretAccessKey: constants.amazonSecretAccessKey,
-  });
-  // Create sendEmail params
-  const params = {
-    Destination: { /* required */
-      //   CcAddresses: [
-      //     'brainiacten@gmail.com',
-      //     /* more items */
-      //   ],
-      ToAddresses: [
-        to
-      ]
-    },
-    Message: { /* required */
-      Body: { /* required */
-        Html: {
-          Charset: 'UTF-8',
-          Data: `${type = 'html' ? content : ''}`
-        },
-        Text: {
-          Charset: 'UTF-8',
-          Data: `${type = 'text' ? content : ''}`
-        }
-      },
-      Subject: {
-        Charset: 'UTF-8',
-        Data: subject
+import mailchimpTransactional from '@mailchimp/mailchimp_transactional';
+import {EmailDTO} from "../interfaces/constants";
+
+const mailchimp = mailchimpTransactional(constants.mailchimpConfig.apiKey as string);
+
+export async function sendEmail(config: EmailDTO) {
+  const { toEmail, subject, templateName, templateData } = config;
+  const message: any = {
+    from_email: 'hello@vamooze.com',
+    subject,
+    to: [
+      {
+        email: toEmail,
+        type: 'to'
       }
-    },
-    Source: 'BeepBeep <admin@beepbeep.ng>', /* required */
-    ReplyToAddresses: [
-      'admin@beepbeep.ng'
-      /* more items */
-    ]
+    ],
+    merge_language: 'mailchimp',
+    global_merge_vars: templateData
+  };
+
+  try {
+    const response = await mailchimp.messages.sendTemplate({
+      template_name: templateName,
+      template_content: [],
+      message: message
+    });
+    console.log(response);
+  } catch (error) {
+    console.error(error);
   }
-
-  // Create the promise and SES service object
-  const sendPromise = new AWS.SES({ apiVersion: '2010-12-01' }).sendEmail(params).promise().then(
-    function(data: { MessageId: any; }) {
-      console.log(data.MessageId)
-    }).catch(
-    function(err: { stack: any; }) {
-      console.error(err, err.stack)
-    })
-
-};
+}
 
 
 export const sendSms = async (phone: any, msg: any) => {

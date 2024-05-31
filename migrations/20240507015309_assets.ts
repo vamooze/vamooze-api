@@ -8,13 +8,7 @@ export async function up(knex: Knex): Promise<void> {
 
     table.string('name', 50).notNullable()
     table.string('description', 255).nullable()
-    table
-        .integer('asset_type')
-        .notNullable();
-    table
-        .foreign('asset_type')
-        .references('id')
-        .inTable('asset-type')
+    table.bigInteger('asset_type').references('id').inTable('asset-type').notNullable()
     table.string('brand', 150).notNullable()
     table.string('model', 150).notNullable()
     table.string('eco_friendly_status').nullable()
@@ -26,13 +20,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('proof_of_ownership', 255).notNullable();
     table.string('id_card', 150).notNullable();
     table.string('insurance_document', 100).notNullable()
-    table
-        .integer('user')
-        .notNullable();
-    table
-        .foreign('user')
-        .references('id')
-        .inTable('users')
+    table.bigInteger('user').references('id').inTable('users').notNullable()
     table.timestamps(false, true);
   })
 

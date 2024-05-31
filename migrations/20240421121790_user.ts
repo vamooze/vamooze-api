@@ -12,13 +12,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('email').unique().notNullable()
     table.string('password', 255).notNullable()
     table.string('pin', 6).nullable()
-    table
-      .integer('role')
-      .nullable();
-    table
-      .foreign('role')
-      .references('id')
-      .inTable('roles')
+    table.bigInteger('role').references('id').inTable('roles')
     table.uuid('merchant_id').unique().defaultTo(knex.fn.uuid());
     table.boolean('is_logged_in').notNullable().defaultTo(false);
     table.boolean('is_verified').notNullable().defaultTo(false);
@@ -28,6 +22,8 @@ export async function up(knex: Knex): Promise<void> {
     table.integer('otp').nullable();
     table.string('one_signal_player_id', 150).nullable();
     table.timestamps(false, true);
+
+    return table;
   })
 
   await knex.raw(`

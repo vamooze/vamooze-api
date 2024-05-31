@@ -35,6 +35,10 @@ export const constants = {
 
   queueConfig: {
     concurrency: process.env.CONCURRENCY || 5
+  },
+
+  mailchimpConfig: {
+    apiKey: process.env.MAILCHIMP_API_KEY
   }
 }
 

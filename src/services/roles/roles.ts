@@ -34,7 +34,7 @@ export const roles = (app: Application) => {
   app.service(rolesPath).hooks({
     around: {
       all: [
-        // authenticate('jwt'),
+        authenticate('jwt'),
         schemaHooks.resolveExternal(rolesExternalResolver),
         schemaHooks.resolveResult(rolesResolver)
       ]

@@ -10,7 +10,7 @@ export type { Roles, RolesData, RolesPatch, RolesQuery }
 
 export interface RolesParams extends KnexAdapterParams<RolesQuery> {}
 
-// By default calls the standard Knex adapter service methods but can be customized with your own functionality.
+// By default, calls the standard Knex adapter service methods but can be customized with your own functionality.
 export class RolesService<ServiceParams extends Params = RolesParams> extends KnexService<
   Roles,
   RolesData,
