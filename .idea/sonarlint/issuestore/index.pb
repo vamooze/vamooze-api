@@ -95,3 +95,5 @@ K
 src/interfaces/constants.ts,0/3/03b576eda302b6afda5de37b115e3604ab39d47c
 T
 $src/services/assets/assets.shared.ts,c/1/c1640778efe0e5b0214e25dcafb9da3b26426e5a
+>
+seeds/roles.ts,9/6/96f9d560aaa14c40a4cbf41fcc1de4998ac024a6

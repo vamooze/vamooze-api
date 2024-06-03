@@ -20,6 +20,7 @@ import { userPath, userMethods } from './users.shared'
 import { checkPermission } from '../../helpers/checkPermission'
 import {getOtp, isVerified, sendEmail} from '../../helpers/functions'
 import {TemplateName, TemplateType} from "../../interfaces/constants";
+import { Conflict } from '@feathersjs/errors'
 
 const { protect, hashPassword } = require('@feathersjs/authentication-local').hooks;
 
@@ -56,7 +57,7 @@ export const user = (app: Application) => {
         context.data = {
           ...context.data,
           otp: numb,
-          role: role.data[0].id
+          role: role?.data[0]?.id
         }
       }],
       patch: [hashPassword('password'), authenticate('jwt'), schemaHooks.validateData(userPatchValidator), schemaHooks.resolveData(userPatchResolver)],
@@ -75,15 +76,26 @@ export const user = (app: Application) => {
             });
         }
         context.result.otp = null;
-      }],
-      find: [protect('otp')],
-      get: [protect('otp')],
-      update: [],
-      patch: [],
+      }, protect('password')],
+      find: [protect('password','otp')],
+      get: [protect('password','otp')],
+      update: [protect('password','otp')],
+      patch: [protect('password','otp')],
       remove: []
     },
     error: {
-      all: []
+      all: [],
+      create: [
+        async context => {
+          const err = Object.keys(context.error.errors);
+
+          if(context.error.code === 409 && err.includes('email')){
+            throw new Conflict('This email has been used');
+          }
+
+          return context;
+        }
+      ]
     }
   })
 }

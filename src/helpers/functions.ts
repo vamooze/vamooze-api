@@ -18,6 +18,7 @@ export const formatPhoneNumber = (phoneNumber: string) => {
 
 import mailchimpTransactional from '@mailchimp/mailchimp_transactional';
 import {EmailDTO} from "../interfaces/constants";
+import {logger} from "../logger";
 
 const mailchimp = mailchimpTransactional(constants.mailchimpConfig.apiKey as string);
 
@@ -42,9 +43,9 @@ export async function sendEmail(config: EmailDTO) {
       template_content: [],
       message: message
     });
-    console.log(response);
+    logger.info(response);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 }
 
@@ -99,17 +100,12 @@ export const sendPush = async (type: string, content: any, ids: any, data: any, 
 
   try {
     const response = await client.createNotification(notification);
-    console.log('====================================');
-    console.log(response.body);
-    console.log('====================================');
+    logger.info(response.body);
   } catch (e) {
-    console.log('====================================');
-    console.log(e);
-    console.log('====================================');
     if (e instanceof OneSignal.HTTPError) {
       // When status code of HTTP response is not 2xx, HTTPError is thrown.
-      console.log(e.statusCode);
-      console.log(e.body);
+      logger.info(e.statusCode);
+      logger.info(e.body);
     }
   }
 };
@@ -188,7 +184,7 @@ export const getStateFromLatLngWithGoogle = async (data: { lat: any; lng: any })
 
   const res = await geocoder.reverse({ lat:  data.lat, lon: data.lng });
   if(res.length > 0) {
-    console.log(res[0].administrativeLevels.level1long);
+    logger.info(res[0].administrativeLevels.level1long);
     return res[0].administrativeLevels.level1long;
   }
   return 'default';

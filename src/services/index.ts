@@ -9,6 +9,9 @@ import { formatPhoneNumber, sendSms } from '../helpers/functions'
 import bcrypt from 'bcryptjs'
 import Joi from 'joi'
 import { createValidator } from 'express-joi-validation'
+import fileUpload from "express-fileupload";
+import AzureStorageService from "./azureStorageService";
+import {logger} from "../logger";
 const validator = createValidator({ passError: true, statusCode: 400 })
 const schemas = {
   forgotPassword: Joi.object().keys({
@@ -47,6 +50,7 @@ const schemas = {
 }
 
 export const services = (app: Application) => {
+  // All services will be registered here
   app.configure(assets)
   app.configure(assetType)
   app.configure(roles)
@@ -213,5 +217,22 @@ export const services = (app: Application) => {
       res.json(error)
     }
   })
-  // All services will be registered here
+
+  app.post('/upload', async (req: any, res: any) => {
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).send('No files were uploaded.');
+    }
+
+    const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME || 'asset-images';
+    const file = req.files.file as fileUpload.UploadedFile;
+
+    try {
+      const azureStorageService = new AzureStorageService();
+      const fileUrl = await azureStorageService.uploadBuffer(containerName, file.data, file.name);
+      res.send({ fileUrl });
+    } catch (error) {
+      logger.error(error);
+      res.status(500).send('Error uploading file');
+    }
+  });
 }

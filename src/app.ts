@@ -19,13 +19,15 @@ import { logger } from './logger'
 import { logError } from './hooks/log-error'
 import { postgresql } from './postgresql'
 import { authentication } from './authentication'
-import { services } from './services/index'
+import { services } from './services'
 import { channels } from './channels'
+import fileUpload from 'express-fileupload';
 
 const app: Application = express(feathers())
 
 // Load app configuration
 app.configure(configuration(configurationValidator))
+app.use(fileUpload({ limits: { fileSize: 100 * 1024 * 1024 } }));
 app.use(cors())
 app.use(json())
 app.use(urlencoded({ extended: true }))
