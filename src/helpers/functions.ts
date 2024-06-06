@@ -43,7 +43,7 @@ export async function sendEmail(config: EmailDTO) {
       template_content: [],
       message: message
     });
-    logger.info(response);
+    logger.info(JSON.stringify(response));
   } catch (error) {
     logger.error(error);
   }

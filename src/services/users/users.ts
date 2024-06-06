@@ -19,7 +19,7 @@ import { UserService, getOptions } from './users.class'
 import { userPath, userMethods } from './users.shared'
 import { checkPermission } from '../../helpers/checkPermission'
 import {getOtp, isVerified, sendEmail} from '../../helpers/functions'
-import {TemplateName, TemplateType} from "../../interfaces/constants";
+import {Roles, TemplateName, TemplateType} from "../../interfaces/constants";
 import { Conflict } from '@feathersjs/errors'
 
 const { protect, hashPassword } = require('@feathersjs/authentication-local').hooks;
@@ -51,15 +51,17 @@ export const user = (app: Application) => {
       all: [schemaHooks.validateQuery(userQueryValidator), schemaHooks.resolveQuery(userQueryResolver)],
       find: [authenticate('jwt')],
       get: [authenticate('jwt')],
-      create: [schemaHooks.validateData(userDataValidator), schemaHooks.resolveData(userDataResolver), async (context: HookContext) => {
-        const role = await context.app.service('roles').find({query: { $limit: 1,slug: 'user'}});
-        const numb = getOtp();
-        context.data = {
-          ...context.data,
-          otp: numb,
-          role: role?.data[0]?.id
-        }
-      }],
+      create: [schemaHooks.validateData(userDataValidator), schemaHooks.resolveData(userDataResolver)
+      //   async (context: HookContext) => {
+      //   const role = await context.app.service('roles').find({query: { $limit: 1,slug: 'asset-owner'}});
+      //   const numb = getOtp();
+      //   context.data = {
+      //     ...context.data,
+      //     otp: numb,
+      //     role: role?.data[0]?.id
+      //   }
+      // }
+      ],
       patch: [hashPassword('password'), authenticate('jwt'), schemaHooks.validateData(userPatchValidator), schemaHooks.resolveData(userPatchResolver)],
       remove: []
     },
@@ -67,7 +69,7 @@ export const user = (app: Application) => {
       all: [protect('pin', 'password')],
       create: [async (context: HookContext) => {
         const role = await context.app.service('roles').get(context.result.role)
-        if(role.slug === 'user') {
+        if(role.slug === Roles.AssetOwner) {
             sendEmail({
               toEmail: context.result.email,
               subject: 'Verify your email',

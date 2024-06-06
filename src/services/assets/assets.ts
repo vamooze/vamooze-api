@@ -17,9 +17,28 @@ import {
 import {Application, HookContext} from '../../declarations'
 import { AssetsService, getOptions } from './assets.class'
 import { assetsPath, assetsMethods } from './assets.shared'
+import {createValidator} from "express-joi-validation";
+import Joi from "joi";
+import {Conflict, NotFound} from "@feathersjs/errors";
+import {Roles} from "../../interfaces/constants";
+import {getOtp} from "../../helpers/functions";
 
 export * from './assets.class'
 export * from './assets.schema'
+
+const validator = createValidator({ passError: true, statusCode: 400 })
+const schemas = {
+  signup: Joi.object().keys({
+    first_name: Joi.string().required(),
+    last_name: Joi.string().required(),
+    email: Joi.string().required().email(),
+    password: Joi.string().required(),
+    phone_number: Joi.string().optional().max(12),
+    state: Joi.string().optional(),
+    address: Joi.string().optional(),
+    local_government_area: Joi.string().optional(),
+  })
+}
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const assets = (app: Application) => {
@@ -30,6 +49,26 @@ export const assets = (app: Application) => {
     // You can add additional custom events to be sent to clients here
     events: []
   })
+
+  app.post('/asset-owners/signup',  validator.body(schemas.signup), async (req: any, res: any, next: any) => {
+    try {
+      const user = await app.service('users').find({ query: { email: req.body.email } });
+
+      if(user?.data?.length > 0) {
+        throw new Conflict('User with this email already exists');
+      }
+      const role = await app.service('roles').find({query: { $limit: 1,slug: Roles.AssetOwner}});
+      if (role?.data?.length === 0) {
+        throw new NotFound('Role not found');
+      }
+      req.body.role = role?.data[0]?.id;
+      req.body.otp = getOtp();
+      const result = await app.service('users').create(req.body);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
   // Initialize hooks
   app.service(assetsPath).hooks({
     around: {
