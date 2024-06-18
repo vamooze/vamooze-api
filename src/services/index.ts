@@ -1,3 +1,5 @@
+import { maintenance } from './maintenance/maintenance'
+import { leasePreferences } from './lease-preferences/lease-preferences'
 import { leases } from './leases/leases'
 import { messages } from './messages/messages'
 import { assets } from './assets/assets'
@@ -14,6 +16,7 @@ import { createValidator } from 'express-joi-validation'
 import fileUpload from 'express-fileupload'
 import AzureStorageService from './azureStorageService'
 import { logger } from '../logger'
+import { Roles } from '../interfaces/constants'
 const validator = createValidator({ passError: true, statusCode: 400 })
 const schemas = {
   forgotPassword: Joi.object().keys({
@@ -52,6 +55,8 @@ const schemas = {
 }
 
 export const services = (app: Application) => {
+  app.configure(maintenance)
+  app.configure(leasePreferences)
   app.configure(leases)
   app.configure(messages)
   // All services will be registered here
@@ -91,7 +96,7 @@ export const services = (app: Application) => {
         .create({ password: req.body.password, email: userDetails.data[0].email, strategy: 'local' })
       return res.json({ message: 'User verification successful!', status: 200, data })
     } catch (error) {
-      res.json(error)
+      res.status(400).json(error)
     }
   })
 
@@ -185,6 +190,11 @@ export const services = (app: Application) => {
   app.post('/auth/google/sign-up', validator.body(schemas.google_signup), async (req: any, res: any) => {
     try {
       let User = app.service('users')
+      const roleData = await app.service('roles').find({ query: { $limit: 1, slug: Roles.AssetOwner } })
+      if (roleData?.data?.length === 0) {
+        throw new NotFound('Role not found')
+      }
+      req.body.role = roleData?.data[0]?.id
       const { first_name, last_name, email, role, phone_number } = req.body
       const user = await User.create({
         first_name,

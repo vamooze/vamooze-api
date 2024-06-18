@@ -4,6 +4,22 @@ import type { TransportConnection, Application } from '@feathersjs/feathers'
 import authenticationClient from '@feathersjs/authentication-client'
 import type { AuthenticationClientOptions } from '@feathersjs/authentication-client'
 
+import { maintenanceClient } from './services/maintenance/maintenance.shared'
+export type {
+  Maintenance,
+  MaintenanceData,
+  MaintenanceQuery,
+  MaintenancePatch
+} from './services/maintenance/maintenance.shared'
+
+import { leasePreferencesClient } from './services/lease-preferences/lease-preferences.shared'
+export type {
+  LeasePreferences,
+  LeasePreferencesData,
+  LeasePreferencesQuery,
+  LeasePreferencesPatch
+} from './services/lease-preferences/lease-preferences.shared'
+
 import { leasesClient } from './services/leases/leases.shared'
 export type { Leases, LeasesData, LeasesQuery, LeasesPatch } from './services/leases/leases.shared'
 
@@ -64,5 +80,7 @@ export const createClient = <Configuration = any,>(
   client.configure(assetsClient)
   client.configure(messagesClient)
   client.configure(leasesClient)
+  client.configure(leasePreferencesClient)
+  client.configure(maintenanceClient)
   return client
 }

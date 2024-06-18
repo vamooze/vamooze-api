@@ -1,10 +1,11 @@
 import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
 import * as dotenv from "dotenv";
 import {logger} from "../logger";
+import {constants} from "../helpers/constants";
 
 dotenv.config();
 
-const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING || "";
+const AZURE_STORAGE_CONNECTION_STRING = constants.azureStorageConfig.connectionString || "";
 
 if (!AZURE_STORAGE_CONNECTION_STRING) {
     throw new Error("Azure Storage Connection string not found");

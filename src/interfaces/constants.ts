@@ -36,3 +36,14 @@ export enum LeaseStatus {
     Ongoing = 'ongoing',
     Expired = 'expired'
 }
+
+export enum MaintenanceStatus {
+    InProgress = 'in-progress',
+    Pending = 'pending',
+    Completed = 'completed'
+}
+
+export enum MaintenanceType {
+    Repair = 'repair',
+    Servicing = 'servicing'
+}

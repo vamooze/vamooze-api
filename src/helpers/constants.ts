@@ -39,6 +39,9 @@ export const constants = {
 
   mailchimpConfig: {
     apiKey: process.env.MAILCHIMP_API_KEY
+  },
+  azureStorageConfig: {
+    connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING
   }
 }
 
