@@ -197,6 +197,10 @@ export const services = (app: Application) => {
   app.post('/auth/google/sign-up', validator.body(schemas.google_signup), async (req: any, res: any) => {
     try {
       let User = app.service('users')
+      let userDetails = await User.find({query: {email: req.body.email}})
+      if (userDetails.data.length > 0){
+        throw new NotFound('User already registered')
+      }
       const roleData = await app.service('roles').find({ query: { $limit: 1, slug: req.body.role } })
       if (roleData?.data?.length === 0) {
         throw new NotFound('Role not found')
@@ -221,7 +225,7 @@ export const services = (app: Application) => {
 
       return res.json({ message: 'Successful Sign Up!', status: 200, data: data })
     } catch (error) {
-      res.json(error)
+      res.status(400).json(error)
     }
   })
 
