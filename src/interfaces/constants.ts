@@ -47,3 +47,8 @@ export enum MaintenanceType {
     Repair = 'repair',
     Servicing = 'servicing'
 }
+
+export enum OAuthTypes {
+    Google = 'google',
+    Github = 'git-hub'
+}

@@ -22,6 +22,7 @@ import Joi from "joi";
 import {Conflict, NotFound} from "@feathersjs/errors";
 import {Roles} from "../../interfaces/constants";
 import {getOtp} from "../../helpers/functions";
+import {logger} from "../../logger";
 
 export * from './assets.class'
 export * from './assets.schema'
@@ -65,7 +66,8 @@ export const assets = (app: Application) => {
       req.body.otp = getOtp();
       const result = await app.service('users').create(req.body);
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
+      logger.error({message: error.message, stack: error.stack, email: req.body.email});
       next(error);
     }
   });

@@ -59,12 +59,6 @@ K
 src/hooks/authentication.ts,9/b/9bda53722644868ecbfb7a4a9760364dbe115b0e
 A
 src/postgresql.ts,d/e/def33186cf08854409da78df8c9288d38757d97e
-K
-src/authentication.hooks.js,5/0/502788e2cb46a383c66e99b7293d46406d3237b0
-K
-src/authentication.hooks.ts,0/d/0d688633ade5d052731388545946d04f1e8ab701
-C
-config/constants.ts,b/4/b4c31d799b19182acef5e04314b5ae7a13ed40e7
 U
 %src/services/asset-type/asset-type.ts,8/3/83f0fa597e5a66ea9629a5f162d0dd52e78d95d6
 \
@@ -73,8 +67,6 @@ U
 ,src/services/asset-type/asset-type.schema.ts,d/c/dcfaae3e6489ed51d5492130fec08d32c9401caa
 [
 +src/services/asset-type/asset-type.class.ts,3/d/3de6e877485aa05797ef03daca502d6cc77da130
-W
-'migrations/20240507014041_asset_name.ts,7/6/7618bda5085a88657dcd015b57c6b91a9c6624a9
 W
 'migrations/20240507013413_asset-type.ts,3/c/3c88278041d92cbbd43099b5b48306dbe05390ea
 R
@@ -89,8 +81,6 @@ T
 $src/services/assets/assets.schema.ts,5/9/59ba1d808a9cc38eaacfbe61f0b210d8fcbe773f
 M
 src/services/assets/assets.ts,2/3/23abee5f95f0b5f0b4ad85f62220886e85cca7c9
-I
-src/schemas/validators.ts,6/7/67cd17d6151c05b926da3e0dc47abd89196a6da8
 K
 src/interfaces/constants.ts,0/3/03b576eda302b6afda5de37b115e3604ab39d47c
 T
@@ -101,8 +91,6 @@ $src/services/assets/assets.shared.ts,c/1/c1640778efe0e5b0214e25dcafb9da3b26426
 tsconfig.json,6/1/61ebb9fd6e8cf9082658121d5d81e297791dacd0
 A
 public/index.html,f/4/f43ecdf8d666ee908aacce037b4cd72159e4741b
-S
-#lib/services/azureStorageService.js,c/1/c1d435bd3e68f6debbf5b59ba347cd3f2b9abef4
 S
 #src/services/azureStorageService.ts,4/5/452e3caa42ed851247f1ff61893f674822559bfa
 H

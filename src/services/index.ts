@@ -9,14 +9,14 @@ import { user } from './users/users'
 // For more information about this file see https://dove.feathersjs.com/guides/cli/application.html#configure-functions
 import type { Application } from '../declarations'
 import { GeneralError, NotFound } from '@feathersjs/errors'
-import { formatPhoneNumber, sendSms } from '../helpers/functions'
+import {formatPhoneNumber, sendEmail, sendSms} from '../helpers/functions'
 import bcrypt from 'bcryptjs'
 import Joi from 'joi'
 import { createValidator } from 'express-joi-validation'
 import fileUpload from 'express-fileupload'
 import AzureStorageService from './azureStorageService'
 import { logger } from '../logger'
-import { Roles } from '../interfaces/constants'
+import {OAuthTypes, Roles, TemplateName, TemplateType} from '../interfaces/constants'
 const validator = createValidator({ passError: true, statusCode: 400 })
 const schemas = {
   forgotPassword: Joi.object().keys({
@@ -43,7 +43,7 @@ const schemas = {
     first_name: Joi.string().required(),
     last_name: Joi.string().required(),
     email: Joi.string().required().email(),
-    role: Joi.number().required(),
+    role: Joi.string().required().valid(...Object.values(Roles)),
     phone_number: Joi.string().optional().length(11)
   }),
   google_signin: Joi.object().keys({
@@ -51,8 +51,12 @@ const schemas = {
   }),
   logout: Joi.object().keys({
     email: Joi.string().required().email()
+  }),
+  resend_otp: Joi.object().keys({
+    email: Joi.string().required().email()
   })
 }
+import {Response, Request} from 'express'
 
 export const services = (app: Application) => {
   app.configure(maintenance)
@@ -79,15 +83,15 @@ export const services = (app: Application) => {
 
   app.post('/auth/user/verify', validator.body(schemas.verify), async (req: any, res: any) => {
     try {
-      let User = app.service('users')
-      let userDetails = await User.find({
+      const User = app.service('users')
+      const userDetails = await User.find({
         query: {
           otp: req.body.otp,
           email: req.body.email
         }
       })
 
-      if (userDetails.data.length == 0) {
+      if (userDetails?.data.length === 0) {
         throw new NotFound('Ouch! User OTP or Email is not correct')
       }
       await User.patch(userDetails.data[0].id, { is_verified: true, is_logged_in: true, otp: 0 })
@@ -120,21 +124,24 @@ export const services = (app: Application) => {
         const contentBody = `Hi! <br><br> You requested for password reset. Here is your OTP: ${otp} to continue the reset process. <br><br>Team Vamooze`
         const smdContentBody = `Hi! ${userDetails.data[0].first_name} You requested for password reset. Here is your OTP: ${otp} to continue the reset process. Team Vamooze`
         const phoneNumber = formatPhoneNumber(userDetails.data[0].phone_number)
-        const smsSent = await sendSms(phoneNumber, smdContentBody)
+        if(phoneNumber) {
+          const smsSent = await sendSms(phoneNumber, smdContentBody)
+          if (smsSent === 200) {
+            let otpData = {
+              message: `OTP has been sent to your ${req.body.email ? 'email address' : 'your phone number'}`
+            }
+            res.json({ result: { ...otpData }, status: 200 })
+          } else {
+            res.json({ error: { message: 'Something went wrong' }, status: 400 })
+          }
+        }
         // if(userDetails.data[0].email){
         //   await forgotPassword({content: '',to: userDetails.data[0].email, subject: 'Vamooze account password reset', type: 'html',
         //     firstName: userDetails.data[0].first_name, otp: otp });
         // }
 
         await User.patch(userDetails.data[0].id, { otp: otp })
-        if (smsSent === 200) {
-          let otpData = {
-            message: `OTP has been sent to your ${req.body.email ? 'email address' : 'your phone number'}`
-          }
-          res.json({ result: { ...otpData }, status: 200 })
-        } else {
-          res.json({ error: { message: 'Something went wrong' }, status: 400 })
-        }
+
       } catch (error: any) {
         res.json({ error: { message: error.message }, status: 400 })
       }
@@ -155,7 +162,7 @@ export const services = (app: Application) => {
       console.log(userDetails)
       console.log('====================================userDetails')
 
-      if (userDetails.data.length == 0) {
+      if (userDetails.data.length === 0) {
         throw new NotFound('Ouch! User OTP is not correct')
       }
       await User.patch(userDetails.data[0].id, { password: req.body.password, otp: 0 })
@@ -190,18 +197,18 @@ export const services = (app: Application) => {
   app.post('/auth/google/sign-up', validator.body(schemas.google_signup), async (req: any, res: any) => {
     try {
       let User = app.service('users')
-      const roleData = await app.service('roles').find({ query: { $limit: 1, slug: Roles.AssetOwner } })
+      const roleData = await app.service('roles').find({ query: { $limit: 1, slug: req.body.role } })
       if (roleData?.data?.length === 0) {
         throw new NotFound('Role not found')
       }
-      req.body.role = roleData?.data[0]?.id
-      const { first_name, last_name, email, role, phone_number } = req.body
+
+      const { first_name, last_name, email, phone_number } = req.body
       const user = await User.create({
         first_name,
         last_name,
         email,
-        password: 'google',
-        role: role,
+        password: OAuthTypes.Google,
+        role: roleData.data[0].id,
         is_verified: true,
         phone_number
       })
@@ -209,7 +216,7 @@ export const services = (app: Application) => {
       if (user) {
         data = await app
           .service('authentication')
-          .create({ password: 'google', email: email, strategy: 'local' })
+          .create({ password: OAuthTypes.Google, email: email, strategy: 'local' })
       }
 
       return res.json({ message: 'Successful Sign Up!', status: 200, data: data })
@@ -222,7 +229,7 @@ export const services = (app: Application) => {
     try {
       const data = await app
         .service('authentication')
-        .create({ password: 'google', email: req.body.email, strategy: 'local' })
+        .create({ password: OAuthTypes.Google, email: req.body.email, strategy: 'local' })
       return res.json({ status: 200, data })
     } catch (error) {
       res.json(error)
@@ -245,5 +252,34 @@ export const services = (app: Application) => {
       logger.error(error)
       res.status(500).send('Error uploading file')
     }
+  })
+
+  app.post('/resend-otp', validator.body(schemas.resend_otp), async(req: Request, res: Response) => {
+    let User = app.service('users')
+    let userDetails = await User.find({
+      query: {
+        email: req.body.email
+      }
+    })
+
+    if (userDetails.data.length === 0) {
+      throw new NotFound('User not found')
+    }
+
+    if (!userDetails.data[0].otp) {
+      throw new NotFound('OTP is empty')
+    }
+
+    sendEmail({
+      toEmail: userDetails.data[0].email,
+      subject: 'Here is your otp',
+      templateName: TemplateType.Otp,
+      templateData: [{ name: TemplateName.Otp, content: userDetails.data[0].otp }]
+    });
+
+    let otpData = {
+      message: `OTP has been sent to your ${req.body.email ? 'email address' : 'your phone number'}`
+    }
+    res.json({ result: { ...otpData }, status: 200 })
   })
 }

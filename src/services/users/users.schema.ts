@@ -14,7 +14,7 @@ export const userSchema = Type.Object(
     id: Type.Number(),
     first_name: Type.String(),
     last_name: Type.String(),
-      phone_number: Type.String(),
+      phone_number: Type.Optional(Type.String()),
     pin: Type.Optional(Type.String()),
     role: Type.Optional(Type.Number()),
     merchant_id: Type.Optional(Type.String({ format: 'uuid' })),
