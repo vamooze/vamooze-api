@@ -1,3 +1,8 @@
+import { requests } from './requests/requests'
+import { businessDispatches } from './business-dispatches/business-dispatches'
+import { businessSettings } from './business-settings/business-settings'
+import { businessTypes } from './business-types/business-types'
+import { business } from './business/business'
 import { maintenance } from './maintenance/maintenance'
 import { leasePreferences } from './lease-preferences/lease-preferences'
 import { leases } from './leases/leases'
@@ -9,14 +14,14 @@ import { user } from './users/users'
 // For more information about this file see https://dove.feathersjs.com/guides/cli/application.html#configure-functions
 import type { Application } from '../declarations'
 import { GeneralError, NotFound } from '@feathersjs/errors'
-import {formatPhoneNumber, sendEmail, sendSms} from '../helpers/functions'
+import { formatPhoneNumber, sendEmail, sendSms } from '../helpers/functions'
 import bcrypt from 'bcryptjs'
 import Joi from 'joi'
 import { createValidator } from 'express-joi-validation'
 import fileUpload from 'express-fileupload'
 import AzureStorageService from './azureStorageService'
 import { logger } from '../logger'
-import {OAuthTypes, Roles, TemplateName, TemplateType} from '../interfaces/constants'
+import { OAuthTypes, Roles, TemplateName, TemplateType } from '../interfaces/constants'
 const validator = createValidator({ passError: true, statusCode: 400 })
 const schemas = {
   forgotPassword: Joi.object().keys({
@@ -43,7 +48,9 @@ const schemas = {
     first_name: Joi.string().required(),
     last_name: Joi.string().required(),
     email: Joi.string().required().email(),
-    role: Joi.string().required().valid(...Object.values(Roles)),
+    role: Joi.string()
+      .required()
+      .valid(...Object.values(Roles)),
     phone_number: Joi.string().optional().length(11)
   }),
   google_signin: Joi.object().keys({
@@ -56,9 +63,14 @@ const schemas = {
     email: Joi.string().required().email()
   })
 }
-import {Response, Request} from 'express'
+import { Response, Request } from 'express'
 
 export const services = (app: Application) => {
+  app.configure(requests)
+  app.configure(businessDispatches)
+  app.configure(businessSettings)
+  app.configure(businessTypes)
+  app.configure(business)
   app.configure(maintenance)
   app.configure(leasePreferences)
   app.configure(leases)
@@ -124,7 +136,7 @@ export const services = (app: Application) => {
         const contentBody = `Hi! <br><br> You requested for password reset. Here is your OTP: ${otp} to continue the reset process. <br><br>Team Vamooze`
         const smdContentBody = `Hi! ${userDetails.data[0].first_name} You requested for password reset. Here is your OTP: ${otp} to continue the reset process. Team Vamooze`
         const phoneNumber = formatPhoneNumber(userDetails.data[0].phone_number)
-        if(phoneNumber) {
+        if (phoneNumber) {
           const smsSent = await sendSms(phoneNumber, smdContentBody)
           if (smsSent === 200) {
             let otpData = {
@@ -141,7 +153,6 @@ export const services = (app: Application) => {
         // }
 
         await User.patch(userDetails.data[0].id, { otp: otp })
-
       } catch (error: any) {
         res.json({ error: { message: error.message }, status: 400 })
       }
@@ -197,8 +208,8 @@ export const services = (app: Application) => {
   app.post('/auth/google/sign-up', validator.body(schemas.google_signup), async (req: any, res: any) => {
     try {
       let User = app.service('users')
-      let userDetails = await User.find({query: {email: req.body.email}})
-      if (userDetails.data.length > 0){
+      let userDetails = await User.find({ query: { email: req.body.email } })
+      if (userDetails.data.length > 0) {
         throw new NotFound('User already registered')
       }
       const roleData = await app.service('roles').find({ query: { $limit: 1, slug: req.body.role } })
@@ -258,7 +269,7 @@ export const services = (app: Application) => {
     }
   })
 
-  app.post('/resend-otp', validator.body(schemas.resend_otp), async(req: Request, res: Response) => {
+  app.post('/resend-otp', validator.body(schemas.resend_otp), async (req: Request, res: Response) => {
     let User = app.service('users')
     let userDetails = await User.find({
       query: {
@@ -279,7 +290,7 @@ export const services = (app: Application) => {
       subject: 'Here is your otp',
       templateName: TemplateType.Otp,
       templateData: [{ name: TemplateName.Otp, content: userDetails.data[0].otp }]
-    });
+    })
 
     let otpData = {
       message: `OTP has been sent to your ${req.body.email ? 'email address' : 'your phone number'}`

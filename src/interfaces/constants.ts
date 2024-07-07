@@ -52,3 +52,25 @@ export enum OAuthTypes {
     Google = 'google',
     Github = 'git-hub'
 }
+
+export enum PaymentMethod {
+    Cash = 'cash',
+    Card = 'card',
+    Ussd = 'ussd',
+    Bank = 'bank'
+}
+
+export enum DeliveryMethod {
+    Car = 'car',
+    Bike = 'bike',
+    Truck = 'truck',
+    Van = 'van',
+    Bus = 'bus'
+}
+
+export enum RequestStatus {
+    Pending = 'pending',
+    Accepted = 'accepted',
+    Enroute = 'enroute',
+    Delivered = 'delivered'
+}

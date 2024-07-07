@@ -69,7 +69,7 @@ export const user = (app: Application) => {
       all: [protect('pin', 'password')],
       create: [async (context: HookContext) => {
         const role = await context.app.service('roles').get(context.result.role)
-        if(role.slug === Roles.AssetOwner) {
+        if(role.slug === Roles.AssetOwner || role.slug === Roles.BusinessOwner || role.slug === Roles.Dispatch) {
             sendEmail({
               toEmail: context.result.email,
               subject: 'Verify your email',

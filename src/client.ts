@@ -4,6 +4,46 @@ import type { TransportConnection, Application } from '@feathersjs/feathers'
 import authenticationClient from '@feathersjs/authentication-client'
 import type { AuthenticationClientOptions } from '@feathersjs/authentication-client'
 
+import { requestsClient } from './services/requests/requests.shared'
+export type {
+  Requests,
+  RequestsData,
+  RequestsQuery,
+  RequestsPatch
+} from './services/requests/requests.shared'
+
+import { businessDispatchesClient } from './services/business-dispatches/business-dispatches.shared'
+export type {
+  BusinessDispatches,
+  BusinessDispatchesData,
+  BusinessDispatchesQuery,
+  BusinessDispatchesPatch
+} from './services/business-dispatches/business-dispatches.shared'
+
+import { businessSettingsClient } from './services/business-settings/business-settings.shared'
+export type {
+  BusinessSettings,
+  BusinessSettingsData,
+  BusinessSettingsQuery,
+  BusinessSettingsPatch
+} from './services/business-settings/business-settings.shared'
+
+import { businessTypesClient } from './services/business-types/business-types.shared'
+export type {
+  BusinessTypes,
+  BusinessTypesData,
+  BusinessTypesQuery,
+  BusinessTypesPatch
+} from './services/business-types/business-types.shared'
+
+import { businessClient } from './services/business/business.shared'
+export type {
+  Business,
+  BusinessData,
+  BusinessQuery,
+  BusinessPatch
+} from './services/business/business.shared'
+
 import { maintenanceClient } from './services/maintenance/maintenance.shared'
 export type {
   Maintenance,
@@ -82,5 +122,10 @@ export const createClient = <Configuration = any,>(
   client.configure(leasesClient)
   client.configure(leasePreferencesClient)
   client.configure(maintenanceClient)
+  client.configure(businessClient)
+  client.configure(businessTypesClient)
+  client.configure(businessSettingsClient)
+  client.configure(businessDispatchesClient)
+  client.configure(requestsClient)
   return client
 }
