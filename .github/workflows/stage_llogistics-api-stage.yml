@@ -28,7 +28,7 @@ jobs:
       DB_URL: postgres://vamooze:Vmooz$321@loystar-logisticsdb-stage.postgres.database.azure.com/vamoozedb
       DB_CLIENT: pg
       MAILCHIMP_API_KEY: md-TslttMDAJO4IyHFLN6Kwbw
-      AZURE_STORAGE_CONNECTION_STRING: DefaultEndpointsProtocol=https;AccountName=vmzestore;AccountKey=kxKCnchRpGH4XoXhBTVjKNG0r/Ka4FTias7o1rAIMV3Z+6TUjDENZFYA2nFUH1En0//A5oev/7ih+AStBGF+cQ==;EndpointSuffix=core.windows.net
+      AZURE_STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=vmzestore;AccountKey=kxKCnchRpGH4XoXhBTVjKNG0r/Ka4FTias7o1rAIMV3Z+6TUjDENZFYA2nFUH1En0//A5oev/7ih+AStBGF+cQ==;EndpointSuffix=core.windows.net'
       AZURE_STORAGE_CONTAINER_NAME: asset-images
       
 
