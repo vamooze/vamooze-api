@@ -32,8 +32,8 @@ jobs:
       AZURE_STORAGE_CONTAINER_NAME: asset-images
       TERMII_API_KEY: TLUYaEK1P8WxnOPDhjqa1EoZa8ri8MRZDfW2kPNZmmBsePHDKJrnjpusUjJx4b
       TERMII_BASE_URL: https://api.ng.termii.com/api/sms/send
-      PHONE_STRATEGY_USERNAME_FIELD: phone_number
-      PHONE_STRATEGY_PASSWORD_FIELD: password
+      PHONE_STRATEGY_USERNAME_FIELD: 'phone_number'
+      PHONE_STRATEGY_PASSWORD_FIELD: 'password'
       TEST_DB_URL: postgres://postgres:postgres@localhost:5432/vamooze_test
       
 
@@ -84,8 +84,8 @@ jobs:
       AZURE_STORAGE_CONTAINER_NAME: asset-images
       TERMII_API_KEY: TLUYaEK1P8WxnOPDhjqa1EoZa8ri8MRZDfW2kPNZmmBsePHDKJrnjpusUjJx4b
       TERMII_BASE_URL: https://api.ng.termii.com/api/sms/send
-      PHONE_STRATEGY_USERNAME_FIELD: phone_number
-      PHONE_STRATEGY_PASSWORD_FIELD: password
+      PHONE_STRATEGY_USERNAME_FIELD: 'phone_number'
+      PHONE_STRATEGY_PASSWORD_FIELD: 'password'
       TEST_DB_URL: postgres://postgres:postgres@localhost:5432/vamooze_test
     
     environment:
