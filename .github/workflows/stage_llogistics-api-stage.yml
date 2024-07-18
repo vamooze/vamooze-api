@@ -32,6 +32,8 @@ jobs:
       AZURE_STORAGE_CONTAINER_NAME: asset-images
       TERMII_API_KEY: TLUYaEK1P8WxnOPDhjqa1EoZa8ri8MRZDfW2kPNZmmBsePHDKJrnjpusUjJx4b
       TERMII_BASE_URL: https://api.ng.termii.com/api/sms/send
+      PHONE_STRATEGY_USERNAME_FIELD: phone_number
+      PHONE_STRATEGY_PASSWORD_FIELD: password
       
 
     steps:
@@ -79,6 +81,10 @@ jobs:
       MAILCHIMP_API_KEY: md-TslttMDAJO4IyHFLN6Kwbw
       AZURE_STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=vmzestore;AccountKey=kxKCnchRpGH4XoXhBTVjKNG0r/Ka4FTias7o1rAIMV3Z+6TUjDENZFYA2nFUH1En0//A5oev/7ih+AStBGF+cQ==;EndpointSuffix=core.windows.net'
       AZURE_STORAGE_CONTAINER_NAME: asset-images
+      TERMII_API_KEY: TLUYaEK1P8WxnOPDhjqa1EoZa8ri8MRZDfW2kPNZmmBsePHDKJrnjpusUjJx4b
+      TERMII_BASE_URL: https://api.ng.termii.com/api/sms/send
+      PHONE_STRATEGY_USERNAME_FIELD: phone_number
+      PHONE_STRATEGY_PASSWORD_FIELD: password
     
     environment:
       name: 'Production'
