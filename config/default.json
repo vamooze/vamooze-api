@@ -6,7 +6,8 @@
   "authentication": {
     "authStrategies": [
       "jwt",
-      "local"
+      "local",
+      "phone"
     ]
   }
 }

@@ -58,7 +58,7 @@ export const requestsSchema = Type.Object(
       delivery_date: Type.Optional(Type.String({ format: 'date-time' })),
       delivery_method: Type.Enum(DeliveryMethod, { default: DeliveryMethod.Bike }),
       status: Type.Enum(RequestStatus, { default: RequestStatus.Pending }),
-      reference: Type.String({ format: 'uuid' })
+      reference: Type.Optional(Type.String({ format: 'uuid' }))
   },
   { $id: 'Requests', additionalProperties: false }
 )

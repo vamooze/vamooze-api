@@ -30,6 +30,10 @@
     "local": {
       "usernameField": "USERNAME_FIELD",
       "passwordField": "PASSWORD_FIELD"
+    },
+    "phone": {
+      "usernameField": "PHONE_STRATEGY_USERNAME_FIELD",
+      "passwordField": "PHONE_STRATEGY_PASSWORD_FIELD"
     }
   }
 }

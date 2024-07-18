@@ -42,6 +42,10 @@ export const constants = {
   },
   azureStorageConfig: {
     connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING
+  },
+  termii: {
+    apiKey: process.env.TERMII_API_KEY,
+    baseUrl: process.env.TERMII_BASE_URL
   }
 }
 

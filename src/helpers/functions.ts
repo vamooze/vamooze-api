@@ -7,11 +7,11 @@ import type { HookContext } from '../declarations';
 export const formatPhoneNumber = (phoneNumber: string | undefined) => {
   if (phoneNumber) {
     if(phoneNumber.substring(0,1) === '0'){
-      return '+234' + phoneNumber.substring(phoneNumber.length - 10);
-    }else if(phoneNumber.substring(0,4) === '+234'){
+      return '234' + phoneNumber.substring(phoneNumber.length - 10);
+    }else if(phoneNumber.substring(0,4) === '234'){
       return phoneNumber;
     }else if(phoneNumber.substring(0,3) === '234'){
-      return '+' + phoneNumber;
+      return phoneNumber;
     }else{
       return phoneNumber;
     }

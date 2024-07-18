@@ -192,7 +192,7 @@ export const services = (app: Application) => {
         }
       })
 
-      let result = bcrypt.compareSync(req.body.oldPassword, foundUser.data[0]['password'])
+      let result = bcrypt.compareSync(req.body.oldPassword, <string>foundUser?.data[0]['password'])
 
       if (result) {
         await user.patch(foundUser.data[0]['id'], { password: req.body.newPassword })
@@ -286,7 +286,7 @@ export const services = (app: Application) => {
     }
 
     sendEmail({
-      toEmail: userDetails.data[0].email,
+      toEmail: userDetails?.data[0].email,
       subject: 'Here is your otp',
       templateName: TemplateType.Otp,
       templateData: [{ name: TemplateName.Otp, content: userDetails.data[0].otp }]

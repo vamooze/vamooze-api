@@ -9,7 +9,7 @@ export enum MessageStatus {
 }
 export interface EmailDTO {
     templateName: string;
-    toEmail: string;
+    toEmail: string | undefined;
     subject: string;
     templateData: GlobalMergeVars[];
 }

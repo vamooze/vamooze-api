@@ -1,11 +1,0 @@
-
-ptypescript:S6557	"'Use 'String#startsWith' method instead.(όÿεΫ8ιήγ¨…2J$90aa7643-30a4-494b-be4d-7d16153d4e56
-utypescript:S6557"'Use 'String#startsWith' method instead.(Òΰβ«ώÿÿÿÿ8ιήγ¨…2J$a6b583e2-9514-44ed-a4f3-94fac531cff8
-otypescript:S6557"'Use 'String#startsWith' method instead.(©u8κήγ¨…2J$321be451-66f7-4397-9401-8336e6771dea
-©typescript:S3923T"[Remove this conditional structure or edit its code blocks so that they're not all the same.(πέΖιϋÿÿÿÿ8μήγ¨…2J$7e6ca22a-ad79-45aa-9d07-8474eb9093f1
-•typescript:S1871W"LThis branch's code block is the same as the block for the branch on line 84.(ε¥‡8φήγ¨…2J$26530015-635c-41f3-a14b-6f6773996860
-”typescript:S1764a"KCorrect one of the identical sub-expressions on both sides of operator "&&"(ξ΄Ϋ8φήγ¨…2J$9f86b180-63cd-43a8-b519-d06e2662f4a8
-¤typescript:S6582x"[Prefer using an optional chain expression instead, as it's more concise and easier to read.(Ομ·‡8φήγ¨…2J$a15caad9-85c2-452e-a4da-7850474f645d
-„typescript:S1125y"6Refactor the code to avoid using this boolean literal.(‰™©Βÿÿÿÿÿ8χήγ¨…2J$f44b183c-0f4b-407d-9ac9-0c6486a78133
-΅typescript:S2737"WAdd logic to this catch clause or eliminate it and rethrow the exception automatically.(‚·Ι8χήγ¨…2J$a281ebe1-8a02-4398-9105-e752a1d9601f
-΅typescript:S2737"WAdd logic to this catch clause or eliminate it and rethrow the exception automatically.(‚·Ι8χήγ¨…2J$f5715cc0-e00e-469f-8cf8-3b9077a0b2d8
