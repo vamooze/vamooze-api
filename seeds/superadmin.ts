@@ -13,7 +13,7 @@ exports.seed = async function (knex: Knex): Promise<void> {
   };
 
   // Hash the password
-  const hashedPassword = await hashPassword(superAdmin.password);
+  const hashedPassword = await hashPassword()(superAdmin.password);
 
   await knex("users")
     .insert({
