@@ -1,8 +1,5 @@
 import { Knex } from "knex";
-
-const { hashPassword } = require('@feathersjs/authentication-local').hooks;
-const hash = require("@feathersjs/authentication-local/lib/utils/hash");
-
+import bcrypt from 'bcryptjs'
 
 exports.seed = async function (knex: Knex): Promise<void> {
   const superAdmin = {
@@ -13,13 +10,17 @@ exports.seed = async function (knex: Knex): Promise<void> {
     last_name: "vamooze",
   };
 
-  // Hash the password
-  const hashedPassword = await hash(superAdmin.password)
+  // Hash the password using bcrypt
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(superAdmin.password, saltRounds);
 
   await knex("users")
     .insert({
-      ...superAdmin,
+      role: superAdmin.role,
+      email: superAdmin.email,
       password: hashedPassword,
+      first_name: superAdmin.first_name,
+      last_name: superAdmin.last_name,
     })
     .onConflict("id")
     .merge({
