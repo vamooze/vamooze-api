@@ -1,5 +1,7 @@
 import { Knex } from "knex";
-import { hashPassword } from '@feathersjs/authentication-local';
+
+const { hashPassword } = require('@feathersjs/authentication-local').hooks;
+
 
 exports.seed = async function (knex: Knex): Promise<void> {
   const superAdmin = {
