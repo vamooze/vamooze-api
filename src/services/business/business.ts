@@ -30,13 +30,20 @@ export * from './business.schema'
 
 const validator = createValidator({ passError: true, statusCode: 400 })
 
-const phoneRegex = /^[1-9]\d{1,14}$/;
+const phoneRegex = /^\+?\d+$/;
 
 
 const joi_phone_number_validator = Joi.string()
-.required()
-.pattern(phoneRegex)
-.message(`Phone number must be in the format: [country code][phone number] without any symbols or spaces e.g 2348037184523`)
+  .pattern(phoneRegex)
+  .min(7)
+  // .max(15)
+  .required()
+  .messages({
+    'string.pattern.base': 'Phone number must be a number and can only start with "+"',
+    'string.min': 'Phone number must be at least 7 digits long',
+    // 'string.max': 'Phone number cannot be longer than 15 digits',
+    'any.required': 'Phone number is required'
+  });
 
 const schemas = {
   signup: Joi.object().keys({
