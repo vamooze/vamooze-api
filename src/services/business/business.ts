@@ -2,7 +2,7 @@
 import { authenticate } from '@feathersjs/authentication'
 
 import { hooks as schemaHooks } from '@feathersjs/schema'
-
+import emailTemplates from '../../helpers/emailTemplates'
 import {
   businessDataValidator,
   businessPatchValidator,
@@ -58,7 +58,7 @@ const schemas = {
     phone_number: joi_phone_number_validator
   }),
   complete_dispatch_login: Joi.object().keys({
-    phone_number: Joi.string().required().max(12),
+    phone_number: joi_phone_number_validator,
     otp: Joi.number().required()
   })
 }
@@ -104,6 +104,13 @@ export const business = (app: Application) => {
       req.body.otp = getOtp();
       req.body.password = Roles.Dispatch;
       const result = await app.service('users').create(req.body);
+      console.log(req.body.otp, '...')
+      sendEmail({
+        toEmail: 'balogunbiola101@gmail.com',
+        subject: 'Testing email template on prod',
+        templateData: emailTemplates.otp(req.body.otp),
+        receiptName: 'biola balogun'
+      })
       const instance = new Termii(req.body.phone_number, `Your OTP is ${req.body.otp}`);
       await instance.sendSMS();
       res.json(result);
