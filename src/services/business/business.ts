@@ -103,6 +103,12 @@ export const business = (app: Application) => {
   app.post('/dispatch/signup',  validator.body(schemas.dispatch_signup), async (req: any, res: any, next: any) => {
     try {
    
+      const user = await app.service('users').find({ query: { phone_number: req.body.phone_number } });
+
+      if(user?.data?.length > 0) {
+        throw new Conflict('User with this phone number already exists');
+      }
+
       const role = await app.service('roles').find({query: { $limit: 1,slug: Roles.Dispatch}});
       if (role?.data?.length === 0) {
         throw new NotFound('Role does not exist');
@@ -111,13 +117,14 @@ export const business = (app: Application) => {
       req.body.otp = getOtp();
       req.body.password = Roles.Dispatch;
       const result = await app.service('users').create(req.body);
-      console.log(req.body.otp, '...')
-      sendEmail({
-        toEmail: 'balogunbiola101@gmail.com',
-        subject: 'Testing email template on prod',
-        templateData: emailTemplates.otp(req.body.otp),
-        receiptName: 'biola balogun'
-      })
+   
+      // sendEmail({
+      //   toEmail: 'balogunbiola101@gmail.com',
+      //   subject: 'Testing email template on prod',
+      //   templateData: emailTemplates.otp(req.body.otp),
+      //   receiptName: 'biola balogun'
+      // })
+
       const instance = new Termii(req.body.phone_number, `Your OTP is ${req.body.otp}`);
       await instance.sendSMS();
       res.json(result);
