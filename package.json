@@ -50,6 +50,7 @@
     "seed": "knex seed:run"
   },
   "dependencies": {
+    "@azure/communication-email": "^1.0.0",
     "@azure/storage-blob": "^12.18.0",
     "@feathersjs/adapter-commons": "^5.0.24",
     "@feathersjs/authentication": "^5.0.24",

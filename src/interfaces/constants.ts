@@ -8,10 +8,10 @@ export enum MessageStatus {
     Unread = 'unread'
 }
 export interface EmailDTO {
-    templateName: string;
     toEmail: string | undefined;
     subject: string;
-    templateData: GlobalMergeVars[];
+    templateData: string;
+    receiptName: string;
 }
 
 interface GlobalMergeVars {name: string,content: any}

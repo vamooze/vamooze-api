@@ -18,6 +18,7 @@ import {Application, HookContext} from '../../declarations'
 import { UserService, getOptions } from './users.class'
 import { userPath, userMethods } from './users.shared'
 import { checkPermission } from '../../helpers/checkPermission'
+import emailTemplates from '../../helpers/emailTemplates'
 import {getOtp, isVerified, sendEmail} from '../../helpers/functions'
 import {Roles, TemplateName, TemplateType} from "../../interfaces/constants";
 import { Conflict } from '@feathersjs/errors'
@@ -69,12 +70,12 @@ export const user = (app: Application) => {
       all: [protect('pin', 'password')],
       create: [async (context: HookContext) => {
         const role = await context.app.service('roles').get(context.result.role)
-        if(role.slug === Roles.AssetOwner || role.slug === Roles.BusinessOwner || role.slug === Roles.Dispatch) {
+        if(role.slug === Roles.AssetOwner || role.slug === Roles.BusinessOwner) {
             sendEmail({
               toEmail: context.result.email,
               subject: 'Verify your email',
-              templateName: TemplateType.Otp,
-              templateData: [{ name: TemplateName.Otp, content: context.result.otp }]
+              templateData: emailTemplates.otp(context.result.otp),
+              receiptName: `${context.result.first_name} ${context.result.last_name}`
             });
         }
         context.result.otp = null;

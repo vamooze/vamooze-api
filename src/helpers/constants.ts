@@ -46,6 +46,10 @@ export const constants = {
   termii: {
     apiKey: process.env.TERMII_API_KEY,
     baseUrl: process.env.TERMII_BASE_URL
+  },
+
+  azureEmailConfig: {
+    senderAddress: process.env.AZURE_EMAIL_SENDER_ADDRESS,
+    connectionString: process.env.AZURE_EMAIL_CONNECTION_STRING
   }
 }
-

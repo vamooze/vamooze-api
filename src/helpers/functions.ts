@@ -1,63 +1,92 @@
-import { constants } from './constants';
-import axios from 'axios';
-import OneSignal from 'onesignal-node';
-import { Forbidden } from '@feathersjs/errors';
-import type { HookContext } from '../declarations';
+import { constants } from "./constants";
+import axios from "axios";
+import OneSignal from "onesignal-node";
+import { Forbidden } from "@feathersjs/errors";
+import type { HookContext } from "../declarations";
 
 export const formatPhoneNumber = (phoneNumber: string | undefined) => {
   if (phoneNumber) {
-    if(phoneNumber.substring(0,1) === '0'){
-      return '234' + phoneNumber.substring(phoneNumber.length - 10);
-    }else if(phoneNumber.substring(0,4) === '234'){
+    if (phoneNumber.substring(0, 1) === "0") {
+      return "234" + phoneNumber.substring(phoneNumber.length - 10);
+    } else if (phoneNumber.substring(0, 4) === "234") {
       return phoneNumber;
-    }else if(phoneNumber.substring(0,3) === '234'){
+    } else if (phoneNumber.substring(0, 3) === "234") {
       return phoneNumber;
-    }else{
+    } else {
       return phoneNumber;
     }
-  }else {
-    return null
+  } else {
+    return null;
   }
 };
 
-import mailchimpTransactional from '@mailchimp/mailchimp_transactional';
-import {EmailDTO} from "../interfaces/constants";
-import {logger} from "../logger";
+import { EmailDTO } from "../interfaces/constants";
+import { logger } from "../logger";
+const {
+  EmailClient,
+  KnownEmailSendStatus,
+} = require("@azure/communication-email");
 
-const mailchimp = mailchimpTransactional(constants.mailchimpConfig.apiKey as string);
 
 export async function sendEmail(config: EmailDTO) {
-  const { toEmail, subject, templateName, templateData } = config;
-  const message: any = {
-    from_email: 'hello@vamooze.com',
-    subject,
-    to: [
-      {
-        email: toEmail,
-        type: 'to'
-      }
-    ],
-    merge_language: 'mailchimp',
-    global_merge_vars: templateData
-  };
+  const { toEmail, subject, templateData, receiptName } = config;
+  const connectionString =  constants.azureEmailConfig.connectionString
+  const emailClient = new EmailClient(connectionString);
 
+ 
+  const POLLER_WAIT_TIME = 10;
   try {
-    const response = await mailchimp.messages.sendTemplate({
-      template_name: templateName,
-      template_content: [],
-      message: message
-    });
-    logger.info(JSON.stringify(response));
+    const message = {
+      senderAddress:  constants.azureEmailConfig.senderAddress,
+      content: {
+        subject,
+        html: templateData
+      },
+      recipients: {
+        to: [
+          {
+            address: toEmail,
+            displayName: receiptName,
+          },
+        ],
+      },
+    };
+
+    const poller = await emailClient.beginSend(message);
+
+    if (!poller.getOperationState().isStarted) {
+      logger.error("Email poller was not started.");
+    }
+
+    let timeElapsed = 0;
+    while (!poller.isDone()) {
+      poller.poll();
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, POLLER_WAIT_TIME * 1000)
+      );
+      timeElapsed += 10;
+
+      if (timeElapsed > 18 * POLLER_WAIT_TIME) {
+        logger.error("Email Polling timed out.");
+      }
+    }
+
+    if (poller.getResult().status === KnownEmailSendStatus.Succeeded) {
+      logger.info(
+        `Successfully sent the email (operation id: ${poller.getResult().id})`
+      );
+    } else {
+      throw poller.getResult().error;
+    }
   } catch (error) {
     logger.error(error);
   }
 }
 
-
 export const sendSms = async (phone: any, msg: any) => {
-return 200
+  return 200;
 };
-
 
 /**
  * Will return random number.
@@ -76,12 +105,21 @@ export const getOtp = (): number => {
 };
 
 export const generateTrackingId = (len: number | undefined) => {
-  return (Math.random().toString(36).substring(2, len) + Math.random().toString(36).substring(2, len) ).toUpperCase();
+  return (
+    Math.random().toString(36).substring(2, len) +
+    Math.random().toString(36).substring(2, len)
+  ).toUpperCase();
 };
 
-export const sendPush = async (type: string, content: any, ids: any, data: any, playSound: any ) => {
-  let oneSignalToken: any, appId : any;
-  if (type === 'dispatch') {
+export const sendPush = async (
+  type: string,
+  content: any,
+  ids: any,
+  data: any,
+  playSound: any
+) => {
+  let oneSignalToken: any, appId: any;
+  if (type === "dispatch") {
     oneSignalToken = constants.oneSignalToken;
     appId = constants.oneSignalAppId;
   } else {
@@ -91,15 +129,15 @@ export const sendPush = async (type: string, content: any, ids: any, data: any, 
   const client = new OneSignal.Client(appId, oneSignalToken);
   let notification: any = {
     contents: {
-      'en': content,
+      en: content,
     },
     include_player_ids: ids,
-    data: data && data
+    data: data && data,
   };
-  if(playSound) {
-    notification['ios_sound'] = 'beep-notif.wav';
-    notification['android_channel_id'] = '50a280f7-91f6-40c6-a950-469b3505cd7f';
-    notification['adm_sound'] = 'exploade_sound';
+  if (playSound) {
+    notification["ios_sound"] = "beep-notif.wav";
+    notification["android_channel_id"] = "50a280f7-91f6-40c6-a950-469b3505cd7f";
+    notification["adm_sound"] = "exploade_sound";
   }
 
   try {
@@ -114,12 +152,11 @@ export const sendPush = async (type: string, content: any, ids: any, data: any, 
   }
 };
 
-
 export const isVerified = (options = {}) => {
   return async (context: HookContext) => {
-    if(context.params && context.params.user){
-      if(context.params.user.isVerified != true){
-        throw new Forbidden('This user has not been verified');
+    if (context.params && context.params.user) {
+      if (context.params.user.isVerified != true) {
+        throw new Forbidden("This user has not been verified");
       }
     }
     return context;
@@ -128,75 +165,90 @@ export const isVerified = (options = {}) => {
 
 export const checkPaystackPayment = async (paymentRef: any) => {
   try {
-    const response = await axios.get(`${constants.paystackVerifyUrl}${paymentRef}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${constants.paystackPrivateKey}`
+    const response = await axios.get(
+      `${constants.paystackVerifyUrl}${paymentRef}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${constants.paystackPrivateKey}`,
+        },
       }
-    });
+    );
     return response.data;
   } catch (error) {
     throw error;
   }
 };
-
 
 export const checkDistanceAndTime = async (pickup: any, dropoff: any) => {
   try {
-    const response = await axios.get(`${constants.googleDirectionConfig.url}origin=${pickup}&destination=${dropoff}&key=${constants.googleDirectionConfig.key}&mode=driving&traffic_model=best_guess&departure_time=now`, {
-      headers: {
-        'Content-Type': 'application/json'
+    const response = await axios.get(
+      `${constants.googleDirectionConfig.url}origin=${pickup}&destination=${dropoff}&key=${constants.googleDirectionConfig.key}&mode=driving&traffic_model=best_guess&departure_time=now`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
       }
-    });
+    );
     return response.data;
   } catch (error) {
     throw error;
   }
 };
 
-export const calculatePrice = async (distance: number, time: number, settings: { baseFare: number; ratePerKilometer: number; ratePerMinute: number }) => {
-  return Math.round(settings.baseFare + (distance * settings.ratePerKilometer) + (time * settings.ratePerMinute));
+export const calculatePrice = async (
+  distance: number,
+  time: number,
+  settings: {
+    baseFare: number;
+    ratePerKilometer: number;
+    ratePerMinute: number;
+  }
+) => {
+  return Math.round(
+    settings.baseFare +
+      distance * settings.ratePerKilometer +
+      time * settings.ratePerMinute
+  );
 };
 
-
-export const getStateFromLatLngWithOpenMap = async (data: { lat: any; lng: any }) => {
-  const NodeGeocoder = require('node-geocoder');
+export const getStateFromLatLngWithOpenMap = async (data: {
+  lat: any;
+  lng: any;
+}) => {
+  const NodeGeocoder = require("node-geocoder");
 
   const options = {
-    provider: 'openstreetmap',
+    provider: "openstreetmap",
   };
 
   const geocoder = NodeGeocoder(options);
 
-  const res = await geocoder.reverse({ lat:  data.lat, lon: data.lng });
-  if(res.length > 0) {
+  const res = await geocoder.reverse({ lat: data.lat, lon: data.lng });
+  if (res.length > 0) {
     return res[0].state;
   }
   await getStateFromLatLngWithGoogle(data);
   // https://nominatim.openstreetmap.org/reverse?lat=7.3833249&lon=3.8252766&format=json  keep this as fallback endpoint
 };
 
-export const getStateFromLatLngWithGoogle = async (data: { lat: any; lng: any }) => {
-  const NodeGeocoder = require('node-geocoder');
+export const getStateFromLatLngWithGoogle = async (data: {
+  lat: any;
+  lng: any;
+}) => {
+  const NodeGeocoder = require("node-geocoder");
 
   const options = {
-    provider: 'google',
+    provider: "google",
     apiKey: constants.googleDirectionConfig.key,
   };
 
   const geocoder = NodeGeocoder(options);
 
-  const res = await geocoder.reverse({ lat:  data.lat, lon: data.lng });
-  if(res.length > 0) {
+  const res = await geocoder.reverse({ lat: data.lat, lon: data.lng });
+  if (res.length > 0) {
     logger.info(res[0].administrativeLevels.level1long);
     return res[0].administrativeLevels.level1long;
   }
-  return 'default';
+  return "default";
 };
-
-
-
-
-
-
-

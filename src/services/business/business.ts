@@ -19,7 +19,7 @@ import { BusinessService, getOptions } from './business.class'
 import { businessPath, businessMethods } from './business.shared'
 import {Conflict, NotFound} from "@feathersjs/errors";
 import {OAuthTypes, Roles} from "../../interfaces/constants";
-import {getOtp} from "../../helpers/functions";
+import {getOtp, sendEmail} from "../../helpers/functions";
 import {logger} from "../../logger";
 import {createValidator} from "express-joi-validation";
 import Joi from "joi";
@@ -29,6 +29,15 @@ export * from './business.class'
 export * from './business.schema'
 
 const validator = createValidator({ passError: true, statusCode: 400 })
+
+const phoneRegex = /^[1-9]\d{1,14}$/;
+
+
+const joi_phone_number_validator = Joi.string()
+.required()
+.pattern(phoneRegex)
+.message(`Phone number must be in the format: [country code][phone number] without any symbols or spaces e.g 2348037184523`)
+
 const schemas = {
   signup: Joi.object().keys({
     first_name: Joi.string().required(),
@@ -43,10 +52,10 @@ const schemas = {
   dispatch_signup: Joi.object().keys({
     first_name: Joi.string().required(),
     last_name: Joi.string().required(),
-    phone_number: Joi.string().required().max(12)
+    phone_number: joi_phone_number_validator
   }),
   dispatch_login: Joi.object().keys({
-    phone_number: Joi.string().required().max(12)
+    phone_number: joi_phone_number_validator
   }),
   complete_dispatch_login: Joi.object().keys({
     phone_number: Joi.string().required().max(12),
@@ -86,6 +95,7 @@ export const business = (app: Application) => {
 
   app.post('/dispatch/signup',  validator.body(schemas.dispatch_signup), async (req: any, res: any, next: any) => {
     try {
+   
       const role = await app.service('roles').find({query: { $limit: 1,slug: Roles.Dispatch}});
       if (role?.data?.length === 0) {
         throw new NotFound('Role does not exist');
@@ -93,9 +103,6 @@ export const business = (app: Application) => {
       req.body.role = role?.data[0]?.id;
       req.body.otp = getOtp();
       req.body.password = Roles.Dispatch;
-      console.log('===========================================req.body');
-      console.log(req.body);
-      console.log('===========================================req.body');
       const result = await app.service('users').create(req.body);
       const instance = new Termii(req.body.phone_number, `Your OTP is ${req.body.otp}`);
       await instance.sendSMS();

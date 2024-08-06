@@ -22,6 +22,8 @@ import fileUpload from 'express-fileupload'
 import AzureStorageService from './azureStorageService'
 import { logger } from '../logger'
 import { OAuthTypes, Roles, TemplateName, TemplateType } from '../interfaces/constants'
+import emailTemplates from '../helpers/emailTemplates'
+
 const validator = createValidator({ passError: true, statusCode: 400 })
 const schemas = {
   forgotPassword: Joi.object().keys({
@@ -288,8 +290,8 @@ export const services = (app: Application) => {
     sendEmail({
       toEmail: userDetails?.data[0].email,
       subject: 'Here is your otp',
-      templateName: TemplateType.Otp,
-      templateData: [{ name: TemplateName.Otp, content: userDetails.data[0].otp }]
+      templateData: emailTemplates.otp(userDetails.data[0].otp),
+      receiptName: `${userDetails.data[0].first_name} ${userDetails.data[0].last_name}`
     })
 
     let otpData = {
