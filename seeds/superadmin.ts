@@ -22,10 +22,9 @@ exports.seed = async function (knex: Knex): Promise<void> {
       first_name: superAdmin.first_name,
       last_name: superAdmin.last_name,
     })
-    .onConflict("id")
+    .onConflict("email")
     .merge({
       role: superAdmin.role,
-      email: superAdmin.email,
       password: hashedPassword,
       first_name: superAdmin.first_name,
       last_name: superAdmin.last_name
