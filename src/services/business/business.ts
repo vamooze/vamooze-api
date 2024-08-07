@@ -70,8 +70,39 @@ const schemas = {
   }),
 };
 
+
 // A configure function that registers the service and its hooks via `app.configure`
 export const business = (app: Application) => {
+
+  const handleOtpDispatch = async (req: any, res: any) => {
+    try {
+      const User = app.service("users");
+      const userDetails = await User.find({
+        query: {
+          phone_number: req.body.phone_number,
+        },
+      });
+  
+      if (userDetails?.data.length === 0) {
+        throw new NotFound("Ouch! User not found");
+      }
+  
+      req.body.otp = getOtp();
+      await app
+        .service("users")
+        .patch(userDetails?.data[0]?.id, { otp: req.body.otp });
+        
+      const instance = new Termii(
+        req.body.phone_number,
+        `Your OTP is ${req.body.otp}`
+      );
+      await instance.sendSMS();
+      res.json({ status: 200, message: "Otp sent successfully" });
+    } catch (error) {
+      res.json(error);
+    }
+  }
+
   // Register our service on the Feathers application
   app.use(businessPath, new BusinessService(getOptions(app)), {
     // A list of all methods this service exposes externally
@@ -163,40 +194,13 @@ export const business = (app: Application) => {
   app.post(
     "/auth/dispatch/initiate-login",
     validator.body(schemas.dispatch_login),
-    async (req: any, res: any) => {
-      try {
-        const User = app.service("users");
-        const userDetails = await User.find({
-          query: {
-            phone_number: req.body.phone_number,
-          },
-        });
-
-        if (userDetails?.data.length === 0) {
-          throw new NotFound("Ouch! User not found");
-        }
-
-        req.body.otp = getOtp();
-        const result = await app
-          .service("users")
-          .patch(userDetails?.data[0]?.id, { otp: req.body.otp });
-        const instance = new Termii(
-          req.body.phone_number,
-          `Your OTP is ${req.body.otp}`
-        );
-        await instance.sendSMS();
-        console.log("===========================================req.body");
-        console.log(req.body);
-        console.log("===========================================req.body");
-        res.json({ status: 200, message: "Otp sent successfully" });
-        // const data = await app
-        //     .service('authentication')
-        //     .create({ password: Roles.Dispatch, phone_number: req.body.phone_number, strategy: 'phone' })
-        // return res.json({ status: 200, data })
-      } catch (error) {
-        res.json(error);
-      }
-    }
+    handleOtpDispatch
+  );
+  
+  app.post(
+    "/auth/dispatch/resend-otp",
+    validator.body(schemas.dispatch_login),
+    handleOtpDispatch
   );
 
   app.post(
