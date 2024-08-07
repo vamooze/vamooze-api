@@ -37,7 +37,7 @@ export class Termii {
 
     try {
       const response = await axios(options);
-      logger.info(response);
+      logger.info(JSON.stringify(response, null, 2)); 
     } catch (error) {
       logger.error(error);
     }
