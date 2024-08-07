@@ -40,7 +40,7 @@ export class Termii {
       logger.info(response);
     } catch (error) {
       // logger.error(error);
-      console.log('error.message ->' , error, '.................' , 'error.message ->');
+      console.log('error.message ->' , error, '.................' , 'error.message ->',  constants.termii.baseUrl, constants.termii.apiKey);
     }
   }
 }
