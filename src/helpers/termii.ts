@@ -39,8 +39,8 @@ export class Termii {
       const response = await axios(options);
       logger.info(response);
     } catch (error) {
-      logger.error(error);
-      console.log(error, data);
+      // logger.error(error);
+      console.log('error.message ->' , error, '.................' , 'error.message ->');
     }
   }
 }
