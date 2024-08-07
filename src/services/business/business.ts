@@ -143,13 +143,6 @@ export const business = (app: Application) => {
         req.body.password = Roles.Dispatch;
         const result = await app.service("users").create(req.body);
 
-        // sendEmail({
-        //   toEmail: 'balogunbiola101@gmail.com',
-        //   subject: 'Testing email template on prod',
-        //   templateData: emailTemplates.otp(req.body.otp),
-        //   receiptName: 'biola balogun'
-        // })
-
         const instance = new Termii(
           req.body.phone_number,
           `Your OTP is ${req.body.otp}`

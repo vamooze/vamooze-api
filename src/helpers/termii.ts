@@ -8,7 +8,7 @@ export class Termii {
   public message: string | undefined;
   public business: string | undefined;
 
-  constructor(phoneNumber: string, message: string, business = "Vamooze") {
+  constructor(phoneNumber: string, message: string, business = "Loystar") {
     this.phoneNumber = phoneNumber;
     this.message = message;
     this.business = business;
