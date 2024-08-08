@@ -19,7 +19,9 @@ import bcrypt from 'bcryptjs'
 import Joi from 'joi'
 import { createValidator } from 'express-joi-validation'
 import fileUpload from 'express-fileupload'
+import { ref, uploadBytes, getDownloadURL, getStorage } from 'firebase/storage'
 import AzureStorageService from './azureStorageService'
+import storage from '../helpers/firebase'
 import { logger } from '../logger'
 import { OAuthTypes, Roles, TemplateName, TemplateType } from '../interfaces/constants'
 import emailTemplates from '../helpers/emailTemplates'
@@ -241,7 +243,7 @@ export const services = (app: Application) => {
       res.status(400).json(error)
     }
   })
-
+  
   app.post('/auth/google/sign-in', validator.body(schemas.google_signin), async (req: any, res: any) => {
     try {
       const data = await app
@@ -258,13 +260,18 @@ export const services = (app: Application) => {
       return res.status(400).send('No files were uploaded.')
     }
 
-    const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME || 'asset-images'
+    // const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME || 'asset-images'
     const file = req.files.file as fileUpload.UploadedFile
+     const storageRef = ref(storage, `asset-images/${file.name}`);
+
 
     try {
-      const azureStorageService = new AzureStorageService()
-      const fileUrl = await azureStorageService.uploadBuffer(containerName, file.data, file.name)
-      res.send({ fileUrl })
+      // const azureStorageService = new AzureStorageService()
+      // const fileUrl = await azureStorageService.uploadBuffer(containerName, file.data, file.name)
+      // res.send({ fileUrl })
+      await uploadBytes(storageRef, file.data);
+      const fileUrl = await getDownloadURL(storageRef);
+      res.send({ fileUrl });
     } catch (error) {
       logger.error(error)
       res.status(500).send('Error uploading file')
