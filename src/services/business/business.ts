@@ -164,7 +164,7 @@ export const business = (app: Application) => {
         if (role?.data?.length === 0) {
           throw new NotFound("Role does not exist");
         }
-        req.body.role = role?.data[0]?.id;
+        req.body.role = role?.cdata[0]?.id;
         req.body.otp = getOtp();
         const result = await app.service("users").create(req.body);
         res.json(result);
@@ -182,9 +182,9 @@ export const business = (app: Application) => {
   app.patch(
     '/super-admin/activate-business',
     validator.body(schemas.activateBusiness),
-    superAdminMiddleware,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
+        console.log('here in activating buisness', req.body)
         const { businessId } = req.body;
 
         const businessService = app.service('business');
@@ -200,12 +200,11 @@ export const business = (app: Application) => {
 
         const updatedBusiness = await businessService.patch(businessId, { active: true });
 
-        // res.json({ status: 200, data: updatedBusiness })
+        res.json({ status: 200, data: updatedBusiness })
       } catch (error: any) {
         logger.error({
           message: error.message,
           stack: error.stack,
-        
         });
         next(error);
       }
