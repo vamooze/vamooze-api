@@ -183,7 +183,6 @@ export const business = (app: Application) => {
   app.patch(
     '/super-admin/activate-business',
     validator.body(schemas.activateBusiness),
-    superAdminMiddleware,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { businessId } = req.body;
