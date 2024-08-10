@@ -15,6 +15,7 @@ import {
   businessQueryResolver,
 } from "./business.schema";
 
+import { HookContext } from '../../declarations'
 import type { Application } from "../../declarations";
 import { BusinessService, getOptions } from "./business.class";
 import { businessPath, businessMethods } from "./business.shared";
@@ -109,7 +110,8 @@ export const business = (app: Application) => {
 
   const superAdminMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log('here in activating buisness', req)
+      //@ts-ignore
+      console.log('here in activating buisness', req.user , '.......')
       // const User = app.service("users");
       // const userDetails = await User.find({
       //   query: {
@@ -183,6 +185,7 @@ export const business = (app: Application) => {
   app.patch(
     '/super-admin/activate-business',
     validator.body(schemas.activateBusiness),
+    superAdminMiddleware,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { businessId } = req.body;
@@ -200,7 +203,6 @@ export const business = (app: Application) => {
 
         const updatedBusiness = await businessService.patch(businessId, { active: true });
 
-        console.log('updatedBusiness', updatedBusiness)
         return res.json({ status: 200, data: updatedBusiness })
       } catch (error: any) {
         logger.error({
@@ -315,6 +317,7 @@ export const business = (app: Application) => {
     },
     before: {
       all: [
+        authenticate("jwt"),
         schemaHooks.validateQuery(businessQueryValidator),
         schemaHooks.resolveQuery(businessQueryResolver),
       ],
