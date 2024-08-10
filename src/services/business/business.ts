@@ -201,7 +201,7 @@ export const business = (app: Application) => {
 
         const updatedBusiness = await businessService.patch(businessId, { active: true });
 
-        conole.log('updatedBusiness', updatedBusiness)
+        console.log('updatedBusiness', updatedBusiness)
         return res.json({ status: 200, data: updatedBusiness })
       } catch (error: any) {
         logger.error({
