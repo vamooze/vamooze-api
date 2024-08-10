@@ -79,6 +79,7 @@ export const user = (app: Application) => {
             });
         }
         context.result.otp = null;
+        context.result.password = null;
       }, protect('password')],
       find: [protect('password','otp')],
       get: [protect('password','otp')],

@@ -1,6 +1,7 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 import { authenticate } from "@feathersjs/authentication";
-
+import { Request, Response, NextFunction } from 'express';
+import { NotFound, BadRequest,Conflict, } from '@feathersjs/errors';
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import emailTemplates from "../../helpers/emailTemplates";
 import {
@@ -17,7 +18,6 @@ import {
 import type { Application } from "../../declarations";
 import { BusinessService, getOptions } from "./business.class";
 import { businessPath, businessMethods } from "./business.shared";
-import { Conflict, NotFound } from "@feathersjs/errors";
 import { OAuthTypes, Roles } from "../../interfaces/constants";
 import { getOtp, sendEmail } from "../../helpers/functions";
 import { logger } from "../../logger";
@@ -68,7 +68,11 @@ const schemas = {
     phone_number: joi_phone_number_validator,
     otp: Joi.number().required(),
   }),
+  activateBusiness: Joi.object().keys({
+    businessId: Joi.number().required()
+  })
 };
+
 
 
 // A configure function that registers the service and its hooks via `app.configure`
@@ -102,6 +106,38 @@ export const business = (app: Application) => {
       res.json(error);
     }
   }
+
+  const superAdminMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // const User = app.service("users");
+      // const userDetails = await User.find({
+      //   query: {
+      //     phone_number: req.body.phone_number,
+      //   },
+      // });
+      // Fetch the user's role from the database
+      // const app = req.app;
+      // const userService = app.service('users');
+      // const userDetails = await userService.get(user.id);
+  
+      // if (!userDetails) {
+      //   throw new NotAuthorized('User not found');
+      // }
+  
+      // Fetch the role details
+      // const roleService = app.service('roles');
+      // const roleDetails = await roleService.get(userDetails.role);
+  
+      // if (!roleDetails || roleDetails.slug !== 'super-admin') {
+      //   throw new NotAuthorized('Super Admin access required');
+      // }
+  
+      // If we reach here, the user is a super admin
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
 
   // Register our service on the Feathers application
   app.use(businessPath, new BusinessService(getOptions(app)), {
@@ -143,6 +179,39 @@ export const business = (app: Application) => {
     }
   );
 
+  app.patch(
+    '/super-admin/activate-business',
+    validator.body(schemas.activateBusiness),
+    superAdminMiddleware,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { businessId } = req.body;
+
+        const businessService = app.service('business');
+        const business = await businessService.get(businessId);
+
+        if (!business) {
+          throw new NotFound('Business not found');
+        }
+
+        if (business.active === true) {
+          throw new BadRequest('Business is already active');
+        }
+
+        const updatedBusiness = await businessService.patch(businessId, { active: true });
+
+        // res.json({ status: 200, data: updatedBusiness })
+      } catch (error: any) {
+        logger.error({
+          message: error.message,
+          stack: error.stack,
+        
+        });
+        next(error);
+      }
+    }
+  );
+  
   app.post(
     "/dispatch/signup",
     validator.body(schemas.dispatch_signup),
@@ -263,6 +332,7 @@ export const business = (app: Application) => {
     },
     after: {
       all: [],
+      
     },
     error: {
       all: [],

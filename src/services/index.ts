@@ -306,4 +306,6 @@ export const services = (app: Application) => {
     }
     res.json({ result: { ...otpData }, status: 200 })
   })
+
+  
 }
