@@ -214,7 +214,7 @@ export const business = (app: Application) => {
 
         sendEmail({
           //@ts-ignore
-          toEmail:  'balogunbiola101@gmail.com' || updatedBusiness?.contact?.email,
+          toEmail:  updatedBusiness?.contact?.email,
           subject: 'Business Approval',
           templateData: emailTemplates.businessApproval(),
            //@ts-ignore

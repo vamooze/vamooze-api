@@ -31,6 +31,7 @@ const {
 export async function sendEmail(config: EmailDTO) {
   const { toEmail, subject, templateData, receiptName } = config;
   const connectionString =  constants.azureEmailConfig.connectionString
+  console.log( '..connectionString...', connectionString, '..connectionString...')
   const emailClient = new EmailClient(connectionString);
 
  
