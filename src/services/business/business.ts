@@ -52,7 +52,7 @@ const schemas = {
     last_name: Joi.string().required(),
     email: Joi.string().required().email(),
     password: Joi.string().required(),
-    phone_number: Joi.string().optional().max(12),
+    phone_number: joi_phone_number_validator,
     state: Joi.string().optional(),
     address: Joi.string().optional(),
     local_government_area: Joi.string().optional(),
@@ -72,7 +72,7 @@ const schemas = {
   activateBusiness: Joi.object().keys({
     businessId: Joi.number().required()
   })
-};
+}; 
 
 
 
@@ -87,10 +87,16 @@ export const business = (app: Application) => {
           phone_number: req.body.phone_number,
         },
       });
+
+      console.log(userDetails, '....userDetails....')
   
       if (userDetails?.data.length === 0) {
-        throw new NotFound("Ouch! User not found");
+        return res.status(404).json({
+          status: 404,
+          message: "User not found",
+        });
       }
+
   
       req.body.otp = getOtp();
       await app
@@ -219,20 +225,26 @@ export const business = (app: Application) => {
     validator.body(schemas.dispatch_signup),
     async (req: any, res: any, next: any) => {
       try {
-        const phoneNumber = req.body.phone_number.startsWith("+")
-          ? req.body.phone_number.slice(1)
-          : req.body.phone_number;
-
-        // Update the req.body.phone_number with the stripped phone number
-        req.body.phone_number = phoneNumber;
-
+     
         const user = await app
           .service("users")
           .find({ query: { phone_number: req.body.phone_number } });
 
-        if (user?.data?.length > 0) {
-          throw new Conflict("User with this phone number already exists");
-        }
+          if (user?.data?.length > 0) {
+            const simplifiedUserData = {
+              id: user.data[0].id,
+              first_name: user.data[0].first_name,
+              last_name: user.data[0].last_name,
+              phone_number: user.data[0].phone_number,
+              is_logged_in: user.data[0].is_logged_in,
+              is_verified: user.data[0].is_verified
+            };
+            return res.status(409).json({
+              status: 409,
+              message: "User with this phone number already exists",
+              data: simplifiedUserData
+            });
+          }
 
         const role = await app
           .service("roles")
@@ -280,29 +292,49 @@ export const business = (app: Application) => {
     async (req: any, res: any) => {
       try {
         const User = app.service("users");
-        const userDetails = await User.find({
+        
+        // Check if user exists
+        const user = await User.find({
           query: {
             phone_number: req.body.phone_number,
-            otp: req.body.otp,
           },
         });
-
-        if (userDetails?.data.length === 0) {
-          throw new NotFound("Ouch! Otp is incorrect");
-        }
-
-        await app.service("users").patch(userDetails?.data[0]?.id, { otp: 0 });
-
-        const data = await app
-          .service("authentication")
-          .create({
-            password: Roles.Dispatch,
-            phone_number: req.body.phone_number,
-            strategy: "phone",
+  
+        if (user?.data.length === 0) {
+          return res.status(404).json({
+            status: 404,
+            message: "User not found",
           });
-        return res.json({ status: 200, data });
-      } catch (error) {
-        res.json(error);
+        }
+  
+        // Check OTP correctness
+        if (user.data[0].otp !== req.body.otp) {
+          return res.status(400).json({
+            status: 400,
+            message: "Incorrect OTP",
+          });
+        }
+  
+        // Update user status
+        await User.patch(user.data[0].id, {
+          is_verified: true,
+          is_logged_in: true,
+          otp: 0,
+        });
+  
+        // Create authentication
+        const data = await app.service("authentication").create({
+          password: Roles.Dispatch,
+          phone_number: req.body.phone_number,
+          strategy: "phone",
+        });
+  
+        return res.status(200).json({ status: 200, data });
+      } catch (error: any) {
+        return res.status(500).json({
+          status: 500,
+          message: error.message,
+        });
       }
     }
   );
