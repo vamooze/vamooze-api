@@ -18,8 +18,7 @@ import type { Application } from "../../declarations";
 import { DispatchService, getOptions } from "./dispatch.class";
 import { dispatchPath, dispatchMethods } from "./dispatch.shared";
 import { checkPermission } from '../../helpers/checkPermission'
-const userRoles = require('../../helpers/permissions.json')
-
+import userRoles from  '../../helpers/permissions'
 
 
 export * from "./dispatch.class";
@@ -44,7 +43,7 @@ export const dispatch = (app: Application) => {
         schemaHooks.validateQuery(dispatchQueryValidator),
         schemaHooks.resolveQuery(dispatchQueryResolver),
       ],
-      find: [checkPermission(userRoles.allAdmin)],
+      find: [checkPermission(userRoles.superAdmin)],
       get: [],
       create: [
         async (context) => {
