@@ -17,9 +17,9 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('asset_id').unique().defaultTo(knex.fn.uuid());
     table.enum('status', ['active', 'inactive']).notNullable().defaultTo('inactive');
     table.date('next_maintenance').nullable();
-    table.string('proof_of_ownership', 255).notNullable();
-    table.string('id_card', 150).notNullable();
-    table.string('insurance_document', 100).notNullable()
+    table.string('proof_of_ownership', 1024).notNullable();
+    table.string('id_card', 1024).notNullable();
+    table.string('insurance_document', 1024).notNullable();
     table.bigInteger('user').references('id').inTable('users').notNullable()
     table.timestamps(false, true);
   })

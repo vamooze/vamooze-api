@@ -4,6 +4,14 @@ import type { TransportConnection, Application } from '@feathersjs/feathers'
 import authenticationClient from '@feathersjs/authentication-client'
 import type { AuthenticationClientOptions } from '@feathersjs/authentication-client'
 
+import { dispatchClient } from './services/dispatch/dispatch.shared'
+export type {
+  Dispatch,
+  DispatchData,
+  DispatchQuery,
+  DispatchPatch
+} from './services/dispatch/dispatch.shared'
+
 import { requestsClient } from './services/requests/requests.shared'
 export type {
   Requests,
@@ -127,5 +135,6 @@ export const createClient = <Configuration = any,>(
   client.configure(businessSettingsClient)
   client.configure(businessDispatchesClient)
   client.configure(requestsClient)
+  client.configure(dispatchClient)
   return client
 }

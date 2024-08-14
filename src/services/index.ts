@@ -1,3 +1,4 @@
+import { dispatch } from './dispatch/dispatch'
 import { requests } from './requests/requests'
 import { businessDispatches } from './business-dispatches/business-dispatches'
 import { businessSettings } from './business-settings/business-settings'
@@ -14,7 +15,8 @@ import { user } from './users/users'
 // For more information about this file see https://dove.feathersjs.com/guides/cli/application.html#configure-functions
 import type { Application } from '../declarations'
 import { GeneralError, NotFound } from '@feathersjs/errors'
-import { formatPhoneNumber, sendEmail, sendSms } from '../helpers/functions'
+import { formatPhoneNumber, sendEmail, sendSms, getOtp, isVerified } from '../helpers/functions'
+import { Termii } from '../helpers/termii'
 import bcrypt from 'bcryptjs'
 import Joi from 'joi'
 import { createValidator } from 'express-joi-validation'
@@ -27,6 +29,14 @@ import { OAuthTypes, Roles, TemplateName, TemplateType } from '../interfaces/con
 import emailTemplates from '../helpers/emailTemplates'
 
 const validator = createValidator({ passError: true, statusCode: 400 })
+
+const phoneRegex = /^\+\d{7,15}$/
+
+const joi_phone_number_validator = Joi.string().pattern(phoneRegex).required().messages({
+  'string.pattern.base': 'Phone number must start with "+" followed by 7 to 15 digits',
+  'any.required': 'Phone number is required'
+})
+
 const schemas = {
   forgotPassword: Joi.object().keys({
     email: Joi.string().required().email(),
@@ -65,11 +75,24 @@ const schemas = {
   }),
   resend_otp: Joi.object().keys({
     email: Joi.string().required().email()
+  }),
+  dispatch_signup: Joi.object().keys({
+    first_name: Joi.string().required(),
+    last_name: Joi.string().required(),
+    phone_number: joi_phone_number_validator
+  }),
+  dispatch_login: Joi.object().keys({
+    phone_number: joi_phone_number_validator
+  }),
+  complete_dispatch_login: Joi.object().keys({
+    phone_number: joi_phone_number_validator,
+    otp: Joi.number().required()
   })
 }
 import { Response, Request } from 'express'
 
 export const services = (app: Application) => {
+  app.configure(dispatch)
   app.configure(requests)
   app.configure(businessDispatches)
   app.configure(businessSettings)
@@ -85,13 +108,45 @@ export const services = (app: Application) => {
   app.configure(roles)
   app.configure(user)
 
+  const handleOtpDispatch = async (req: any, res: any) => {
+    try {
+      const User = app.service('users')
+      const userDetails = await User.find({
+        query: {
+          phone_number: req.body.phone_number
+        }
+      })
+
+      if (userDetails?.data.length === 0) {
+        return res.status(404).json({
+          status: 404,
+          message: 'User not found'
+        })
+      }
+
+      req.body.otp = getOtp()
+      await app.service('users').patch(userDetails?.data[0]?.id, { otp: req.body.otp })
+
+      const instance = new Termii(req.body.phone_number, `Your OTP is ${req.body.otp}`)
+      await instance.sendSMS()
+      res.json({ status: 200, message: 'Otp sent successfully' })
+    } catch (error) {
+      res.json(error)
+    }
+  }
+
   app.post('/auth/logout', validator.body(schemas.logout), async (req: any, res: any) => {
     try {
       const USERS = app.service('users')
       const user = await USERS.find({ query: { email: req.body.email } })
-      const updatedUser = await USERS.patch(user.data[0].id, { is_logged_in: false })
+      const updatedUser = await USERS.patch(user.data[0].id, {
+        is_logged_in: false
+      })
       app.service('users').emit('loggingOut', { updatedUser })
-      return res.json({ status: 200, message: 'User logged out successfully' })
+      return res.json({
+        status: 200,
+        message: 'User logged out successfully'
+      })
     } catch (error) {
       res.json(error)
     }
@@ -110,11 +165,21 @@ export const services = (app: Application) => {
       if (userDetails?.data.length === 0) {
         throw new NotFound('Ouch! User OTP or Email is not correct')
       }
-      await User.patch(userDetails.data[0].id, { is_verified: true, is_logged_in: true, otp: 0 })
-      const data = await app
-        .service('authentication')
-        .create({ password: req.body.password, email: userDetails.data[0].email, strategy: 'local' })
-      return res.json({ message: 'User verification successful!', status: 200, data })
+      await User.patch(userDetails.data[0].id, {
+        is_verified: true,
+        is_logged_in: true,
+        otp: 0
+      })
+      const data = await app.service('authentication').create({
+        password: req.body.password,
+        email: userDetails.data[0].email,
+        strategy: 'local'
+      })
+      return res.json({
+        message: 'User verification successful!',
+        status: 200,
+        data
+      })
     } catch (error) {
       res.status(400).json(error)
     }
@@ -148,7 +213,10 @@ export const services = (app: Application) => {
             }
             res.json({ result: { ...otpData }, status: 200 })
           } else {
-            res.json({ error: { message: 'Something went wrong' }, status: 400 })
+            res.json({
+              error: { message: 'Something went wrong' },
+              status: 400
+            })
           }
         }
         // if(userDetails.data[0].email){
@@ -180,8 +248,14 @@ export const services = (app: Application) => {
       if (userDetails.data.length === 0) {
         throw new NotFound('Ouch! User OTP is not correct')
       }
-      await User.patch(userDetails.data[0].id, { password: req.body.password, otp: 0 })
-      return res.json({ message: 'Password reset was successful', status: 200 })
+      await User.patch(userDetails.data[0].id, {
+        password: req.body.password,
+        otp: 0
+      })
+      return res.json({
+        message: 'Password reset was successful',
+        status: 200
+      })
     } catch (error) {
       res.json(error)
     }
@@ -199,8 +273,13 @@ export const services = (app: Application) => {
       let result = bcrypt.compareSync(req.body.oldPassword, <string>foundUser?.data[0]['password'])
 
       if (result) {
-        await user.patch(foundUser.data[0]['id'], { password: req.body.newPassword })
-        return res.json({ message: 'Password Changed Successfully', status: 200 })
+        await user.patch(foundUser.data[0]['id'], {
+          password: req.body.newPassword
+        })
+        return res.json({
+          message: 'Password Changed Successfully',
+          status: 200
+        })
       } else {
         throw new GeneralError('Incorrect Password')
       }
@@ -233,22 +312,30 @@ export const services = (app: Application) => {
       })
       let data
       if (user) {
-        data = await app
-          .service('authentication')
-          .create({ password: OAuthTypes.Google, email: email, strategy: 'local' })
+        data = await app.service('authentication').create({
+          password: OAuthTypes.Google,
+          email: email,
+          strategy: 'local'
+        })
       }
 
-      return res.json({ message: 'Successful Sign Up!', status: 200, data: data })
+      return res.json({
+        message: 'Successful Sign Up!',
+        status: 200,
+        data: data
+      })
     } catch (error) {
       res.status(400).json(error)
     }
   })
-  
+
   app.post('/auth/google/sign-in', validator.body(schemas.google_signin), async (req: any, res: any) => {
     try {
-      const data = await app
-        .service('authentication')
-        .create({ password: OAuthTypes.Google, email: req.body.email, strategy: 'local' })
+      const data = await app.service('authentication').create({
+        password: OAuthTypes.Google,
+        email: req.body.email,
+        strategy: 'local'
+      })
       return res.json({ status: 200, data })
     } catch (error) {
       res.json(error)
@@ -262,16 +349,15 @@ export const services = (app: Application) => {
 
     // const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME || 'asset-images'
     const file = req.files.file as fileUpload.UploadedFile
-     const storageRef = ref(storage, `asset-images/${file.name}`);
-
+    const storageRef = ref(storage, `asset-images/${file.name}`)
 
     try {
       // const azureStorageService = new AzureStorageService()
       // const fileUrl = await azureStorageService.uploadBuffer(containerName, file.data, file.name)
       // res.send({ fileUrl })
-      await uploadBytes(storageRef, file.data);
-      const fileUrl = await getDownloadURL(storageRef);
-      res.send({ fileUrl });
+      await uploadBytes(storageRef, file.data)
+      const fileUrl = await getDownloadURL(storageRef)
+      res.send({ fileUrl })
     } catch (error) {
       logger.error(error)
       res.status(500).send('Error uploading file')
@@ -307,5 +393,109 @@ export const services = (app: Application) => {
     res.json({ result: { ...otpData }, status: 200 })
   })
 
-  
+  app.post(
+    '/dispatch/signup',
+    validator.body(schemas.dispatch_signup),
+    async (req: any, res: any, next: any) => {
+      try {
+        const user = await app.service('users').find({ query: { phone_number: req.body.phone_number } })
+
+        if (user?.data?.length > 0) {
+          const simplifiedUserData = {
+            id: user.data[0].id,
+            first_name: user.data[0].first_name,
+            last_name: user.data[0].last_name,
+            phone_number: user.data[0].phone_number,
+            is_logged_in: user.data[0].is_logged_in,
+            is_verified: user.data[0].is_verified
+          }
+          return res.status(409).json({
+            status: 409,
+            message: 'User with this phone number already exists',
+            data: simplifiedUserData
+          })
+        }
+
+        const role = await app.service('roles').find({ query: { $limit: 1, slug: Roles.Dispatch } })
+        if (role?.data?.length === 0) {
+          return res.status(404).json({
+            status: 404,
+            message: 'Role does not exist'
+          })
+        }
+        req.body.role = role?.data[0]?.id
+        req.body.otp = getOtp()
+        req.body.password = Roles.Dispatch
+        const result = await app.service('users').create(req.body)
+
+        const instance = new Termii(req.body.phone_number, `Your OTP is ${req.body.otp}`)
+        await instance.sendSMS()
+        res.json(result)
+      } catch (error: any) {
+        logger.error({
+          message: error.message,
+          stack: error.stack,
+          phone_number: req.body.phone_number
+        })
+        next(error)
+      }
+    }
+  )
+
+  app.post('/auth/dispatch/initiate-login', validator.body(schemas.dispatch_login), handleOtpDispatch)
+
+  app.post('/auth/dispatch/resend-otp', validator.body(schemas.dispatch_login), handleOtpDispatch)
+
+  app.post(
+    '/auth/dispatch/complete-login',
+    validator.body(schemas.complete_dispatch_login),
+    async (req: any, res: any) => {
+      try {
+        const User = app.service('users')
+
+        // Check if user exists
+        const user = await User.find({
+          query: {
+            phone_number: req.body.phone_number
+          }
+        })
+
+        if (user?.data.length === 0) {
+          return res.status(404).json({
+            status: 404,
+            message: 'User not found'
+          })
+        }
+
+        // Check OTP correctness
+        if (user.data[0].otp !== req.body.otp) {
+          return res.status(400).json({
+            status: 400,
+            message: 'Incorrect OTP'
+          })
+        }
+
+        // Update user status
+        await User.patch(user.data[0].id, {
+          is_verified: true,
+          is_logged_in: true,
+          otp: 0
+        })
+
+        // Create authentication
+        const data = await app.service('authentication').create({
+          password: Roles.Dispatch,
+          phone_number: req.body.phone_number,
+          strategy: 'phone'
+        })
+
+        return res.status(200).json({ status: 200, data })
+      } catch (error: any) {
+        return res.status(500).json({
+          status: 500,
+          message: error.message
+        })
+      }
+    }
+  )
 }
