@@ -6,7 +6,7 @@ export const checkPermission = (options: string | string[]) => {
     const { app, params } = context;
     if(params.user){
       const userRole = await app.service('roles').get(params.user.role);
-      if (!options.includes(userRole.name)) {
+      if (!options.includes(userRole.name) && !options.includes(userRole.slug)) {
         throw new Forbidden('You dont have the permission to access this route');
       }
     }

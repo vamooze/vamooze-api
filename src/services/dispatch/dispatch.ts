@@ -25,6 +25,17 @@ export * from "./dispatch.class";
 export * from "./dispatch.schema";
 
 
+const checkDispatchOwnership = async (context: any) => {
+ 
+  const dispatch = await context.app.service('dispatch').get(context.arguments[0]);
+  console.log( dispatch , context.arguments[0] ,   context.params.user)
+
+  if (dispatch.user_id !== context.params.user?.id) {
+    throw new Forbidden('You do not have permission to view this dispatch');
+  }
+
+  return context;
+};
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const dispatch = (app: Application) => {
@@ -43,11 +54,16 @@ export const dispatch = (app: Application) => {
         schemaHooks.validateQuery(dispatchQueryValidator),
         schemaHooks.resolveQuery(dispatchQueryResolver),
       ],
-      find: [checkPermission(userRoles.superAdmin)],
-      get: [],
+      find: [
+        checkPermission(userRoles.superAdmin),
+      ],
+      get: [
+        checkPermission(userRoles.superAdminAndDispatch),
+        checkDispatchOwnership
+      ],
       create: [
         async (context) => {
-          const { app, data, } = context;
+          const { app } = context;
           const existingDispatch = await app.service("dispatch").find({
             query: {
               //@ts-ignore

@@ -8,6 +8,7 @@ const userRoles = {
   dispatch: ["dispatch"],
   allButUser: ["admin", "superAdmin", "manager", "dispatch"],
   allButDispatch: ["admin", "superAdmin", "manager", "user"],
+  superAdminAndDispatch: ["superAdmin", "dispatch"],
 };
 
 export default userRoles
