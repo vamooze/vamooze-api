@@ -62,45 +62,6 @@ const schemas = {
 // A configure function that registers the service and its hooks via `app.configure`
 export const business = (app: Application) => {
 
-
-  const superAdminMiddleware = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      //@ts-ignore
-      console.log("here in activating buisness", req.user, ".......");
-      // const User = app.service("users");
-      // const userDetails = await User.find({
-      //   query: {
-      //     phone_number: req.body.phone_number,
-      //   },
-      // });
-      // Fetch the user's role from the database
-      // const app = req.app;
-      // const userService = app.service('users');
-      // const userDetails = await userService.get(user.id);
-
-      // if (!userDetails) {
-      //   throw new NotAuthorized('User not found');
-      // }
-
-      // Fetch the role details
-      // const roleService = app.service('roles');
-      // const roleDetails = await roleService.get(userDetails.role);
-
-      // if (!roleDetails || roleDetails.slug !== 'super-admin') {
-      //   throw new NotAuthorized('Super Admin access required');
-      // }
-
-      // If we reach here, the user is a super admin
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-
  
   app.post(
     "/business/whitelabel/signup",
@@ -143,7 +104,6 @@ export const business = (app: Application) => {
 
   app.patch(
     "/super-admin/activate-business",
-    superAdminMiddleware,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { businessId } = req.body;

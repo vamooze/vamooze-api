@@ -17,30 +17,15 @@ import {
 import type { Application } from "../../declarations";
 import { DispatchService, getOptions } from "./dispatch.class";
 import { dispatchPath, dispatchMethods } from "./dispatch.shared";
+import { checkPermission } from '../../helpers/checkPermission'
+const userRoles = require('../../helpers/permissions.json')
+
+
 
 export * from "./dispatch.class";
 export * from "./dispatch.schema";
 
-const isAdmin = async (context: any) => {
-  const { user } = context.params;
-  if (!user || user.role !== 4) {
-    // Assuming 4 is the role ID for admin
-    throw new Forbidden("Only admins can perform this action");
-  }
-};
 
-const customErrorHandler = (context: any) => {
-  if (context.error instanceof Conflict) {
-    const { message } = context.error;
-    context.error = {
-      success: false,
-      code: 409,
-      message,
-      data: null
-    };
-  }
-  return context;
-};
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const dispatch = (app: Application) => {
@@ -53,23 +38,17 @@ export const dispatch = (app: Application) => {
   });
   // Initialize hooks
   app.service(dispatchPath).hooks({
-    around: {
-      all: [
-        authenticate("jwt"),
-        schemaHooks.resolveExternal(dispatchExternalResolver),
-        schemaHooks.resolveResult(dispatchResolver),
-      ],
-    },
     before: {
       all: [
+        authenticate("jwt"),
         schemaHooks.validateQuery(dispatchQueryValidator),
         schemaHooks.resolveQuery(dispatchQueryResolver),
       ],
-      find: [],
-      get: [isAdmin],
+      find: [checkPermission(userRoles.allAdmin)],
+      get: [],
       create: [
         async (context) => {
-          const { app, data, res } = context;
+          const { app, data, } = context;
           const existingDispatch = await app.service("dispatch").find({
             query: {
               //@ts-ignore
@@ -85,6 +64,7 @@ export const dispatch = (app: Application) => {
             //@ts-ignore
             user_id: context?.params?.user?.id,
           };
+          return context;
         },
         schemaHooks.validateData(dispatchDataValidator),
         schemaHooks.resolveData(dispatchDataResolver),
@@ -94,6 +74,7 @@ export const dispatch = (app: Application) => {
             //@ts-ignore
             preferred_delivery_locations: JSON.stringify(context?.data?.preferred_delivery_locations),
           };
+          return context;
         },
       ],
       patch: [
@@ -101,7 +82,7 @@ export const dispatch = (app: Application) => {
         schemaHooks.resolveData(dispatchPatchResolver),
       ],
       remove: [],
-      approveRider: [isAdmin],
+      approveRider: [],
     },
     after: {
       all: [],
