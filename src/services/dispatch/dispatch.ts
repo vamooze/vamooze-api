@@ -19,7 +19,7 @@ import { DispatchService, getOptions } from "./dispatch.class";
 import { dispatchPath, dispatchMethods } from "./dispatch.shared";
 import { checkPermission } from '../../helpers/checkPermission'
 import userRoles from  '../../helpers/permissions'
-
+import { ApprovalStatus} from './dispatch.schema'
 
 export * from "./dispatch.class";
 export * from "./dispatch.schema";
@@ -62,6 +62,7 @@ export const dispatch = (app: Application) => {
             ...context.data,
             //@ts-ignore
             user_id: context?.params?.user?.id,
+            approval_status: ApprovalStatus.PENDING
           };
           return context;
         },
