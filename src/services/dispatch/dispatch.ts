@@ -30,9 +30,9 @@ const checkDispatchOwnership = async (context: any) => {
   const dispatch = await context.app.service('dispatch').get(context.arguments[0]);
   console.log( dispatch , context.arguments[0] ,   context.params.user)
 
-  if (dispatch.user_id !== context.params.user?.id) {
-    throw new Forbidden('You do not have permission to view this dispatch');
-  }
+  // if (dispatch.user_id !== context.params.user?.id) {
+  //   throw new Forbidden('You do not have permission to view this dispatch');
+  // }
 
   return context;
 };
