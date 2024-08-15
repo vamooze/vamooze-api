@@ -48,6 +48,33 @@ const checkDispatchOwnership = async (context: HookContext) => {
   return context;
 };
 
+const addUserInfo = async (context: HookContext) => {
+
+  const { app, method, result } = context;
+
+  const addUserToDispatch = async (dispatch: any) => {
+    const user = await app.service('users').get(dispatch.user_id);
+    return {
+      ...dispatch,
+      phone_number: user.phone_number,
+      first_name: user.first_name,
+      last_name: user.last_name
+    };
+  };
+
+  if (method === 'get') {
+    if (result) {
+      context.result = await addUserToDispatch(result);
+    }
+  } else if (method === 'find') {
+    if (result.data) {
+      context.result.data = await Promise.all(result.data.map(addUserToDispatch));
+    }
+  }
+
+  return context;
+};
+
 // A configure function that registers the service and its hooks via `app.configure`
 export const dispatch = (app: Application) => {
 
@@ -113,6 +140,8 @@ export const dispatch = (app: Application) => {
     },
     after: {
       all: [],
+      get: [addUserInfo],
+      find: [addUserInfo],
     },
     error: {
       all: [],
