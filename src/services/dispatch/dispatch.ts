@@ -1,9 +1,9 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 import { authenticate } from "@feathersjs/authentication";
 import { NotFound, Forbidden, Conflict } from "@feathersjs/errors";
-import { HookContext } from '@feathersjs/feathers';
+import { HookContext } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
-import { Roles } from "../../interfaces/constants";
+import { Roles, DispatchApprovalStatus } from "../../interfaces/constants";
 import {
   dispatchDataValidator,
   dispatchPatchValidator,
@@ -25,7 +25,6 @@ import { ApprovalStatus } from "./dispatch.schema";
 export * from "./dispatch.class";
 export * from "./dispatch.schema";
 
-
 const checkDispatchOwnership = async (context: HookContext) => {
   const id = context?.id;
   const userId = context.params.user?.id;
@@ -33,28 +32,28 @@ const checkDispatchOwnership = async (context: HookContext) => {
   if (!id) {
     throw new NotFound(`No dispatch found with id ${id}`);
   }
- 
+
   const dispatch = await context.app
-    .service("dispatch")  //@ts-ignore
+    .service("dispatch") //@ts-ignore
     .find({ query: { id: id } });
 
   if (dispatch?.total === 0) {
     throw new NotFound(`No dispatch found with id ${id}`);
   }
 
-  if (dispatch.data[0].user_id !==  userId) {
-    throw new Forbidden('You do not have permission to view this dispatch')
+  if (dispatch.data[0].user_id !== userId) {
+    throw new Forbidden("You do not have permission to view this dispatch");
   }
 
   return context;
-}
+};
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const dispatch = (app: Application) => {
-  // Register our service on the Feathers application
+
   app.use(dispatchPath, new DispatchService(getOptions(app)), {
     // A list of all methods this service exposes externally
-    methods: ["find", "get", "create", "patch", "remove", "approveRider"],
+    methods: ["find", "get", "create", "patch", "remove"],
     // You can add additional custom events to be sent to clients here
     events: [],
   });
@@ -69,7 +68,7 @@ export const dispatch = (app: Application) => {
       find: [checkPermission(userRoles.superAdmin)],
       get: [
         checkPermission(userRoles.superAdminAndDispatch), // should come first ensure only a super admin and dispatch can view dispatch resource
-        checkDispatchOwnership
+        checkDispatchOwnership,
       ],
       create: [
         async (context) => {
@@ -111,7 +110,6 @@ export const dispatch = (app: Application) => {
         schemaHooks.resolveData(dispatchPatchResolver),
       ],
       remove: [],
-      approveRider: [],
     },
     after: {
       all: [],
@@ -119,6 +117,48 @@ export const dispatch = (app: Application) => {
     error: {
       all: [],
     },
+  });
+
+  //@ts-ignore
+  app.patch("/dispatch-approve/:dispatchId", async (req, res) => {
+    try {
+      const id = req.params.dispatchId;
+
+      const Dispatch = app.service("dispatch");
+      const dispatchDetais = await Dispatch.find({
+        query: {
+          id,
+        },
+      });
+
+      if (dispatchDetais?.data.length === 0) {
+        return res.status(404).json({
+          status: 404,
+          message: "User not found",
+          success: false
+        });
+      }
+
+     //@ts-ignore
+      await app
+        .service("dispatch")
+         //@ts-ignore
+        .patch(dispatchDetais?.data[0]?.id, {
+          approval_status: DispatchApprovalStatus.approved,
+        });
+
+      return res.json({
+        status: 200,
+        message: "Dispatch Approved succesfully",
+        success: true,
+      });
+    } catch (error) {
+      return res.json({
+        status: 401,
+        message: "Dispatch Approval failed ",
+        success: false,
+      });
+    }
   });
 };
 

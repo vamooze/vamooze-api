@@ -19,26 +19,6 @@ export class DispatchService<ServiceParams extends Params = DispatchParams> exte
   DispatchPatch
 > {
 
-
-  async approveRider(id: number, adminId: number, status: ApprovalStatus, params?: DispatchParams) {
-    const rider = await this.get(id)
-    if (!rider) {
-      throw new NotFound(`Dispatch rider with id ${id} not found`)
-    }
-
-    if (rider.approval_status !== ApprovalStatus.PENDING) {
-      throw new Forbidden('This dispatch rider has already been processed')
-    }
-
-    const updatedRider = await this.patch(id, {
-      approval_status: status,
-      approved_by: adminId,
-      approval_date: new Date().toISOString()
-    }, params)
-
-    return updatedRider
-  }
-
 }
 
 export const getOptions = (app: Application): KnexAdapterOptions => {

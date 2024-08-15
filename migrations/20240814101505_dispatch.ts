@@ -1,4 +1,5 @@
 import { Knex } from 'knex';
+import { DispatchApprovalStatus } from '../src/interfaces/constants'
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('dispatch', (table) => {
@@ -13,9 +14,9 @@ export async function up(knex: Knex): Promise<void> {
     table.specificType('available_time_frames', 'text[]').notNullable();
     table.jsonb('preferred_delivery_locations').notNullable();
     table.string('drivers_license').notNullable();
-    table.enum('approval_status', ['pending', 'approved', 'rejected'])
+    table.enum('approval_status', [DispatchApprovalStatus.pending, DispatchApprovalStatus.approved, DispatchApprovalStatus.rejected])
     .notNullable()
-    .defaultTo('pending');
+    .defaultTo(DispatchApprovalStatus.pending);
     table.integer('approved_by').nullable();
     table.timestamp('approval_date').nullable();
     table.timestamp('created_at').defaultTo(knex.fn.now());
