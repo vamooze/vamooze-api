@@ -19,6 +19,16 @@ export async function up(knex: Knex): Promise<void> {
     .defaultTo(DispatchApprovalStatus.pending);
     table.integer('approved_by').nullable();
     table.timestamp('approval_date').nullable();
+
+    table.string('next_of_kin_name').nullable();
+    table.string('next_of_kin_relationship').nullable();
+    table.string('bank_account_name').nullable();
+    table.string('bank_account_number').nullable();
+    table.boolean('onboarding_quiz_completed').notNullable();
+    table.boolean('suspended').notNullable().defaultTo(false);;
+    table.timestamp('suspended_at').nullable();
+    table.integer('suspended_by').nullable();
+
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table.timestamp('updated_at').defaultTo(knex.fn.now());
   });
