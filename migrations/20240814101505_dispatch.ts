@@ -24,7 +24,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('next_of_kin_relationship').nullable();
     table.string('bank_account_name').nullable();
     table.string('bank_account_number').nullable();
-    table.string(' mobile_money_number').nullable();
+    table.string('mobile_money_number').nullable();
 
     table.boolean('onboarding_quiz_completed').notNullable();
     table.boolean('suspended').notNullable().defaultTo(false);;
