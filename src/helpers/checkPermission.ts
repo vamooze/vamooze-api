@@ -10,7 +10,6 @@ export const checkPermission = (options: string | string[]) => {
         throw new Forbidden('You dont have the permission to access this route');
       }
     }
-
     return context;
   };
 };

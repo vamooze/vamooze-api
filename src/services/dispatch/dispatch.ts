@@ -25,6 +25,8 @@ import { ApprovalStatus } from "./dispatch.schema";
 export * from "./dispatch.class";
 export * from "./dispatch.schema";
 
+///********************************hooks***************///
+
 const checkDispatchOwnership = async (context: HookContext) => {
   const id = context?.id;
   const userId = context.params.user?.id;
@@ -41,9 +43,14 @@ const checkDispatchOwnership = async (context: HookContext) => {
     throw new NotFound(`No dispatch found with id ${id}`);
   }
 
-  if (dispatch.data[0].user_id !== userId) {
+   const userRoleData = await context.app.service('roles').find({ query: { id: context.params.user.role } });
+
+   const userRole = userRoleData.data[0].slug
+
+  if (dispatch.data[0].user_id !== userId && userRole !== Roles.SuperAdmin) {
     throw new Forbidden("You do not have permission to view this dispatch");
   }
+
 
   return context;
 };
@@ -75,6 +82,8 @@ const addUserInfo = async (context: HookContext) => {
   return context;
 };
 
+///********************************hooks***************///
+
 // A configure function that registers the service and its hooks via `app.configure`
 export const dispatch = (app: Application) => {
 
@@ -94,7 +103,6 @@ export const dispatch = (app: Application) => {
       ],
       find: [checkPermission(userRoles.superAdmin)],
       get: [
-        checkPermission(userRoles.superAdminAndDispatch), // should come first ensure only a super admin and dispatch can view dispatch resource
         checkDispatchOwnership,
       ],
       create: [

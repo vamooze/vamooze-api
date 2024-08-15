@@ -59,6 +59,15 @@ export const dispatchSchema = Type.Object(
     approval_date: Type.Optional(Type.String({ format: "date-time" })),
     created_at: Type.String({ format: "date-time" }),
     updated_at: Type.String({ format: "date-time" }),
+
+    next_of_kin_name: Type.Optional(Type.String()),
+    next_of_kin_relationship: Type.Optional(Type.String()),
+    bank_account_name: Type.String(),
+    bank_account_number: Type.String(),
+    onboarding_quiz_completed: Type.Boolean(),
+    suspended: Type.Boolean(),
+    suspended_at: Type.Optional(Type.String({ format: "date-time" })),
+    suspended_by: Type.Optional(Type.Number()),
   },
   { $id: "Dispatch", additionalProperties: false }
 );
