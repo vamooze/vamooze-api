@@ -65,7 +65,7 @@ export const dispatchSchema = Type.Object(
     bank_account_name: Type.String(),
     bank_account_number: Type.String(),
     onboarding_quiz_completed: Type.Boolean(),
-    suspended: Type.Boolean(),
+    suspended: Type.Optional(Type.Boolean()),
     suspended_at: Type.Optional(Type.String({ format: "date-time" })),
     suspended_by: Type.Optional(Type.Number()),
   },
@@ -97,6 +97,14 @@ export const dispatchDataSchema = Type.Pick(
     "preferred_delivery_locations",
     "drivers_license",
     "approval_status",
+    "next_of_kin_name",
+    "next_of_kin_relationship",
+    "bank_account_name",
+    "bank_account_number",
+    "onboarding_quiz_completed",
+    "suspended",
+    "suspended_at",
+    "suspended_by"
   ],
   {
     $id: "DispatchData",
@@ -130,6 +138,7 @@ export const dispatchPatchResolver = resolve<
 export const dispatchQueryProperties = Type.Pick(dispatchSchema, [
   "id",
   "user_id",
+  "address",
   "city",
   "state",
   "lga",
@@ -139,6 +148,14 @@ export const dispatchQueryProperties = Type.Pick(dispatchSchema, [
   "preferred_delivery_locations",
   "drivers_license",
   "approval_status",
+  "next_of_kin_name",
+  "next_of_kin_relationship",
+  "bank_account_name",
+  "bank_account_number",
+  "onboarding_quiz_completed",
+  "suspended",
+  "suspended_at",
+  "suspended_by"
 ]);
 export const dispatchQuerySchema = Type.Intersect(
   [

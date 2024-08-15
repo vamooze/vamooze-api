@@ -197,6 +197,52 @@ export const dispatch = (app: Application) => {
       });
     }
   });
+
+ //@ts-ignore
+  app.patch("/dispatch/toggle-suspension/:dispatchId", async (req, res) => {
+
+    try {
+      const id = req.params.dispatchId;
+
+      const Dispatch = app.service("dispatch");
+      const dispatchDetails = await Dispatch.find({
+        query: {
+          id,
+        },
+      });
+
+      if (dispatchDetails.data.length === 0) {
+        return res.status(404).json({
+          status: 404,
+          message: "Dispatch not found",
+          success: false
+        });
+      }
+
+      const currentDispatch = dispatchDetails.data[0];
+      const newSuspendedStatus = !currentDispatch.suspended;
+
+       //@ts-ignore
+      await Dispatch.patch(currentDispatch.id, {
+        suspended: newSuspendedStatus,
+        // suspended_at: newSuspendedStatus ? new Date().toISOString() : null,
+        // suspended_by: newSuspendedStatus ? req.user.id : null, // Assuming you have user information in the request
+      });
+
+      return res.json({
+        status: 200,
+        message: newSuspendedStatus ? "Dispatch suspended successfully" : "Dispatch unsuspended successfully",
+        success: true,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: 500,
+        message: "Failed to toggle dispatch suspension",
+        success: false,
+      });
+    }
+  });
+
 };
 
 // Add this service to the service type index
