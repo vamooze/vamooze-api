@@ -1,8 +1,9 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 import { authenticate } from "@feathersjs/authentication";
 import { NotFound, Forbidden, Conflict } from "@feathersjs/errors";
+import { HookContext } from '@feathersjs/feathers';
 import { hooks as schemaHooks } from "@feathersjs/schema";
-
+import { Roles } from "../../interfaces/constants";
 import {
   dispatchDataValidator,
   dispatchPatchValidator,
@@ -17,25 +18,36 @@ import {
 import type { Application } from "../../declarations";
 import { DispatchService, getOptions } from "./dispatch.class";
 import { dispatchPath, dispatchMethods } from "./dispatch.shared";
-import { checkPermission } from '../../helpers/checkPermission'
-import userRoles from  '../../helpers/permissions'
-import { ApprovalStatus} from './dispatch.schema'
+import { checkPermission } from "../../helpers/checkPermission";
+import userRoles from "../../helpers/permissions";
+import { ApprovalStatus } from "./dispatch.schema";
 
 export * from "./dispatch.class";
 export * from "./dispatch.schema";
 
 
-const checkDispatchOwnership = async (context: any) => {
- 
-  // const dispatch = await context.app.service('dispatch').get(context.arguments[0]);
-  // console.log( dispatch , context.arguments[0] ,   context.params.user)
+const checkDispatchOwnership = async (context: HookContext) => {
+  const id = context?.id;
+  const userId = context.params.user?.id;
 
-  // if (dispatch.user_id !== context.params.user?.id) {
-  //   throw new Forbidden('You do not have permission to view this dispatch');
-  // }
+  if (!id) {
+    throw new NotFound(`No dispatch found with id ${id}`);
+  }
+ 
+  const dispatch = await context.app
+    .service("dispatch")  //@ts-ignore
+    .find({ query: { id: id } });
+
+  if (dispatch?.total === 0) {
+    throw new NotFound(`No dispatch found with id ${id}`);
+  }
+
+  if (dispatch.data[0].user_id !==  userId) {
+    throw new Forbidden('You do not have permission to view this dispatch')
+  }
 
   return context;
-};
+}
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const dispatch = (app: Application) => {
@@ -54,11 +66,9 @@ export const dispatch = (app: Application) => {
         schemaHooks.validateQuery(dispatchQueryValidator),
         schemaHooks.resolveQuery(dispatchQueryResolver),
       ],
-      find: [
-        checkPermission(userRoles.superAdmin),
-      ],
+      find: [checkPermission(userRoles.superAdmin)],
       get: [
-        checkPermission(userRoles.superAdminAndDispatch),
+        checkPermission(userRoles.superAdminAndDispatch), // should come first ensure only a super admin and dispatch can view dispatch resource
         checkDispatchOwnership
       ],
       create: [
@@ -72,13 +82,13 @@ export const dispatch = (app: Application) => {
           });
 
           if (existingDispatch.total > 0) {
-            throw new Conflict("User already has a dispatch record.",);
+            throw new Conflict("User already has a dispatch record.");
           }
           context.data = {
             ...context.data,
             //@ts-ignore
             user_id: context?.params?.user?.id,
-            approval_status: ApprovalStatus.PENDING
+            approval_status: ApprovalStatus.PENDING,
           };
           return context;
         },
@@ -88,7 +98,10 @@ export const dispatch = (app: Application) => {
           context.data = {
             ...context.data,
             //@ts-ignore
-            preferred_delivery_locations: JSON.stringify(context?.data?.preferred_delivery_locations),
+            preferred_delivery_locations: JSON.stringify(
+              //@ts-ignore
+              context?.data?.preferred_delivery_locations
+            ),
           };
           return context;
         },
