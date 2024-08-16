@@ -169,13 +169,6 @@ export const business = (app: Application) => {
 
   // Initialize hooks
   app.service(businessPath).hooks({
-    around: {
-      all: [
-        authenticate("jwt"),
-        schemaHooks.resolveExternal(businessExternalResolver),
-        schemaHooks.resolveResult(businessResolver),
-      ],
-    },
     before: {
       all: [
         authenticate("jwt"),

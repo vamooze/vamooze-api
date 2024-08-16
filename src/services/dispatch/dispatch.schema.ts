@@ -65,6 +65,7 @@ export const dispatchSchema = Type.Object(
     bank_account_name: Type.String(),
     bank_account_number: Type.String(),
     onboarding_quiz_completed: Type.Boolean(),
+    has_watched_onboarding_video: Type.Boolean(),
     suspended: Type.Optional(Type.Boolean()),
     suspended_at: Type.Optional(Type.String({ format: "date-time" })),
     suspended_by: Type.Optional(Type.Number()),
@@ -102,6 +103,7 @@ export const dispatchDataSchema = Type.Pick(
     "bank_account_name",
     "bank_account_number",
     "onboarding_quiz_completed",
+    "has_watched_onboarding_video",
     "suspended",
     "suspended_at",
     "suspended_by"
@@ -153,6 +155,7 @@ export const dispatchQueryProperties = Type.Pick(dispatchSchema, [
   "bank_account_name",
   "bank_account_number",
   "onboarding_quiz_completed",
+  "has_watched_onboarding_video",
   "suspended",
   "suspended_at",
   "suspended_by"

@@ -82,6 +82,84 @@ const addUserInfo = async (context: HookContext) => {
   return context;
 };
 
+const quizData = [
+  {
+    "id": "q001",
+    "questionNumber": 1,
+    "text": "What's the Capital of Ivory Coast",
+    "type": "multiple_choice",
+    "options": [
+      {
+        "id": "a",
+        "text": "Abuja"
+      },
+      {
+        "id": "b",
+        "text": "Yamoussoukro"
+      },
+      {
+        "id": "c",
+        "text": "Accra"
+      },
+      {
+        "id": "d",
+        "text": "Abidjan"
+      }
+    ],
+    "correctAnswer": "b"
+  },
+  {
+    "id": "q002",
+    "questionNumber": 2,
+    "text": "What is the maximum weight a dispatch rider can carry?",
+    "type": "multiple_choice",
+    "options": [
+      {
+        "id": "a",
+        "text": "20 kg"
+      },
+      {
+        "id": "b",
+        "text": "30 kg"
+      },
+      {
+        "id": "c",
+        "text": "40 kg"
+      },
+      {
+        "id": "d",
+        "text": "50 kg"
+      }
+    ],
+    "correctAnswer": "c"
+  },
+  {
+    "id": "q003",
+    "questionNumber": 3,
+    "text": "What should you do if a customer is not available to receive their package?",
+    "type": "multiple_choice",
+    "options": [
+      {
+        "id": "a",
+        "text": "Leave the package at the door"
+      },
+      {
+        "id": "b",
+        "text": "Return the package to the depot"
+      },
+      {
+        "id": "c",
+        "text": "Call the customer and wait for 15 minutes"
+      },
+      {
+        "id": "d",
+        "text": "Give the package to a neighbor"
+      }
+    ],
+    "correctAnswer": "c"
+  }
+]
+
 ///********************************hooks***************///
 
 // A configure function that registers the service and its hooks via `app.configure`
@@ -154,6 +232,23 @@ export const dispatch = (app: Application) => {
     error: {
       all: [],
     },
+  });
+
+  //@ts-ignore
+  app.get('/dispatch-onboarding-quiz', async (req, res) => {
+    try {
+
+      return res.status(404).json({
+        status: 200,
+        message: "Quiz Data",
+        success: true,
+        data: quizData
+      });
+
+    } catch (error) {
+      console.error('Error fetching quiz data:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
 
   //@ts-ignore
