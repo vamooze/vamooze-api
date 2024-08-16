@@ -27,4 +27,4 @@ export const getOptions = (app: Application): KnexAdapterOptions => {
     Model: app.get('postgresqlClient'),
     name: 'dispatch'
   }
-}
+};
