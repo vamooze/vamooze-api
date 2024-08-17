@@ -17,7 +17,6 @@ import {
 
 import type { Application } from "../../declarations";
 import { DispatchService, getOptions } from "./dispatch.class";
-import { DispatchServiceCopy } from "./dispatch.class-copy";
 import { dispatchPath, dispatchMethods } from "./dispatch.shared";
 import { checkPermission } from "../../helpers/checkPermission";
 import userRoles from "../../helpers/permissions";
