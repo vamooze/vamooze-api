@@ -28,16 +28,45 @@ export * from "./dispatch.schema";
 
 ///********************************hooks***************///
 
+const calculateOnboardingCompletion = (dispatch: any): number => {
+  let completedSteps = 0;
+  const totalSteps = 6; // Assuming 6 onboarding steps
+
+  if (dispatch.drivers_license) {
+    completedSteps++;
+  }
+  if (dispatch.available_days && dispatch.available_time_frames) {
+    completedSteps++;
+  }
+  if (dispatch.preferred_delivery_locations.length > 0) {
+    completedSteps++;
+  }
+  if (dispatch.bank_account_name) {
+    completedSteps++;
+  }
+  if (dispatch.has_watched_onboarding_video) {
+    completedSteps++;
+  }
+  if (dispatch.onboarding_quiz_completed) {
+    completedSteps++;
+  }
+
+  return Math.floor((completedSteps / totalSteps) * 100);
+};
+
 const addUserInfo = async (context: HookContext) => {
   const { app, method, result } = context;
 
   const addUserToDispatch = async (dispatch: any) => {
     const user = await app.service("users").get(dispatch.user_id);
+    const onboardingCompletion = calculateOnboardingCompletion(dispatch);
+
     return {
       ...dispatch,
       phone_number: user.phone_number,
       first_name: user.first_name,
       last_name: user.last_name,
+      onboarding_completion: onboardingCompletion
     };
   };
 
@@ -182,13 +211,21 @@ export const dispatch = (app: Application) => {
           //@ts-ignore
           const userRole = await app.service("roles").get(user.role);
 
-         
-      
+          if (!context.id) {
+            throw new Error('No dispatch ID provided');
+          }
 
+          // Fetch the dispatch record to ensure it exists
+          let dispatch;
+          try {
+            dispatch = await context.service.get(context.id);
+          
+          } catch (error) {
+            throw new NotFound(`No dispatch found with ID ${context.id}`);
+          }
+      
            //@ts-ignore
           const { suspended, approval_status } = context.data;
-
-          console.log( suspended, approval_status, context.id)
 
           // Handle suspension toggle
           if (suspended !== undefined) {
@@ -274,6 +311,18 @@ export const dispatch = (app: Application) => {
           );
         },
       ],
+      patch: [ 
+        addUserInfo,
+        async (context) => {
+          //@ts-ignore
+          context.result = successResponse(
+            //@ts-ignore
+            context.result,
+            200,
+            "Updated dispatch successfully"
+          )
+        }
+        ]
     },
     error: {
       all: [],
