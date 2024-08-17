@@ -253,3 +253,14 @@ export const getStateFromLatLngWithGoogle = async (data: {
   }
   return "default";
 };
+
+
+
+export const successResponse = (data: any, status: number, messsage: string) => {
+  return {
+      data,
+      status:status,
+      success:true,
+      messsage
+  }
+}
