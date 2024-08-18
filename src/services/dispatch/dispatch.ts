@@ -21,7 +21,7 @@ import { dispatchPath, dispatchMethods } from "./dispatch.shared";
 import { checkPermission } from "../../helpers/checkPermission";
 import userRoles from "../../helpers/permissions";
 import { ApprovalStatus } from "./dispatch.schema";
-import { successResponse } from "../../helpers/functions";
+import { successResponse, successResponseWithPagination } from "../../helpers/functions";
 
 export * from "./dispatch.class";
 export * from "./dispatch.schema";
@@ -66,7 +66,9 @@ const addUserInfo = async (context: HookContext) => {
       phone_number: user.phone_number,
       first_name: user.first_name,
       last_name: user.last_name,
-      onboarding_completion: onboardingCompletion
+      onboarding_completion: onboardingCompletion,
+      average_rating: 4.5,
+      number_of_deliveries: 500
     };
   };
 
@@ -291,9 +293,9 @@ export const dispatch = (app: Application) => {
         addUserInfo,
         async (context) => {
           //@ts-ignore
-          context.result = successResponse(
+          context.result = successResponseWithPagination(
             //@ts-ignore
-            context.result.data,
+            context.result,
             200,
             dispatchDetails
           );

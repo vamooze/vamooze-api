@@ -258,9 +258,19 @@ export const getStateFromLatLngWithGoogle = async (data: {
 
 export const successResponse = (data: any, status: number, messsage: string) => {
   return {
-      data,
       status:status,
       success:true,
-      messsage
+      messsage,
+      data,
+  }
+}
+
+
+export const successResponseWithPagination = (data: any, status: number, messsage: string) => {
+  return {
+      status:status,
+      success:true,
+      messsage,
+      ...data,
   }
 }
