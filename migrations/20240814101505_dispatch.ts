@@ -22,6 +22,7 @@ export async function up(knex: Knex): Promise<void> {
 
     table.string('next_of_kin_name').nullable();
     table.string('next_of_kin_relationship').nullable();
+    table.string('next_of_kin_phone_number').nullable();
     table.string('bank_account_name').nullable();
     table.string('bank_account_number').nullable();
     table.string('mobile_money_number').nullable();
