@@ -3,6 +3,8 @@ import axios from "axios";
 import OneSignal from "onesignal-node";
 import { Forbidden } from "@feathersjs/errors";
 import type { HookContext } from "../declarations";
+import { EmailDTO } from "../interfaces/constants";
+import { logger } from "../logger";
 
 export const formatPhoneNumber = (phoneNumber: string | undefined) => {
   if (phoneNumber) {
@@ -20,8 +22,7 @@ export const formatPhoneNumber = (phoneNumber: string | undefined) => {
   }
 };
 
-import { EmailDTO } from "../interfaces/constants";
-import { logger } from "../logger";
+
 const {
   EmailClient,
   KnownEmailSendStatus,
@@ -254,8 +255,6 @@ export const getStateFromLatLngWithGoogle = async (data: {
   return "default";
 };
 
-
-
 export const successResponse = (data: any, status: number, messsage: string) => {
   return {
       status:status,
@@ -264,7 +263,6 @@ export const successResponse = (data: any, status: number, messsage: string) => 
       data,
   }
 }
-
 
 export const successResponseWithPagination = (data: any, status: number, messsage: string) => {
   return {
