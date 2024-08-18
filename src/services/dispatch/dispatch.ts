@@ -177,6 +177,18 @@ export const dispatch = (app: Application) => {
     events: [],
   });
 
+  //@ts-ignore
+  app.use(`/dispatch-onboarding-quiz`, {
+    async find() {
+      return {
+        success: true,
+        code: 200,
+        message: "Quiz data retrieved successfully",
+        data: quizData,
+      };
+    },
+  });
+
   app.service("dispatch").hooks({
     before: {
       all: [
