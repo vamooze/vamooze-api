@@ -61,6 +61,7 @@ export const dispatchSchema = Type.Object(
     updated_at: Type.String({ format: "date-time" }),
 
     next_of_kin_name: Type.Optional(Type.String()),
+    next_of_kin_phone_number: Type.Optional(Type.String()),
     next_of_kin_relationship: Type.Optional(Type.String()),
     bank_account_name: Type.String(),
     bank_account_number: Type.String(),
@@ -99,6 +100,7 @@ export const dispatchDataSchema = Type.Pick(
     "drivers_license",
     "approval_status",
     "next_of_kin_name",
+    "next_of_kin_phone_number",
     "next_of_kin_relationship",
     "bank_account_name",
     "bank_account_number",
@@ -151,6 +153,7 @@ export const dispatchQueryProperties = Type.Pick(dispatchSchema, [
   "drivers_license",
   "approval_status",
   "next_of_kin_name",
+  "next_of_kin_phone_number",
   "next_of_kin_relationship",
   "bank_account_name",
   "bank_account_number",
