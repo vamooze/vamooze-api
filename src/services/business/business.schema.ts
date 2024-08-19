@@ -7,7 +7,6 @@ import type { HookContext } from "../../declarations";
 import { dataValidator, queryValidator } from "../../validators";
 import type { BusinessService } from "./business.class";
 
-
 // Main data model schema
 export const businessSchema = Type.Object(
   {
