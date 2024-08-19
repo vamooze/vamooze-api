@@ -15,7 +15,7 @@ import {
 } from './business-settings.schema'
 
 import type { Application } from '../../declarations'
-import { BusinessSettingsService, getOptions } from './business-settings.class'
+import { BusinessSettingsService, getOptions,  } from './business-settings.class'
 import { businessSettingsPath, businessSettingsMethods } from './business-settings.shared'
 import {createValidator} from "express-joi-validation";
 import Joi from "joi";
@@ -25,6 +25,26 @@ export * from './business-settings.schema'
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const businessSettings = (app: Application) => {
+
+  //@ts-ignore
+  app.use(`/business-signup-dashboard-customization`, {
+    async find(params: any) {
+      const { query } = params;
+      const { slug } = query;
+  
+      const business = await  app.service('business').find({ query: { slug } });
+      if (!business) {
+        throw new Error('Business not found');
+      }
+      return {
+        success: true,
+        code: 200,
+        message: "Quiz data retrieved successfully",
+        data: [],
+      };
+    },
+  });
+
   // Register our service on the Feathers application
   app.use(businessSettingsPath, new BusinessSettingsService(getOptions(app)), {
     // A list of all methods this service exposes externally

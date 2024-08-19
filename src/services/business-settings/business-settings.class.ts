@@ -25,6 +25,7 @@ export class BusinessSettingsService<
   BusinessSettingsPatch
 > {}
 
+
 export const getOptions = (app: Application): KnexAdapterOptions => {
   return {
     paginate: app.get('paginate'),
