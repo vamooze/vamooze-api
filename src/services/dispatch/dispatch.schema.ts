@@ -46,13 +46,7 @@ export const dispatchSchema = Type.Object(
     country: Type.String(),
     available_days: Type.Array(Type.Enum(Days)),
     available_time_frames: Type.Array(Type.Enum(TimeFrame)),
-    preferred_delivery_locations: Type.Array(
-      Type.Object({
-        address: Type.String(),
-        latitude: Type.Number(),
-        longitude: Type.Number(),
-      })
-    ),
+    preferred_delivery_locations: Type.Object({}, { minProperties: 1 }),
     drivers_license: Type.String({ format: "uri" }),
     approval_status: Type.Enum(ApprovalStatus),
     approved_by: Type.Optional(Type.Number()), // ID of the admin who approved/rejected
@@ -65,6 +59,7 @@ export const dispatchSchema = Type.Object(
     next_of_kin_relationship: Type.Optional(Type.String()),
     bank_account_name: Type.String(),
     bank_account_number: Type.String(),
+    mobile_money_number: Type.String(),
     onboarding_quiz_completed: Type.Boolean(),
     has_watched_onboarding_video: Type.Boolean(),
     suspended: Type.Optional(Type.Boolean()),
@@ -104,6 +99,7 @@ export const dispatchDataSchema = Type.Pick(
     "next_of_kin_relationship",
     "bank_account_name",
     "bank_account_number",
+    "mobile_money_number",
     "onboarding_quiz_completed",
     "has_watched_onboarding_video",
     "suspended",
@@ -157,6 +153,7 @@ export const dispatchQueryProperties = Type.Pick(dispatchSchema, [
   "next_of_kin_relationship",
   "bank_account_name",
   "bank_account_number",
+  "mobile_money_number",
   "onboarding_quiz_completed",
   "has_watched_onboarding_video",
   "suspended",

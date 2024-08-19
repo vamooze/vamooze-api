@@ -38,7 +38,7 @@ const calculateOnboardingCompletion = (dispatch: any): number => {
   if (dispatch.available_days && dispatch.available_time_frames) {
     completedSteps++;
   }
-  if (dispatch.preferred_delivery_locations.length > 0) {
+  if (Object.keys(dispatch.preferred_delivery_locations).length > 0) {
     completedSteps++;
   }
   if (dispatch.bank_account_name) {
@@ -288,6 +288,7 @@ export const dispatch = (app: Application) => {
         schemaHooks.validateData(dispatchDataValidator),
         schemaHooks.resolveData(dispatchDataResolver),
         async (context) => {
+            //@ts-ignore
           context.data = {
             ...context.data,
             //@ts-ignore
