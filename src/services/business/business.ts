@@ -195,7 +195,17 @@ export const business = (app: Application) => {
       ],
       find: [],
       get: [],
-      create: [
+      create: [   
+        async (context) => {
+          const { data } = context; // Access the data object
+         //@ts-ignore
+          context.data = {
+            ...context.data,
+             //@ts-ignore
+            slug: slugify(data.name, { lower: true, strict: true })
+          };
+          return context;
+        },
         schemaHooks.validateData(businessDataValidator),
         schemaHooks.resolveData(businessDataResolver),
       ],
