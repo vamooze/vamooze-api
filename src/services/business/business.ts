@@ -14,6 +14,9 @@ import {
   businessPatchResolver,
   businessQueryResolver,
 } from "./business.schema";
+import slugify from 'slugify';
+import { v4 as uuidv4 } from 'uuid';
+
 
 import { HookContext } from "../../declarations";
 import type { Application } from "../../declarations";
@@ -58,6 +61,21 @@ const schemas = {
   }),
 };
 
+const generateUniqueSlug = async (name: string, app: Application) => {
+  let slug = slugify(name, { lower: true });
+  const existingBusiness = await app.service('business').find({
+    query: {
+      slug,
+      $limit: 1,
+    },
+  });
+
+  if (existingBusiness.total > 0) {
+    slug = `${slug}-${uuidv4()}`;
+  }
+
+  return slug;
+};
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const business = (app: Application) => {

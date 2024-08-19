@@ -7,11 +7,13 @@ import type { HookContext } from "../../declarations";
 import { dataValidator, queryValidator } from "../../validators";
 import type { BusinessService } from "./business.class";
 
+
 // Main data model schema
 export const businessSchema = Type.Object(
   {
     id: Type.Number(),
     name: Type.String(),
+    slug: Type.String(),  
     trading_name: Type.Optional(Type.String()),
     address: Type.String(),
     business_type: Type.Number(),
@@ -43,6 +45,7 @@ export const businessDataSchema = Type.Pick(
   businessSchema,
   [
     "name",
+    "slug",
     "trading_name",
     "address",
     "business_type",
@@ -88,6 +91,7 @@ export const businessPatchResolver = resolve<
 export const businessQueryProperties = Type.Pick(businessSchema, [
   "id",
   "name",
+  "slug",
   "trading_name",
   "address",
   "business_type",
