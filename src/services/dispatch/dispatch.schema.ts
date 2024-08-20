@@ -46,7 +46,9 @@ export const dispatchSchema = Type.Object(
     country: Type.String(),
     available_days: Type.Array(Type.Enum(Days)),
     available_time_frames: Type.Array(Type.Enum(TimeFrame)),
-    preferred_delivery_locations:  Type.Array(Type.Object({}, { minProperties: 1 })),
+    preferred_delivery_locations: Type.Array(
+      Type.Object({}, { minProperties: 1 })
+    ),
     drivers_license: Type.String({ format: "uri" }),
     approval_status: Type.Enum(ApprovalStatus),
     approved_by: Type.Optional(Type.Number()), // ID of the admin who approved/rejected
@@ -60,6 +62,8 @@ export const dispatchSchema = Type.Object(
     bank_account_name: Type.String(),
     bank_account_number: Type.String(),
     mobile_money_number: Type.String(),
+    isAcceptingPickUps: Type.Boolean(),
+    onTrip: Type.Boolean(),
     onboarding_quiz_completed: Type.Boolean(),
     quiz_responses: Type.Object({}, { minProperties: 1 }),
     has_watched_onboarding_video: Type.Boolean(),
@@ -106,7 +110,7 @@ export const dispatchDataSchema = Type.Pick(
     "has_watched_onboarding_video",
     "suspended",
     "suspended_at",
-    "suspended_by"
+    "suspended_by",
   ],
   {
     $id: "DispatchData",
@@ -159,9 +163,11 @@ export const dispatchQueryProperties = Type.Pick(dispatchSchema, [
   "onboarding_quiz_completed",
   "quiz_responses",
   "has_watched_onboarding_video",
+  "isAcceptingPickUps",
+  "onTrip",
   "suspended",
   "suspended_at",
-  "suspended_by"
+  "suspended_by",
 ]);
 export const dispatchQuerySchema = Type.Intersect(
   [
