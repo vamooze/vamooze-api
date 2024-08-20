@@ -46,7 +46,7 @@ export const dispatchSchema = Type.Object(
     country: Type.String(),
     available_days: Type.Array(Type.Enum(Days)),
     available_time_frames: Type.Array(Type.Enum(TimeFrame)),
-    preferred_delivery_locations: Type.Object({}, { minProperties: 1 }),
+    preferred_delivery_locations:  Type.Array(Type.Object({}, { minProperties: 1 })),
     drivers_license: Type.String({ format: "uri" }),
     approval_status: Type.Enum(ApprovalStatus),
     approved_by: Type.Optional(Type.Number()), // ID of the admin who approved/rejected
