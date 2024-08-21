@@ -3,6 +3,16 @@ export enum AssetStatus {
   Inactive = "inactive",
 }
 
+export const dispatchRequestValidators = {
+  receiver_name_length: 255,
+  receiver_phone_number_length: 15,
+  package_description_length: 1000,
+  landmark_length: 1000,
+  delivery_address_length: 1000,
+  pickup_address_length: 1000,
+  delivery_instructions_length: 1000,
+};
+
 export enum MessageStatus {
   Read = "read",
   Unread = "unread",
