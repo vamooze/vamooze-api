@@ -21,7 +21,10 @@ import { dispatchPath, dispatchMethods } from "./dispatch.shared";
 import { checkPermission } from "../../helpers/checkPermission";
 import userRoles from "../../helpers/permissions";
 import { ApprovalStatus } from "./dispatch.schema";
-import { successResponse, successResponseWithPagination } from "../../helpers/functions";
+import {
+  successResponse,
+  successResponseWithPagination,
+} from "../../helpers/functions";
 
 export * from "./dispatch.class";
 export * from "./dispatch.schema";
@@ -47,7 +50,10 @@ const calculateOnboardingCompletion = (dispatch: any): number => {
   if (dispatch.has_watched_onboarding_video) {
     completedSteps++;
   }
-  if (dispatch.onboarding_quiz_completed && Object.keys(dispatch.onboarding_quiz_completed).length > 0) {
+  if (
+    dispatch.onboarding_quiz_completed &&
+    Object.keys(dispatch.onboarding_quiz_completed).length > 0
+  ) {
     completedSteps++;
   }
 
@@ -68,7 +74,7 @@ const addUserInfo = async (context: HookContext) => {
       last_name: user.last_name,
       onboarding_completion: onboardingCompletion,
       average_rating: 4.5,
-      number_of_deliveries: 500
+      number_of_deliveries: 500,
     };
   };
 
@@ -87,7 +93,7 @@ const addUserInfo = async (context: HookContext) => {
   return context;
 };
 
-const dispatchDetails = "Disptach Details"
+const dispatchDetails = "Disptach Details";
 const quizData = [
   {
     id: "q001",
@@ -178,16 +184,16 @@ export const dispatch = (app: Application) => {
   });
 
   //@ts-ignore
-  app.use(`/dispatch-onboarding-quiz`, {
-    async find() {
-      return {
-        success: true,
-        code: 200,
-        message: "Quiz data retrieved successfully",
-        data: quizData,
-      };
-    },
-  });
+  // app.use(`/dispatch-onboarding-quiz`, {
+  //   async find() {
+  //     return {
+  //       success: true,
+  //       code: 200,
+  //       message: "Quiz data retrieved successfully",
+  //       data: quizData,
+  //     };
+  //   },
+  // });
 
   app.service("dispatch").hooks({
     before: {
@@ -220,48 +226,48 @@ export const dispatch = (app: Application) => {
         checkPermission(userRoles.superAdmin),
         async (context) => {
           const user = context.params.user;
-          if(!user) return context
+          if (!user) return context;
 
           //@ts-ignore
           const userRole = await app.service("roles").get(user.role);
 
           if (!context.id) {
-            throw new Error('No dispatch ID provided');
+            throw new Error("No dispatch ID provided");
           }
 
           // Fetch the dispatch record to ensure it exists
           let dispatch;
           try {
             dispatch = await context.service.get(context.id);
-          
           } catch (error) {
             throw new NotFound(`No dispatch found with ID ${context.id}`);
           }
-      
-           //@ts-ignore
+
+          //@ts-ignore
           const { suspended, approval_status } = context.data;
 
           // Handle suspension toggle
           if (suspended !== undefined) {
-             //@ts-ignore
-            context.data.suspended_at = suspended ? new Date().toISOString() : null;
-           //@ts-ignore
+            //@ts-ignore
+            context.data.suspended_at = suspended
+              ? new Date().toISOString()
+              : null;
+            //@ts-ignore
             context.data.suspended_by = suspended ? user.id : null;
           }
 
-  
           if (approval_status !== undefined) {
             if (!Object.values(ApprovalStatus).includes(approval_status)) {
-              throw new Error('Invalid approval status');
+              throw new Error("Invalid approval status");
             }
-             //@ts-ignore
+            //@ts-ignore
             context.data.approved_by = user.id;
-             //@ts-ignore
+            //@ts-ignore
             context.data.approval_date = new Date().toISOString();
           }
 
           return context;
-        }
+        },
       ],
       get: [checkPermission(userRoles.superAdmin)],
       create: [
@@ -288,7 +294,7 @@ export const dispatch = (app: Application) => {
         schemaHooks.validateData(dispatchDataValidator),
         schemaHooks.resolveData(dispatchDataResolver),
         async (context) => {
-            //@ts-ignore
+          //@ts-ignore
           context.data = {
             ...context.data,
             //@ts-ignore
@@ -326,7 +332,7 @@ export const dispatch = (app: Application) => {
           );
         },
       ],
-      patch: [ 
+      patch: [
         addUserInfo,
         async (context) => {
           //@ts-ignore
@@ -335,23 +341,22 @@ export const dispatch = (app: Application) => {
             context.result,
             200,
             "Updated dispatch successfully"
-          )
-        }
-        ]
+          );
+        },
+      ],
     },
     error: {
       all: [],
       find: [],
     },
   });
-  
 
   // @ts-ignore
   app.get("/dispatch-onboarding-quiz", async (req, res) => {
     try {
-      return res.status(404).json({
+      return res.status(200).json({
         status: 200,
-        message: "Quiz Data",
+        message: "Quiz data retrieved successfully",
         success: true,
         data: quizData,
       });
@@ -359,7 +364,6 @@ export const dispatch = (app: Application) => {
       res.status(500).json({ error: "Internal server error" });
     }
   });
-
 };
 
 // Add this service to the service type index
