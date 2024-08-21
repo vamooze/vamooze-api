@@ -47,7 +47,7 @@ const calculateOnboardingCompletion = (dispatch: any): number => {
   if (dispatch.has_watched_onboarding_video) {
     completedSteps++;
   }
-  if (dispatch.onboarding_quiz_completed) {
+  if (dispatch.onboarding_quiz_completed && Object.keys(dispatch.onboarding_quiz_completed).length > 0) {
     completedSteps++;
   }
 
