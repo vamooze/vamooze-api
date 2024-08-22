@@ -13,27 +13,7 @@ import {
   dispatchRequestValidators
 } from "../../interfaces/constants";
 
-// {
-// requester: 40,
-// delivery_price_details: {  // it's a json that allows any form of data 
-//   total_amount: 0,
-//   base_fee:  0,
-//   fee_per_km: 0,
-//   fee_per_min: 0,
-// },
-// package_details:{  //optional there is no screen  for it yet in the mockup though
-// weight: 0,
-// quantity: 0,
-// description: 
-// image: 0,
-// estimated_worth: 0,
-//}
-// delivery_address: 'no 5 ojodu road',
-//delivery_gps_location{
-// latitude: 6.6201, longitude: 3.3683 
-// },
-// pickup_address: 'no 3 aso rock',
-// }
+
 // Main data model schema
 export const requestsSchema = Type.Object(
   {
