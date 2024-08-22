@@ -577,7 +577,7 @@ export const services = (app: Application) => {
           strategy: "phone",
         });
 
-        return res.status(200).json({ status: 200, sucess: true, message: 'Login successful', data });
+        return res.status(200).json({ status: 200, success: true, message: 'Login successful', data });
       } catch (error: any) {
         return res.status(500).json({
           status: 500,

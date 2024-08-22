@@ -29,10 +29,10 @@ import {
 // estimated_worth: 0,
 //}
 // delivery_address: 'no 5 ojodu road',
-// pickup_address: 'no 3 aso rock',
 //delivery_gps_location{
-//
-// }
+// latitude: 6.6201, longitude: 3.3683 
+// },
+// pickup_address: 'no 3 aso rock',
 // }
 // Main data model schema
 export const requestsSchema = Type.Object(
