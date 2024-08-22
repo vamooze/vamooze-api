@@ -40,83 +40,76 @@ export const requests = (app: Application) => {
     events: [],
   });
 
-  app //@ts-ignore
-    .use(`/estimates/ride`, {
-      async create(body: any) {
-        return successResponse(
-          body,
-          200,
-          "Successfully retrieved trip estimate!"
-        );
-      },
-    })
-    .hooks({
-      before: {
-        all: [
-          authenticate("jwt")
-        ],
-        create: [
-          async (context) => {
-            const { origin, destination } = context.data;
+  // app //@ts-ignore
+  //   .use(`/estimates/ride`, {
+  //     async create(body: any) {
+  //       return successResponse(
+  //         body,
+  //         200,
+  //         "Successfully retrieved trip estimate!"
+  //       );
+  //     },
+  //   })
+  //   .hooks({
+  //     before: {
+  //       all: [
+  //         authenticate("jwt")
+  //       ],
+  //       create: [
+  //         async (context) => {
+  //           const { origin, destination } = context.data;
 
-            if (
-              !validateLatLongObject(origin) ||
-              !validateLatLongObject(destination)
-            ) {
-              throw new GeneralError(
-                "Both origin and destination must be objects with latitude and longitude as numbers."
-              );
-            }
+  //           if (
+  //             !validateLatLongObject(origin) ||
+  //             !validateLatLongObject(destination)
+  //           ) {
+  //             throw new GeneralError(
+  //               "Both origin and destination must be objects with latitude and longitude as numbers."
+  //             );
+  //           }
 
-            const distanceResult = await checkDistanceAndTimeUsingLongLat(
-              origin,
-              destination
-            );
-            if (distanceResult && distanceResult.status === "OK") {
-              const time = Math.round(
-                distanceResult.routes[0].legs[0].duration_in_traffic.value / 60
-              );
-              const distance = Math.round(
-                distanceResult.routes[0].legs[0].distance.value / 1000
-              );
+  //           const distanceResult = await checkDistanceAndTimeUsingLongLat(
+  //             origin,
+  //             destination
+  //           );
+  //           if (distanceResult && distanceResult.status === "OK") {
+  //             const time = Math.round(
+  //               distanceResult.routes[0].legs[0].duration_in_traffic.value / 60
+  //             );
+  //             const distance = Math.round(
+  //               distanceResult.routes[0].legs[0].distance.value / 1000
+  //             );
 
-              const settings = {
-                baseFare: constants.whiteLabelAminBaseFee,
-                ratePerKilometer: constants.feePerKm,
-                ratePerMinute: constants.feePerMin,
-              };
+  //             const settings = {
+  //               baseFare: constants.whiteLabelAminBaseFee,
+  //               ratePerKilometer: constants.feePerKm,
+  //               ratePerMinute: constants.feePerMin,
+  //             };
 
-              const price = await calculatePrice(distance, time, settings);
+  //             const price = await calculatePrice(distance, time, settings);
 
-              //@ts-ignore
-              context.data = {
-                ...context.data,
-                priceDetails: {
-                  totalPrice: price,
-                  feeForKm: distance * constants.feePerKm,
-                  feeForTime: time * constants.feePerMin,
-                  baseFeePerKm: constants.feePerKm,
-                  baseFeePerMin: constants.feePerMin,
-                },
-                time,
-                distance,
-              };
-              return context;
-            }
-          },
-        ],
-      },
-    });
+  //             //@ts-ignore
+  //             context.data = {
+  //               ...context.data,
+  //               priceDetails: {
+  //                 totalPrice: price,
+  //                 feeForKm: distance * constants.feePerKm,
+  //                 feeForTime: time * constants.feePerMin,
+  //                 baseFeePerKm: constants.feePerKm,
+  //                 baseFeePerMin: constants.feePerMin,
+  //               },
+  //               time,
+  //               distance,
+  //             };
+  //             return context;
+  //           }
+  //         },
+  //       ],
+  //     },
+  //   });
 
   // Initialize hooks
   app.service(requestsPath).hooks({
-    around: {
-      all: [
-        authenticate("jwt"),
-        schemaHooks.resolveExternal(requestsExternalResolver),
-        schemaHooks.resolveResult(requestsResolver),
-      ],
-    },
     before: {
       all: [
         authenticate("jwt"),

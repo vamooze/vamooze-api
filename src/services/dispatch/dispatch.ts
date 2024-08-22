@@ -303,7 +303,7 @@ export const dispatch = (app: Application) => {
         addUserInfo,
         async (context) => {
           //@ts-ignore
-          context.result = context.params.user.roleName === Roles.SuperAdmin ?  successResponseWithPagination(
+          context.result = context?.params?.user?.roleName === Roles.SuperAdmin ?  successResponseWithPagination(
             //@ts-ignore
             context.result,
             200,
