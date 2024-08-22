@@ -183,18 +183,6 @@ export const dispatch = (app: Application) => {
     events: [],
   });
 
-  //@ts-ignore
-  // app.use(`/dispatch-onboarding-quiz`, {
-  //   async find() {
-  //     return {
-  //       success: true,
-  //       code: 200,
-  //       message: "Quiz data retrieved successfully",
-  //       data: quizData,
-  //     };
-  //   },
-  // });
-
   app.service("dispatch").hooks({
     before: {
       all: [
@@ -344,6 +332,18 @@ export const dispatch = (app: Application) => {
           );
         },
       ],
+      create: [
+        addUserInfo,
+        async (context) => {
+          //@ts-ignore
+          context.result = successResponse(
+            //@ts-ignore
+            context.result,
+            200,
+            "Dispatch details saved successfully"
+          );
+        },
+      ],
     },
     error: {
       all: [],
@@ -356,8 +356,8 @@ export const dispatch = (app: Application) => {
     try {
       return res.status(200).json({
         status: 200,
-        message: "Quiz data retrieved successfully",
         success: true,
+        message: "Quiz data retrieved successfully",
         data: quizData,
       });
     } catch (error) {
