@@ -91,6 +91,8 @@ export enum DeliveryMethod {
 export enum RequestStatus {
   Pending = "pending",
   Accepted = "accepted",
+  EnrouteToPickUp = "enroute_to_pickup",
   Enroute = "enroute",
   Delivered = "delivered",
+  Expired =  "expired"
 }

@@ -19,23 +19,23 @@ import {
 export const requestsSchema = Type.Object(
   {
     id: Type.Number(),
-    sender: Type.Number(),
-    receiver: Type.Object({
-      name: Type.String({
-        maxLength: dispatchRequestValidators.receiver_name_length,
-      }),
-      phone_number: Type.String({
-        maxLength: dispatchRequestValidators.receiver_phone_number_length,
-      }),
-      email: Type.String(),
-    }),
+    requester: Type.Number(),
+    // receiver: Type.Object({
+    //   name: Type.String({
+    //     maxLength: dispatchRequestValidators.receiver_name_length,
+    //   }),
+    //   phone_number: Type.String({
+    //     maxLength: dispatchRequestValidators.receiver_phone_number_length,
+    //   }),
+    //   email: Type.String(),
+    // }),
     delivery_price_details: Type.Object({
       total_amount: Type.Number({ minimum: 1 }),
       base_fee: Type.Number({ minimum: 1 }),
       fee_per_km: Type.Number({ minimum: 1 }),
       fee_per_min: Type.Number({ minimum: 1 }),
     }),
-    package: Type.Object({
+    package_details: Type.Object({
       weight: Type.Optional(Type.Number({ minimum: 1 })),
       quantity: Type.Number({ minimum: 1 }),
       description: Type.Optional(
@@ -46,15 +46,15 @@ export const requestsSchema = Type.Object(
       image: Type.String(),
       estimated_worth: Type.Number({ minimum: 0 }),
     }),
-    priority: Type.Boolean({ default: false }),
-    payment_method: Type.Enum(PaymentMethod),
-    amount: Type.Number({ minimum: 1 }),
-    receiver_gps_location: Type.Optional(
-      Type.Object({
-        longitude: Type.Number({ minimum: -180 }),
-        latitude: Type.Number({ minimum: -90 }),
-      })
-    ),
+    // priority: Type.Boolean({ default: false }),
+    // payment_method: Type.Enum(PaymentMethod),
+    // amount: Type.Number({ minimum: 1 }),
+    // receiver_gps_location: Type.Optional(
+    //   Type.Object({
+    //     longitude: Type.Number({ minimum: -180 }),
+    //     latitude: Type.Number({ minimum: -90 }),
+    //   })
+    // ),
     delivery_address: Type.String({
       maxLength: dispatchRequestValidators.delivery_address_length,
     }),
@@ -73,9 +73,9 @@ export const requestsSchema = Type.Object(
         latitude: Type.Number({ minimum: -90 }),
       })
     ),
-    scheduled: Type.Boolean({ default: false }),
+    scheduled: Type.Optional(Type.Boolean({ default: false })),
     dispatch: Type.Integer({ minimum: 1 }),
-    business: Type.Integer({ minimum: 1 }),
+    // business: Type.Integer({ minimum: 1 }),
     delivery_instructions: Type.Optional(
       Type.String({
         maxLength: dispatchRequestValidators.delivery_instructions_length,
@@ -113,28 +113,27 @@ export const requestsExternalResolver = resolve<
 export const requestsDataSchema = Type.Pick(
   requestsSchema,
   [
-    "sender",
-    "receiver",
-    "package",
-    "payment_method",
-    "amount",
-    "receiver_gps_location",
+    "requester",
+    // "receiver",
+    "package_details",
+    // "payment_method",
+    // "receiver_gps_location",
     "delivery_address",
-    "priority",
+    // "priority",
     "delivery_gps_location",
     "pickup_address",
     "pickup_gps_location",
     "scheduled",
     "dispatch",
-    "business",
+    // "business",
     "delivery_instructions",
-    "pickup_landmark",
-    "delivery_landmark",
-    "delivery_date",
+    // "pickup_landmark",
+    // "delivery_landmark",
+    // "delivery_date",
     "estimated_distance",
     "estimated_delivery_time",
     "status",
-    "reference",
+    // "reference",
     "delivery_method",
   ],
   {
@@ -168,28 +167,27 @@ export const requestsPatchResolver = resolve<
 // Schema for allowed query properties
 export const requestsQueryProperties = Type.Pick(requestsSchema, [
   "id",
-  "sender",
-  "receiver",
-  "package",
-  "payment_method",
-  "amount",
-  "receiver_gps_location",
+  "requester",
+  // "receiver",
+  "package_details",
+  // "payment_method",
+  // "receiver_gps_location",
   "delivery_address",
-  "priority",
+  // "priority",
   "delivery_gps_location",
   "pickup_address",
   "pickup_gps_location",
   "scheduled",
   "dispatch",
-  "business",
+  // "business",
   "delivery_instructions",
-  "pickup_landmark",
-  "delivery_landmark",
-  "delivery_date",
+  // "pickup_landmark",
+  // "delivery_landmark",
+  // "delivery_date",
   "estimated_distance",
   "estimated_delivery_time",
   "status",
-  "reference",
+  // "reference",
   "delivery_method",
 ]);
 export const requestsQuerySchema = Type.Intersect(
