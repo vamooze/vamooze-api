@@ -161,7 +161,7 @@ export const services = (app: Application) => {
         `Your OTP is ${req.body.otp}`
       );
       await instance.sendSMS();
-      res.json({ status: 200, message: "Otp sent successfully" });
+      res.json({ status: 200, success: true, message: "Otp sent successfully" });
     } catch (error) {
       res.json(error);
     }
