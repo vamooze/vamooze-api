@@ -17,6 +17,10 @@ export const constants = {
   oneSignalAppIdMerchant: process.env.ONESIGNAL_APP_IDMERCHANT,
   oneSignalTokenMerchant: process.env.ONESIGNAL_TOKENMERCHANT,
   liveLocationInterval: Number(process.env.LIVE_LOCATION_INTERVAL_IN_MINUTES),
+  whiteLabelAminBaseFee: 2000,
+  feePerKm: 5,
+  feePerMin: 3,
+
 
   enumConfig: {
     vehicleTypes: process.env.VEHICLETYPES ? process.env.VEHICLETYPES.split(',') : ['Bike', 'Car', 'Van', 'Truck']
@@ -24,7 +28,7 @@ export const constants = {
 
   googleDirectionConfig: {
     url: process.env.GOOGLEDIRECTIONBASEURL || 'https://maps.googleapis.com/maps/api/directions/json?',
-    key: process.env.GOOGLEDIRECTIONKEY || 'AIzaSyDmweksUR25uxL7Q40jUpZGRd0eZHkVroY'
+    key: process.env.GOOGLEDIRECTIONKEY
   },
 
   redisConfig: {

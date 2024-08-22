@@ -198,6 +198,22 @@ export const checkDistanceAndTime = async (pickup: any, dropoff: any) => {
   }
 };
 
+export const checkDistanceAndTimeUsingLongLat = async (pickup: any, dropoff: any) => {
+  try {
+    const response = await axios.get(
+      `${constants.googleDirectionConfig.url}origin=${pickup.latitude},${pickup.longitude}&destination=${dropoff.latitude},${dropoff.longitude}&key=${constants.googleDirectionConfig.key}&mode=driving&traffic_model=best_guess&departure_time=now`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const calculatePrice = async (
   distance: number,
   time: number,
@@ -271,4 +287,14 @@ export const successResponseWithPagination = (data: any, status: number, messsag
       messsage,
       ...data,
   }
+}
+
+
+export const validateLatLongObject = (location: any): boolean => {
+  return (
+    typeof location === 'object' &&
+    location !== null &&
+    typeof location.latitude === 'number' &&
+    typeof location.longitude === 'number'
+  );
 }

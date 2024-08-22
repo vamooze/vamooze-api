@@ -13,8 +13,10 @@ import {
   dispatchRequestValidators
 } from "../../interfaces/constants";
 
+// {
+// requester: 40,
 
-
+// }
 // Main data model schema
 export const requestsSchema = Type.Object(
   {
@@ -94,7 +96,7 @@ export const requestsSchema = Type.Object(
       default: DeliveryMethod.Bike,
     }),
     status: Type.Enum(RequestStatus, { default: RequestStatus.Pending }),
-    reference: Type.Optional(Type.String({ format: "uuid" })),
+    // reference: Type.Optional(Type.String({ format: "uuid" })),
   },
   { $id: "Requests", additionalProperties: false }
 );

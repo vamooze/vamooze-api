@@ -31,9 +31,8 @@ export async function up(knex: Knex): Promise<void> {
       )
       .nullable();
     table
-      .enum("delivery_method", Object.values(DeliveryMethod))
+      .integer("delivery_method")
       .notNullable()
-      .defaultTo(DeliveryMethod.Bike);
     table.decimal("estimated_distance", 10, 2).nullable();
     table.decimal("estimated_delivery_time", 10, 2).nullable();
     table.json("package_details").notNullable();

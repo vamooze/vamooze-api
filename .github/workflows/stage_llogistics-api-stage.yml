@@ -37,7 +37,7 @@ jobs:
       TEST_DB_URL: postgres://postgres:postgres@localhost:5432/vamooze_test
       AZURE_EMAIL_CONNECTION_STRING: endpoint=https://vcomms-server.europe.communication.azure.com/;accesskey=AlJjmTM7mqcBoKjv2TgIQ5HSKWH6akgpjsXAIUz4vACeioDLkxCPJQQJ99AHACULyCpPAdxRAAAAAZCSXTqg
       AZURE_EMAIL_SENDER_ADDRESS: DoNotReply@301d8549-a2df-4860-ae70-f9ecbc2d3cf1.azurecomm.net
-
+      GOOGLEDIRECTIONKEY: AIzaSyBAcpKW5cka27LaRVudbAh9vBoHAPVa7N8
       
 
     steps:
@@ -92,8 +92,8 @@ jobs:
       TEST_DB_URL: postgres://postgres:postgres@localhost:5432/vamooze_test
       AZURE_EMAIL_CONNECTION_STRING: endpoint=https://vcomms-server.europe.communication.azure.com/;accesskey=AlJjmTM7mqcBoKjv2TgIQ5HSKWH6akgpjsXAIUz4vACeioDLkxCPJQQJ99AHACULyCpPAdxRAAAAAZCSXTqg
       AZURE_EMAIL_SENDER_ADDRESS: DoNotReply@301d8549-a2df-4860-ae70-f9ecbc2d3cf1.azurecomm.net
-
-    
+      GOOGLEDIRECTIONKEY: AIzaSyBAcpKW5cka27LaRVudbAh9vBoHAPVa7N8 
+  
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
