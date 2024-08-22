@@ -192,7 +192,7 @@ export const dispatch = (app: Application) => {
       ],
       find: async (context) => {
         const user = context.params.user; // Get authenticated user from context
-
+       
         if (!user) return;
 
         //@ts-ignore
@@ -200,6 +200,8 @@ export const dispatch = (app: Application) => {
           .service("roles")
           //@ts-ignore
           .get(context.params.user.role);
+          //@ts-ignore
+          context.params.user.roleName = userRole.slug
 
         if (userRole.slug !== Roles.SuperAdmin) {
           context.params.query = {
@@ -300,12 +302,18 @@ export const dispatch = (app: Application) => {
         addUserInfo,
         async (context) => {
           //@ts-ignore
-          context.result = successResponseWithPagination(
+          context.result = context.params.user.roleName === Roles.SuperAdmin ?  successResponseWithPagination(
             //@ts-ignore
             context.result,
             200,
             dispatchDetails
-          );
+          ) : successResponse(
+            //@ts-ignore
+            context.result.data,
+            200,
+            dispatchDetails
+          )
+
         },
       ],
       get: [
