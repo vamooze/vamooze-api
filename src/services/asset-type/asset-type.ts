@@ -1,7 +1,10 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 
 import { hooks as schemaHooks } from '@feathersjs/schema'
-
+import {
+  successResponse,
+  successResponseWithPagination,
+} from "../../helpers/functions";
 import {
   assetTypeDataValidator,
   assetTypePatchValidator,
@@ -20,6 +23,7 @@ import { assetTypePath, assetTypeMethods } from './asset-type.shared'
 export * from './asset-type.class'
 export * from './asset-type.schema'
 
+const assetTypeResponse = 'Assets retrieved successfully'
 // A configure function that registers the service and its hooks via `app.configure`
 export const assetType = (app: Application) => {
   // Register our service on the Feathers application
@@ -55,7 +59,19 @@ export const assetType = (app: Application) => {
       remove: []
     },
     after: {
-      all: []
+      all: [],
+      find: [
+        async (context) => {
+          //@ts-ignore
+          context.result =  successResponseWithPagination(
+            //@ts-ignore
+            context.result,
+            200,
+           assetTypeResponse
+          )
+
+        },
+      ],
     },
     error: {
       all: []

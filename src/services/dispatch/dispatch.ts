@@ -93,7 +93,8 @@ const addUserInfo = async (context: HookContext) => {
   return context;
 };
 
-const dispatchDetails = "Disptach Details";
+const dispatchDetails = "Disptach details";
+const dispatchDetailsAdmin = "All disptach details";
 const quizData = [
   {
     id: "q001",
@@ -306,7 +307,7 @@ export const dispatch = (app: Application) => {
             //@ts-ignore
             context.result,
             200,
-            dispatchDetails
+            dispatchDetailsAdmin
           ) : successResponse(
             //@ts-ignore
             context.result.data,
