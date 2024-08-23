@@ -36,14 +36,14 @@ export class DispatchService<
     const one_signal_player_id = data?.one_signal_player_id;
 
     if (one_signal_player_id && typeof one_signal_player_id !== "string") {
-      return customErrorResponse(400, `One signal id  must be string`);
+      throw new BadRequest(`One signal id  must be string`)
     }
 
     // Determine the dispatch record to update
     let dispatchId: string;
     if (userRole.slug === Roles.SuperAdmin) {
       if (!id) {
-        return customErrorResponse(400, "No dispatch ID provided");
+        throw new BadRequest("No dispatch ID provided")
       }
       dispatchId = id;
     } else {
@@ -57,7 +57,6 @@ export class DispatchService<
 
       if (dispatchUserDetails.data.length !== 1) {
         throw new NotFound("Dispatch record does not exist");
-        // return customErrorResponse(404, `Dispatch record does not exist`);
       }
 
       dispatchId = dispatchUserDetails.data[0].id;
@@ -78,7 +77,7 @@ export class DispatchService<
 
       if (data.approval_status !== undefined) {
         if (!Object.values(ApprovalStatus).includes(data.approval_status)) {
-          return customErrorResponse(400, `Invalid approval status`);
+          throw new BadRequest(`Invalid approval status`)
         }
         update.approval_status = data.approval_status;
         //@ts-ignore
@@ -89,12 +88,12 @@ export class DispatchService<
       // dispatch user only updates occur here
 
       if (data.suspended || data.approval_status) {
-        return customErrorResponse(403, `Unauthorized operation for dispatch`);
+        throw new Forbidden(`Unauthorized operation for dispatch`)
       }
 
       if (data.isAcceptingPickUps !== undefined) {
         if (typeof data.isAcceptingPickUps !== "boolean") {
-          return customErrorResponse(400, `isAcceptingPickUps must be boolean`);
+          throw new BadRequest(`isAcceptingPickUps must be boolean`)
         }
         update.isAcceptingPickUps = data.isAcceptingPickUps;
       }
@@ -103,7 +102,7 @@ export class DispatchService<
     if (Object.keys(update).length === 0) {
       //@ts-ignore
       if (!one_signal_player_id) {
-        return customErrorResponse(400, "No valid fields to update");
+        throw new BadRequest('No valid fields to update')
       }
 
       //@ts-ignore
