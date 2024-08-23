@@ -34,7 +34,7 @@ export class DispatchService<
 
     //@ts-ignore
     const one_signal_player_id = data?.one_signal_player_id;
-    
+
     if (one_signal_player_id && typeof one_signal_player_id !== "string") {
       return customErrorResponse(400, `One signal id  must be string`);
     }
@@ -48,22 +48,19 @@ export class DispatchService<
       dispatchId = id;
     } else {
       //@ts-ignore
-      if (id && id !== user.id) {
-        throw new Forbidden("You can only update your own dispatch record");
-      }
-      //@ts-ignore
-      dispatchId = user.id;
-    }
+      const dispatchUserDetails = await this.app.service("dispatch").find({
+        query: {
+          //@ts-ignore
+          user_id: user.id,
+        },
+      });
 
-    // Fetch the existing dispatch record
-    let dispatch: Dispatch;
-    try {
-      dispatch = await super.get(dispatchId);
-    } catch (error) {
-      return customErrorResponse(
-        404,
-        `No dispatch found with ID ${dispatchId}`
-      );
+      if (dispatchUserDetails.data.length !== 1) {
+        throw new NotFound("Dispatch record does not exist");
+        // return customErrorResponse(404, `Dispatch record does not exist`);
+      }
+
+      dispatchId = dispatchUserDetails.data[0].id;
     }
 
     // Prepare the update object
@@ -95,7 +92,6 @@ export class DispatchService<
         return customErrorResponse(403, `Unauthorized operation for dispatch`);
       }
 
-    
       if (data.isAcceptingPickUps !== undefined) {
         if (typeof data.isAcceptingPickUps !== "boolean") {
           return customErrorResponse(400, `isAcceptingPickUps must be boolean`);
