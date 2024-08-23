@@ -158,7 +158,8 @@ export const sendPush = async (
 export const isVerified = (options = {}) => {
   return async (context: HookContext) => {
     if (context.params && context.params.user) {
-      if (context.params.user.isVerified != true) {
+      console.log(context.params.user)
+      if (context.params.user.is_verified !== true) {
         throw new Forbidden("This user has not been verified");
       }
     }

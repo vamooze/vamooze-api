@@ -21,6 +21,9 @@ import {
   requestsPatchResolver,
   requestsQueryResolver,
 } from "./requests.schema";
+import {
+  RequestStatus,
+} from "../../interfaces/constants";
 
 import type { Application } from "../../declarations";
 import { RequestsService, getOptions, TripEstimateService } from "./requests.class";
@@ -44,70 +47,70 @@ export const requests = (app: Application) => {
 
 
   //@ts-ignore
-  app .use(`estimates/ride`, new TripEstimateService(options_, app), {
-    // A list of all methods this service exposes externally
-    methods: ['create'],
-    // You can add additional custom events to be sent to clients here
-    events: [],
-  })
-    .hooks({
-      before: {
-        all: [
-          authenticate("jwt"),
-          isVerified()
-        ],
-        create: [
-          async (context) => {
-            const { origin, destination } = context.data;
+  // app.use(`estimates/ride`, new TripEstimateService(options_, app), {
+  //   // A list of all methods this service exposes externally
+  //   methods: ['create'],
+  //   // You can add additional custom events to be sent to clients here
+  //   events: [],
+  // })
+  //   .hooks({
+  //     before: {
+  //       all: [
+  //         authenticate("jwt"),
+  //         isVerified()
+  //       ],
+  //       create: [
+  //         async (context) => {
+  //           const { origin, destination } = context.data;
 
-            if (
-              !validateLatLongObject(origin) ||
-              !validateLatLongObject(destination)
-            ) {
-              throw new BadRequest(
-                "Both origin and destination must be objects with latitude and longitude as numbers."
-              );
-            }
+  //           if (
+  //             !validateLatLongObject(origin) ||
+  //             !validateLatLongObject(destination)
+  //           ) {
+  //             throw new BadRequest(
+  //               "Both origin and destination must be objects with latitude and longitude as numbers."
+  //             );
+  //           }
 
-            const distanceResult = await checkDistanceAndTimeUsingLongLat(
-              origin,
-              destination
-            );
-            if (distanceResult && distanceResult.status === "OK") {
-              const time = Math.round(
-                distanceResult.routes[0].legs[0].duration_in_traffic.value / 60
-              );
-              const distance = Math.round(
-                distanceResult.routes[0].legs[0].distance.value / 1000
-              );
+  //           const distanceResult = await checkDistanceAndTimeUsingLongLat(
+  //             origin,
+  //             destination
+  //           );
+  //           if (distanceResult && distanceResult.status === "OK") {
+  //             const time = Math.round(
+  //               distanceResult.routes[0].legs[0].duration_in_traffic.value / 60
+  //             );
+  //             const distance = Math.round(
+  //               distanceResult.routes[0].legs[0].distance.value / 1000
+  //             );
 
-              const settings = {
-                baseFare: constants.whiteLabelAminBaseFee,
-                ratePerKilometer: constants.feePerKm,
-                ratePerMinute: constants.feePerMin,
-              };
+  //             const settings = {
+  //               baseFare: constants.whiteLabelAminBaseFee,
+  //               ratePerKilometer: constants.feePerKm,
+  //               ratePerMinute: constants.feePerMin,
+  //             };
 
-              const price = await calculatePrice(distance, time, settings);
+  //             const price = await calculatePrice(distance, time, settings);
 
-              //@ts-ignore
-              context.data = {
-                ...context.data,
-                priceDetails: {
-                  totalPrice: price,
-                  feeForKm: distance * constants.feePerKm,
-                  feeForTime: time * constants.feePerMin,
-                  baseFeePerKm: constants.feePerKm,
-                  baseFeePerMin: constants.feePerMin,
-                },
-                time,
-                distance,
-              };
-              return context;
-            }
-          },
-        ],
-      },
-    });
+  //             //@ts-ignore
+  //             context.data = {
+  //               ...context.data,
+  //               priceDetails: {
+  //                 totalPrice: price,
+  //                 feeForKm: distance * constants.feePerKm,
+  //                 feeForTime: time * constants.feePerMin,
+  //                 baseFeePerKm: constants.feePerKm,
+  //                 baseFeePerMin: constants.feePerMin,
+  //               },
+  //               time,
+  //               distance,
+  //             };
+  //             return context;
+  //           }
+  //         },
+  //       ],
+  //     },
+  //   });
 
   // Initialize hooks
   app.service(requestsPath).hooks({
@@ -121,6 +124,22 @@ export const requests = (app: Application) => {
       get: [],
       create: [
         isVerified(),
+        async context => {
+          context.data = {
+            ...context.data,
+            //@ts-ignore
+            requester: context?.params?.user?.id,
+            status: RequestStatus.Pending,
+            delivery_price_details: {
+              "total_amount": 2134,
+              "base_fee": 300,
+              "fee_per_km": 10,
+              "fee_per_min": 20
+            }
+          };
+          return context;
+        },
+
         schemaHooks.validateData(requestsDataValidator),
         schemaHooks.resolveData(requestsDataResolver),
         // async context => {

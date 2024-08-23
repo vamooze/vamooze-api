@@ -28,15 +28,15 @@ export const requestsSchema = Type.Object(
     //   }),
     //   email: Type.String(),
     // }),
-    delivery_price_details: Type.Object({
+    delivery_price_details: Type.Optional(Type.Object({
       total_amount: Type.Number({ minimum: 1 }),
       base_fee: Type.Number({ minimum: 1 }),
       fee_per_km: Type.Number({ minimum: 1 }),
       fee_per_min: Type.Number({ minimum: 1 }),
-    }),
+    })),
     package_details: Type.Object({
-      weight: Type.Optional(Type.Number({ minimum: 1 })),
-      quantity: Type.Number({ minimum: 1 }),
+      weight: Type.Optional(Type.Number({ minimum: 0 })),
+      quantity: Type.Number({ minimum: 0 }),
       description: Type.Optional(
         Type.String({
           maxLength: dispatchRequestValidators.package_description_length,
@@ -80,8 +80,8 @@ export const requestsSchema = Type.Object(
         maxLength: dispatchRequestValidators.delivery_instructions_length,
       })
     ),
-    estimated_distance: Type.Number({ minimum: 1 }),
-    estimated_delivery_time: Type.Number({ minimum: 1 }),
+    estimated_distance: Type.Optional(Type.Number({ minimum: 1 })),
+    estimated_delivery_time: Type.Optional(Type.Number({ minimum: 1 })),
     pickup_landmark: Type.Optional(
       Type.String({ maxLength: dispatchRequestValidators.landmark_length })
     ),
@@ -89,10 +89,8 @@ export const requestsSchema = Type.Object(
       Type.String({ maxLength: dispatchRequestValidators.landmark_length })
     ),
     delivery_date: Type.Optional(Type.String({ format: "date-time" })),
-    delivery_method: Type.Enum(DeliveryMethod, {
-      default: DeliveryMethod.Bike,
-    }),
-    status: Type.Enum(RequestStatus, { default: RequestStatus.Pending }),
+    delivery_method: Type.Integer(),
+    status: Type.Optional(Type.Enum(RequestStatus, { default: RequestStatus.Pending })),
     // reference: Type.Optional(Type.String({ format: "uuid" })),
   },
   { $id: "Requests", additionalProperties: false }
@@ -118,12 +116,13 @@ export const requestsDataSchema = Type.Pick(
     // "payment_method",
     // "receiver_gps_location",
     "delivery_address",
+    "delivery_price_details",
     // "priority",
     "delivery_gps_location",
     "pickup_address",
     "pickup_gps_location",
     "scheduled",
-    "dispatch",
+    // "dispatch",
     // "business",
     "delivery_instructions",
     // "pickup_landmark",
@@ -171,6 +170,7 @@ export const requestsQueryProperties = Type.Pick(requestsSchema, [
   "package_details",
   // "payment_method",
   // "receiver_gps_location",
+  "delivery_price_details",
   "delivery_address",
   // "priority",
   "delivery_gps_location",
