@@ -22,27 +22,28 @@ export const formatPhoneNumber = (phoneNumber: string | undefined) => {
   }
 };
 
-
 const {
   EmailClient,
   KnownEmailSendStatus,
 } = require("@azure/communication-email");
 
-
 export async function sendEmail(config: EmailDTO) {
   const { toEmail, subject, templateData, receiptName } = config;
-  const connectionString =  constants.azureEmailConfig.connectionString
-  console.log( '..connectionString...', connectionString, '..connectionString...')
+  const connectionString = constants.azureEmailConfig.connectionString;
+  console.log(
+    "..connectionString...",
+    connectionString,
+    "..connectionString..."
+  );
   const emailClient = new EmailClient(connectionString);
 
- 
   const POLLER_WAIT_TIME = 10;
   try {
     const message = {
-      senderAddress:  constants.azureEmailConfig.senderAddress,
+      senderAddress: constants.azureEmailConfig.senderAddress,
       content: {
         subject,
-        html: templateData
+        html: templateData,
       },
       recipients: {
         to: [
@@ -198,7 +199,10 @@ export const checkDistanceAndTime = async (pickup: any, dropoff: any) => {
   }
 };
 
-export const checkDistanceAndTimeUsingLongLat = async (pickup: any, dropoff: any) => {
+export const checkDistanceAndTimeUsingLongLat = async (
+  pickup: any,
+  dropoff: any
+) => {
   try {
     const response = await axios.get(
       `${constants.googleDirectionConfig.url}origin=${pickup.latitude},${pickup.longitude}&destination=${dropoff.latitude},${dropoff.longitude}&key=${constants.googleDirectionConfig.key}&mode=driving&traffic_model=best_guess&departure_time=now`,
@@ -271,30 +275,45 @@ export const getStateFromLatLngWithGoogle = async (data: {
   return "default";
 };
 
-export const successResponse = (data: any, status: number, messsage: string) => {
+export const successResponse = (
+  data: any,
+  status: number,
+  messsage: string
+) => {
   return {
-      status:status,
-      success:true,
-      messsage,
-      data,
-  }
-}
+    status: status,
+    success: true,
+    messsage,
+    data,
+  };
+};
 
-export const successResponseWithPagination = (data: any, status: number, messsage: string) => {
+export const customErrorResponse = (status: number, messsage: string) => {
   return {
-      status:status,
-      success:true,
-      messsage,
-      ...data,
-  }
-}
+    status,
+    success: false,
+    messsage,
+  };
+};
 
+export const successResponseWithPagination = (
+  data: any,
+  status: number,
+  messsage: string
+) => {
+  return {
+    status: status,
+    success: true,
+    messsage,
+    ...data,
+  };
+};
 
 export const validateLatLongObject = (location: any): boolean => {
   return (
-    typeof location === 'object' &&
+    typeof location === "object" &&
     location !== null &&
-    typeof location.latitude === 'number' &&
-    typeof location.longitude === 'number'
+    typeof location.latitude === "number" &&
+    typeof location.longitude === "number"
   );
-}
+};

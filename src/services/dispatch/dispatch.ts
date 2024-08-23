@@ -177,7 +177,9 @@ const quizData = [
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const dispatch = (app: Application) => {
-  app.use(dispatchPath, new DispatchService(getOptions(app)), {
+  const options = getOptions(app)
+
+  app.use(dispatchPath, new DispatchService(options, app), {
     // A list of all methods this service exposes externally
     methods: ["find", "get", "create", "patch", "remove"],
     // You can add additional custom events to be sent to clients here
@@ -212,53 +214,8 @@ export const dispatch = (app: Application) => {
         return context;
       },
       patch: [
-        schemaHooks.validateData(dispatchPatchValidator),
         schemaHooks.resolveData(dispatchPatchResolver),
-        checkPermission(userRoles.superAdmin),
-        async (context) => {
-          const user = context.params.user;
-          if (!user) return context;
-
-          //@ts-ignore
-          const userRole = await app.service("roles").get(user.role);
-
-          if (!context.id) {
-            throw new Error("No dispatch ID provided");
-          }
-
-          // Fetch the dispatch record to ensure it exists
-          let dispatch;
-          try {
-            dispatch = await context.service.get(context.id);
-          } catch (error) {
-            throw new NotFound(`No dispatch found with ID ${context.id}`);
-          }
-
-          //@ts-ignore
-          const { suspended, approval_status } = context.data;
-
-          // Handle suspension toggle
-          if (suspended !== undefined) {
-            //@ts-ignore
-            context.data.suspended_at = suspended
-              ? new Date().toISOString()
-              : null;
-            //@ts-ignore
-            context.data.suspended_by = suspended ? user.id : null;
-          }
-
-          if (approval_status !== undefined) {
-            if (!Object.values(ApprovalStatus).includes(approval_status)) {
-              throw new Error("Invalid approval status");
-            }
-            //@ts-ignore
-            context.data.approved_by = user.id;
-            //@ts-ignore
-            context.data.approval_date = new Date().toISOString();
-          }
-
-          return context;
-        },
+        checkPermission(userRoles.superAdminAndDispatch),
       ],
       get: [checkPermission(userRoles.superAdmin)],
       create: [
@@ -326,18 +283,6 @@ export const dispatch = (app: Application) => {
             context.result,
             200,
             dispatchDetails
-          );
-        },
-      ],
-      patch: [
-        addUserInfo,
-        async (context) => {
-          //@ts-ignore
-          context.result = successResponse(
-            //@ts-ignore
-            context.result,
-            200,
-            "Updated dispatch successfully"
           );
         },
       ],
