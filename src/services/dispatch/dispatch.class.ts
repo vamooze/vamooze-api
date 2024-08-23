@@ -32,6 +32,13 @@ export class DispatchService<
     //@ts-ignore
     const userRole = await this.app.service("roles").get(user.role);
 
+    //@ts-ignore
+    const one_signal_player_id = data?.one_signal_player_id;
+    
+    if (one_signal_player_id && typeof one_signal_player_id !== "string") {
+      return customErrorResponse(400, `One signal id  must be string`);
+    }
+
     // Determine the dispatch record to update
     let dispatchId: string;
     if (userRole.slug === Roles.SuperAdmin) {
@@ -87,12 +94,8 @@ export class DispatchService<
       if (data.suspended || data.approval_status) {
         return customErrorResponse(403, `Unauthorized operation for dispatch`);
       }
-      
-      //@ts-ignore
-      if (data?.one_signal_player_id && typeof data.one_signal_player_id !== "string") {
-        return customErrorResponse(400, `One signal id  must be string`);
-      }
 
+    
       if (data.isAcceptingPickUps !== undefined) {
         if (typeof data.isAcceptingPickUps !== "boolean") {
           return customErrorResponse(400, `isAcceptingPickUps must be boolean`);
@@ -101,23 +104,29 @@ export class DispatchService<
       }
     }
 
-    //@ts-ignore
-    if (Object.keys(update).length === 0 && !data?.one_signal_player_id) {
-      customErrorResponse(400, "No valid fields to update");
+    if (Object.keys(update).length === 0) {
+      //@ts-ignore
+      if (!one_signal_player_id) {
+        return customErrorResponse(400, "No valid fields to update");
+      }
+
+      //@ts-ignore
+      await this.app
+        .service("users")
+        //@ts-ignore
+        .patch(user.id, { one_signal_player_id });
+
+      return successResponse(null, 200, "One signal ID saved successfully");
+    } else {
+      const updatedDispatch = await super.patch(dispatchId, update, params);
+
+      //@ts-ignore
+      return successResponse(
+        updatedDispatch,
+        200,
+        "Dispatch updated successfully"
+      );
     }
-
-    console.log(Object.keys(update).length , '..')
-    //@ts-ignore
-    await this.app.service("users").patch(user.id, { one_signal_player_id: data.one_signal_player_id });
-    // Perform the update
-    const updatedDispatch = await super.patch(dispatchId, update, params);
-
-    //@ts-ignore
-    return successResponse(
-      updatedDispatch,
-      200,
-      "Dispatch Updated Successfully"
-    );
   }
 }
 
