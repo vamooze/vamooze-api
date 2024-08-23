@@ -30,11 +30,7 @@ const {
 export async function sendEmail(config: EmailDTO) {
   const { toEmail, subject, templateData, receiptName } = config;
   const connectionString = constants.azureEmailConfig.connectionString;
-  console.log(
-    "..connectionString...",
-    connectionString,
-    "..connectionString..."
-  );
+
   const emailClient = new EmailClient(connectionString);
 
   const POLLER_WAIT_TIME = 10;
@@ -158,7 +154,6 @@ export const sendPush = async (
 export const isVerified = (options = {}) => {
   return async (context: HookContext) => {
     if (context.params && context.params.user) {
-      console.log(context.params.user)
       if (context.params.user.is_verified !== true) {
         throw new Forbidden("This user has not been verified");
       }

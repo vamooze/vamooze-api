@@ -21,22 +21,92 @@ import {
   requestsPatchResolver,
   requestsQueryResolver,
 } from "./requests.schema";
-import {
-  RequestStatus,
-} from "../../interfaces/constants";
+import { RequestStatus } from "../../interfaces/constants";
 
 import type { Application } from "../../declarations";
-import { RequestsService, getOptions, TripEstimateService } from "./requests.class";
+import {
+  RequestsService,
+  getOptions,
+  TripEstimateService,
+} from "./requests.class";
 import { requestsPath, requestsMethods } from "./requests.shared";
 
 export * from "./requests.class";
 export * from "./requests.schema";
 const { BadRequest } = require("@feathersjs/errors");
 
+const estimatesRide = "estimates/ride";
+
+export const tripEstimates = (app: Application) => {
+
+  const options_ = getOptions(app);
+  //@ts-ignore
+  app.use(estimatesRide, new TripEstimateService(options_, app), {
+    // A list of all methods this service exposes externally
+    methods: ["create"],
+    // You can add additional custom events to be sent to clients here
+    events: [],
+  });
+
+  app.service(estimatesRide).hooks({
+    before: {
+      all: [authenticate("jwt"), isVerified()],
+      create: [
+        async (context) => {
+          const { origin, destination } = context.data;
+
+          if (
+            !validateLatLongObject(origin) ||
+            !validateLatLongObject(destination)
+          ) {
+            throw new BadRequest(
+              "Both origin and destination must be objects with latitude and longitude as numbers."
+            );
+          }
+
+          const distanceResult = await checkDistanceAndTimeUsingLongLat(
+            origin,
+            destination
+          );
+          if (distanceResult && distanceResult.status === "OK") {
+            const time = Math.round(
+              distanceResult.routes[0].legs[0].duration_in_traffic.value / 60
+            );
+            const distance = Math.round(
+              distanceResult.routes[0].legs[0].distance.value / 1000
+            );
+
+            const settings = {
+              baseFare: constants.whiteLabelAminBaseFee,
+              ratePerKilometer: constants.feePerKm,
+              ratePerMinute: constants.feePerMin,
+            };
+
+            const price = await calculatePrice(distance, time, settings);
+
+            //@ts-ignore
+            context.data = {
+              ...context.data,
+              priceDetails: {
+                totalPrice: price,
+                feeForKm: distance * constants.feePerKm,
+                feeForTime: time * constants.feePerMin,
+                baseFeePerKm: constants.feePerKm,
+                baseFeePerMin: constants.feePerMin,
+              },
+              time,
+              distance,
+            };
+            return context;
+          }
+        },
+      ],
+    },
+  });
+};
+
 // A configure function that registers the service and its hooks via `app.configure`
 export const requests = (app: Application) => {
-  const options_ = getOptions(app)
-
   // Register our service on the Feathers application
   app.use(requestsPath, new RequestsService(getOptions(app)), {
     // A list of all methods this service exposes externally
@@ -44,73 +114,6 @@ export const requests = (app: Application) => {
     // You can add additional custom events to be sent to clients here
     events: [],
   });
-
-
-  //@ts-ignore
-  // app.use(`estimates/ride`, new TripEstimateService(options_, app), {
-  //   // A list of all methods this service exposes externally
-  //   methods: ['create'],
-  //   // You can add additional custom events to be sent to clients here
-  //   events: [],
-  // })
-  //   .hooks({
-  //     before: {
-  //       all: [
-  //         authenticate("jwt"),
-  //         isVerified()
-  //       ],
-  //       create: [
-  //         async (context) => {
-  //           const { origin, destination } = context.data;
-
-  //           if (
-  //             !validateLatLongObject(origin) ||
-  //             !validateLatLongObject(destination)
-  //           ) {
-  //             throw new BadRequest(
-  //               "Both origin and destination must be objects with latitude and longitude as numbers."
-  //             );
-  //           }
-
-  //           const distanceResult = await checkDistanceAndTimeUsingLongLat(
-  //             origin,
-  //             destination
-  //           );
-  //           if (distanceResult && distanceResult.status === "OK") {
-  //             const time = Math.round(
-  //               distanceResult.routes[0].legs[0].duration_in_traffic.value / 60
-  //             );
-  //             const distance = Math.round(
-  //               distanceResult.routes[0].legs[0].distance.value / 1000
-  //             );
-
-  //             const settings = {
-  //               baseFare: constants.whiteLabelAminBaseFee,
-  //               ratePerKilometer: constants.feePerKm,
-  //               ratePerMinute: constants.feePerMin,
-  //             };
-
-  //             const price = await calculatePrice(distance, time, settings);
-
-  //             //@ts-ignore
-  //             context.data = {
-  //               ...context.data,
-  //               priceDetails: {
-  //                 totalPrice: price,
-  //                 feeForKm: distance * constants.feePerKm,
-  //                 feeForTime: time * constants.feePerMin,
-  //                 baseFeePerKm: constants.feePerKm,
-  //                 baseFeePerMin: constants.feePerMin,
-  //               },
-  //               time,
-  //               distance,
-  //             };
-  //             return context;
-  //           }
-  //         },
-  //       ],
-  //     },
-  //   });
 
   // Initialize hooks
   app.service(requestsPath).hooks({
@@ -124,18 +127,18 @@ export const requests = (app: Application) => {
       get: [],
       create: [
         isVerified(),
-        async context => {
+        async (context) => {
           context.data = {
             ...context.data,
             //@ts-ignore
             requester: context?.params?.user?.id,
             status: RequestStatus.Pending,
             delivery_price_details: {
-              "total_amount": 2134,
-              "base_fee": 300,
-              "fee_per_km": 10,
-              "fee_per_min": 20
-            }
+              total_amount: 2134,
+              base_fee: 300,
+              fee_per_km: 10,
+              fee_per_min: 20,
+            },
           };
           return context;
         },
@@ -210,12 +213,12 @@ export const requests = (app: Application) => {
       all: [],
     },
   });
-
 };
 
 // Add this service to the service type index
 declare module "../../declarations" {
   interface ServiceTypes {
     [requestsPath]: RequestsService;
+    [estimatesRide]: TripEstimateService;
   }
 }

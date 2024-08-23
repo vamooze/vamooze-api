@@ -1,5 +1,5 @@
 import { dispatch } from "./dispatch/dispatch";
-import { requests } from "./requests/requests";
+import { requests, tripEstimates } from "./requests/requests";
 import { businessDispatches } from "./business-dispatches/business-dispatches";
 import { businessSettings } from "./business-settings/business-settings";
 import { businessTypes } from "./business-types/business-types";
@@ -119,6 +119,7 @@ const schemas = {
 import { Response, Request } from "express";
 
 export const services = (app: Application) => {
+  app.configure(tripEstimates);
   app.configure(dispatch);
   app.configure(requests);
   app.configure(businessDispatches);
