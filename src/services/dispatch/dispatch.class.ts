@@ -106,8 +106,9 @@ export class DispatchService<
       customErrorResponse(400, "No valid fields to update");
     }
 
+    console.log(Object.keys(update).length , '..')
     //@ts-ignore
-    await this.app.service("users").patch(user.id, { one_signal_player_id });
+    await this.app.service("users").patch(user.id, { one_signal_player_id: data.one_signal_player_id });
     // Perform the update
     const updatedDispatch = await super.patch(dispatchId, update, params);
 
