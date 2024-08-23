@@ -43,19 +43,7 @@ export class TripEstimateService<
       status: 200,
       success: true,
       message: "Successfully retrieved trip estimate!",
-      data: {
-        origin: { latitude: 6.6201, longitude: 3.3683 },
-        destination: { latitude: 6.5689, longitude: 3.3827 },
-        priceDetails: {
-          totalPrice: 2134,
-          feeForKm: 50,
-          feeForTime: 84,
-          baseFeePerKm: 5,
-          baseFeePerMin: 3,
-        },
-        time: 28,
-        distance: 10,
-      },
+      data
     };
   }
 }

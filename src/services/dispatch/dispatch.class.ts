@@ -11,7 +11,7 @@ import type {
   DispatchQuery,
 } from "./dispatch.schema";
 import { Roles, DispatchApprovalStatus } from "../../interfaces/constants";
-import { customErrorResponse, successResponse } from "../../helpers/functions";
+import {  successResponse } from "../../helpers/functions";
 
 export type { Dispatch, DispatchData, DispatchPatch, DispatchQuery };
 
