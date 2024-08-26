@@ -45,6 +45,7 @@ import {
   TripEstimateService,
 } from "./requests.class";
 import { requestsPath, requestsMethods } from "./requests.shared";
+import { GeneralError } from "@feathersjs/errors";
 
 export * from "./requests.class";
 export * from "./requests.schema";
@@ -122,6 +123,9 @@ export const tripEstimates = (app: Application) => {
               distance,
             };
             return context;
+          } else {
+            logger.error({ result: distanceResult, message: 'google api to generate estimate failling' })
+            throw new GeneralError("Failed to get trip price and distance estimate, Try again");
           }
         },
       ],
@@ -162,6 +166,9 @@ export const requests = (app: Application) => {
             .service(estimatesRide)
             .create(tripLocationDetails);
 
+
+            console.log(result, '....')
+
           context.data = {
             ...context.data,
             //@ts-ignore
@@ -190,8 +197,7 @@ export const requests = (app: Application) => {
         const worker = new Worker(
           newDispatchRequest,
           async (job) => {
-            console.log(job.data);
-
+    
             // logger.info(
             //   `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
             // );
@@ -269,10 +275,6 @@ export const requests = (app: Application) => {
             });
             //********** alert dispatch riders  */
 
-            console.log(
-              suitableRidersOneSingalIds,
-              "suitableRidersOneSingalIds"
-            );
           },
           connectionObject
         );

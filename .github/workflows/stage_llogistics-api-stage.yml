@@ -38,6 +38,7 @@ jobs:
       AZURE_EMAIL_CONNECTION_STRING: endpoint=https://vcomms-server.europe.communication.azure.com/;accesskey=AlJjmTM7mqcBoKjv2TgIQ5HSKWH6akgpjsXAIUz4vACeioDLkxCPJQQJ99AHACULyCpPAdxRAAAAAZCSXTqg
       AZURE_EMAIL_SENDER_ADDRESS: DoNotReply@301d8549-a2df-4860-ae70-f9ecbc2d3cf1.azurecomm.net
       GOOGLEDIRECTIONKEY: AIzaSyBAcpKW5cka27LaRVudbAh9vBoHAPVa7N8
+      GOOGLEDIRECTIONBASEURL: https://maps.googleapis.com/maps/api/directions/json?
       ONESIGNAL_APP_ID: baa2421e-d56f-4068-8259-5c97d1fd486d
       ONESIGNAL_TOKEN: MWI0MTM3YjctYmZhOS00MDFhLTlkMDMtZGYyZTA5YzMyOGMx
       REDIS_HOST: logistics-redis.redis.cache.windows.net
@@ -98,7 +99,8 @@ jobs:
       TEST_DB_URL: postgres://postgres:postgres@localhost:5432/vamooze_test
       AZURE_EMAIL_CONNECTION_STRING: endpoint=https://vcomms-server.europe.communication.azure.com/;accesskey=AlJjmTM7mqcBoKjv2TgIQ5HSKWH6akgpjsXAIUz4vACeioDLkxCPJQQJ99AHACULyCpPAdxRAAAAAZCSXTqg
       AZURE_EMAIL_SENDER_ADDRESS: DoNotReply@301d8549-a2df-4860-ae70-f9ecbc2d3cf1.azurecomm.net
-      GOOGLEDIRECTIONKEY: AIzaSyBAcpKW5cka27LaRVudbAh9vBoHAPVa7N8 
+      GOOGLEDIRECTIONKEY: AIzaSyBAcpKW5cka27LaRVudbAh9vBoHAPVa7N8
+      GOOGLEDIRECTIONBASEURL: https://maps.googleapis.com/maps/api/directions/json?
       ONESIGNAL_APP_ID: baa2421e-d56f-4068-8259-5c97d1fd486d
       ONESIGNAL_TOKEN: MWI0MTM3YjctYmZhOS00MDFhLTlkMDMtZGYyZTA5YzMyOGMx
       REDIS_HOST: logistics-redis.redis.cache.windows.net
