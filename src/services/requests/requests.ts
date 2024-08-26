@@ -195,9 +195,9 @@ export const requests = (app: Application) => {
           newDispatchRequest,
           async (job) => {
     
-            // logger.info(
-            //   `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
-            // );
+            logger.info(
+              `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
+            );
             // context.service.emit("new-delivery-requests", {
             //   message: "Incoming delivery request",
             //   data: job.data,
