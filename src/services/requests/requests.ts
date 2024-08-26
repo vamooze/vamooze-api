@@ -135,7 +135,6 @@ export const tripEstimates = (app: Application) => {
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const requests = (app: Application) => {
-  pusher.trigger("my-channel", "my-event", { message: "hello world" });
 
   // Register our service on the Feathers application
   app.use(requestsPath, new RequestsService(getOptions(app)), {
@@ -226,10 +225,11 @@ export const requests = (app: Application) => {
 
             if (!suitableRidersData.data.length) {
               pusher.trigger(
-                `noDispatchAvailable-${context.result.id}`,
+                `dispatch-channel`,
                 "no-dispatch-available",
                 {
                   message: "No dispatch available",
+                  requestid : context.result.id
                 }
               );
 
