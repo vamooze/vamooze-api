@@ -33,6 +33,8 @@ export class DispatchService<
 
     //@ts-ignore
     const one_signal_player_id = data?.one_signal_player_id;
+    //@ts-ignore
+    const one_signal_alias = data?.one_signal_alias
 
     if (one_signal_player_id && typeof one_signal_player_id !== "string") {
       throw new BadRequest(`One signal id  must be string`)
@@ -100,7 +102,7 @@ export class DispatchService<
 
     if (Object.keys(update).length === 0) {
       //@ts-ignore
-      if (!one_signal_player_id) {
+      if (!one_signal_player_id && !one_signal_alias) {
         throw new BadRequest('No valid fields to update')
       }
 
@@ -108,7 +110,7 @@ export class DispatchService<
       await this.app
         .service("users")
         //@ts-ignore
-        .patch(user.id, { one_signal_player_id });
+        .patch(user.id, { one_signal_player_id, one_signal_alias });
 
       return successResponse(null, 200, "One signal ID saved successfully");
     } else {
