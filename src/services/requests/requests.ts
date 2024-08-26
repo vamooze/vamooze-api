@@ -219,7 +219,7 @@ export const requests = (app: Application) => {
             });
 
             logger.info(
-              ` number  of suitable Riders: ${suitableRidersData.legth} `
+              ` number  of suitable Riders: ${suitableRidersData.length} `
             );
 
             // console.log(job.id, suitableRidersData.data, context.result.id)
