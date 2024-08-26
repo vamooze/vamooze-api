@@ -7,7 +7,11 @@ import {
   checkDistanceAndTimeUsingLongLat,
   successResponse,
   successResponseWithPagination,
+  sendSms,
+  sendPush,
 } from "../../helpers/functions";
+import { Termii } from "../../helpers/termii";
+import { HookContext } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import { Request, Response } from "express";
 import { constants } from "../../helpers/constants";
@@ -21,8 +25,19 @@ import {
   requestsPatchResolver,
   requestsQueryResolver,
 } from "./requests.schema";
-import { RequestStatus } from "../../interfaces/constants";
-
+import {
+  RequestStatus,
+  DispatchApprovalStatus,
+} from "../../interfaces/constants";
+import { Queue, Worker } from "bullmq";
+import {
+  dispatchRequestQueue,
+  generateJobName,
+  newDispatchRequest,
+  connectionObject,
+} from "../../queue";
+import { app } from "../../app";
+import { logger } from "../../logger";
 import type { Application } from "../../declarations";
 import {
   RequestsService,
@@ -33,12 +48,21 @@ import { requestsPath, requestsMethods } from "./requests.shared";
 
 export * from "./requests.class";
 export * from "./requests.schema";
+
 const { BadRequest } = require("@feathersjs/errors");
+const Pusher = require("pusher");
 
 const estimatesRide = "estimates/ride";
 
-export const tripEstimates = (app: Application) => {
+const pusher = new Pusher({
+  appId: "1855037",
+  key: "ffde20945e50d430e18d",
+  secret: "3906ff5c20c344e87277",
+  cluster: "eu",
+  useTLS: true,
+});
 
+export const tripEstimates = (app: Application) => {
   const options_ = getOptions(app);
   //@ts-ignore
   app.use(estimatesRide, new TripEstimateService(options_, app), {
@@ -112,7 +136,7 @@ export const requests = (app: Application) => {
     // A list of all methods this service exposes externally
     methods: requestsMethods,
     // You can add additional custom events to be sent to clients here
-    events: [],
+    events: ["new-delivery-requests"],
   });
 
   // Initialize hooks
@@ -128,58 +152,30 @@ export const requests = (app: Application) => {
       create: [
         isVerified(),
         async (context) => {
+          const tripLocationDetails = {
+            //@ts-ignore
+            origin: context.data.pickup_gps_location,
+            //@ts-ignore
+            destination: context.data.delivery_gps_location,
+          };
+          const result = await app
+            .service(estimatesRide)
+            .create(tripLocationDetails);
+
           context.data = {
             ...context.data,
             //@ts-ignore
             requester: context?.params?.user?.id,
             status: RequestStatus.Pending,
-            delivery_price_details: {
-              total_amount: 2134,
-              base_fee: 300,
-              fee_per_km: 10,
-              fee_per_min: 20,
-            },
+            delivery_price_details: result.data.priceDetails,
+            estimated_distance: result.data.distance,
+            estimated_delivery_time: result.data.time,
           };
           return context;
         },
 
         schemaHooks.validateData(requestsDataValidator),
         schemaHooks.resolveData(requestsDataResolver),
-        // async context => {
-        //   // eslint-disable-next-line no-useless-catch
-        //   try {
-        //     const dat = context.data;
-        //     if (dat.paymentMode === 'wallet' || dat.paymentMode === 'Wallet') {
-        //       const WALLET = context.app.service('wallets');
-        //       const checkWallet =  await WALLET.Model.findOne({user: dat.user});
-        //       if (checkWallet && checkWallet.balance >= dat.paymentAmount) {
-        //         await WALLET.Model.findOneAndUpdate({user: dat.user}, { $inc: { balance: -dat.paymentAmount }, user: dat.user}, {
-        //           new: true
-        //         });
-        //       } else {
-        //         throw new Forbidden('Insufficient Balance');
-        //       }
-        //     }
-        //     const TRANSACTION = context.app.service('transactions');
-        //     await TRANSACTION.create({
-        //       type: (dat.paymentMode === 'wallet' || dat.paymentMode === 'Wallet') ? 'Wallet' : (dat.paymentMode || 'Cash'),
-        //       action: 'Debit',
-        //       amount: dat.paymentAmount,
-        //       status:  true,
-        //       trackingId: dat.paymentRef,
-        //       isDelivery: true,
-        //       user: dat.user,
-        //       pickUpAddress: dat.pickUpAddress,
-        //       deliveryAddress: dat.deliveryAddress
-        //     });
-        //     const status = await context.app.service('orderstatus').create({status: 'Pending'});
-        //     dat.status = status._id;
-        //     dat.trackingId = await generateTrackingId(10);
-        //     return context;
-        //   } catch (error) {
-        //     throw error;
-        //   }
-        // }
       ],
       patch: [
         schemaHooks.validateData(requestsPatchValidator),
@@ -188,26 +184,99 @@ export const requests = (app: Application) => {
       remove: [],
     },
     after: {
-      all: [],
-      create: [
-        async (context) => {
-          // const dat = context.result;
-          // if(dat.paymentRef){
-          //   const pay = await checkPaystackPayment(dat.paymentRef);
-          // }
-          // const now = moment().format('YYYY-MM-DD');
-          // const deliveryDate = moment(context.result && context.result.deliveryDate).format('YYYY-MM-DD');
-          // const sameDay = now === deliveryDate;
-          // if(dat.deliveryMethod !== 'Van' && dat.deliveryMethod !== 'Truck' && sameDay){
-          //   context.service.emit('newDelivery', { message: 'Incoming delivery request', data: context.result });
-          // }else if(!sameDay || context.result.scheduled) {
-          //   const request = context.result;
-          //   pushScheduleQueue(request);
-          // }
-          // context.service.emit('newDelivery', { message: 'Incoming delivery request', data: context.result });
-          return context;
-        },
-      ],
+      async create(context: HookContext) {
+        await dispatchRequestQueue.add("new-req", context.result);
+
+        const worker = new Worker(
+          newDispatchRequest,
+          async (job) => {
+            console.log(job.data);
+
+            // logger.info(
+            //   `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
+            // );
+            context.service.emit("new-delivery-requests", {
+              message: "Incoming delivery request",
+              data: job.data,
+            });
+
+            // Query for suitable riders
+            const suitableRidersData = await app.service("dispatch").find({
+              query: {
+                // isAcceptingPickUps: true,
+                // onTrip: false,
+                // approval_status: DispatchApprovalStatus.Approved,
+                $sort: {
+                  id: 1,
+                },
+                $limit: 50, // Adjust this number as needed
+              },
+            });
+
+            if (!suitableRidersData.data.length) {
+              //emit to client no dispatch | And notify admin via email
+              // delete job  from queue
+              pusher.trigger(
+                `noRiderAvailable-${job.data.requester}`,
+                "my-event",
+                {
+                  message: "hello world",
+                }
+              );
+            }
+
+            const suitableRiders = suitableRidersData.data;
+
+            //**********send sms */
+            const suitableRidersPhoneNumbers = suitableRiders.map(
+              //@ts-ignore
+              (eachRider) => eachRider?.phone_number
+            );
+
+            const messageToRiders = `helllo`;
+
+            // const termii = new Termii();
+            // await termii.sendBatchSMS(suitableRidersPhoneNumbers, messageToRiders);
+            //**********send sms */
+
+            //**********send onse signal */
+            const suitableRidersOneSingalIds = suitableRiders
+              //@ts-ignore
+              .map((eachRider) => eachRider?.one_signal_player_id)
+              .filter((id) => id !== null && id !== undefined);
+
+            const msg = `You have been assigned to pick up a delivery from biola`;
+            // context.result,
+            await sendPush(
+              "dispatch",
+              msg,
+              suitableRidersOneSingalIds,
+              { name: "biola" },
+              true
+            );
+            //**********send onse signal */
+
+            //********** alert dispatch riders  */
+            suitableRiders.forEach((rider) => {
+              console.log(rider, ".......");
+              pusher.trigger(
+                `newDeliveryRequest-${rider.id}`,
+                "new-delivery-request",
+                {
+                  message: "hello world",
+                }
+              );
+            });
+            //********** alert dispatch riders  */
+
+            console.log(
+              suitableRidersOneSingalIds,
+              "suitableRidersOneSingalIds"
+            );
+          },
+          connectionObject
+        );
+      },
     },
     error: {
       all: [],

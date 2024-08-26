@@ -2,7 +2,6 @@ import type { Params } from "@feathersjs/feathers";
 import { KnexService } from "@feathersjs/knex";
 import type { KnexAdapterParams, KnexAdapterOptions } from "@feathersjs/knex";
 import { NotFound, Forbidden, BadRequest } from "@feathersjs/errors";
-import { ApprovalStatus } from "./dispatch.schema";
 import type { Application } from "../../declarations";
 import type {
   Dispatch,
@@ -76,7 +75,7 @@ export class DispatchService<
       }
 
       if (data.approval_status !== undefined) {
-        if (!Object.values(ApprovalStatus).includes(data.approval_status)) {
+        if (!Object.values(DispatchApprovalStatus).includes(data.approval_status)) {
           throw new BadRequest(`Invalid approval status`)
         }
         update.approval_status = data.approval_status;

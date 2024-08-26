@@ -25,6 +25,7 @@ export const getOptions = (app: Application): KnexAdapterOptions => {
     paginate: app.get("paginate"),
     Model: app.get("postgresqlClient"),
     name: "requests",
+    events: ['new-delivery-request'],
   };
 };
 
@@ -38,7 +39,7 @@ export class TripEstimateService<
   }
 
   //@ts-ignore
-  async create(data, params) {
+  async create(data) {
     return {
       status: 200,
       success: true,

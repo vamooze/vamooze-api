@@ -14,9 +14,9 @@ export async function up(knex: Knex): Promise<void> {
     table.specificType('available_time_frames', 'text[]').notNullable();
     table.jsonb('preferred_delivery_locations').notNullable();
     table.string('drivers_license').notNullable();
-    table.enum('approval_status', [DispatchApprovalStatus.pending, DispatchApprovalStatus.approved, DispatchApprovalStatus.rejected])
+    table.enum('approval_status', [DispatchApprovalStatus.Pending, DispatchApprovalStatus.Approved, DispatchApprovalStatus.Rejected])
     .notNullable()
-    .defaultTo(DispatchApprovalStatus.pending);
+    .defaultTo(DispatchApprovalStatus.Pending);
     table.integer('approved_by').nullable();
     table.timestamp('approval_date').nullable();
 

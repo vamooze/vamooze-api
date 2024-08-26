@@ -157,11 +157,10 @@ export const services = (app: Application) => {
         .service("users")
         .patch(userDetails?.data[0]?.id, { otp: req.body.otp });
 
-      const instance = new Termii(
-        req.body.phone_number,
-        `Your OTP is ${req.body.otp}`
-      );
-      await instance.sendSMS();
+
+        const termii = new Termii();
+        await termii.sendSMS(req.body.phone_number,`Your OTP is ${req.body.otp}`);
+
       res.json({ status: 200, success: true, message: "Otp sent successfully" });
     } catch (error) {
       res.json(error);
@@ -468,7 +467,7 @@ export const services = (app: Application) => {
   );
 
   app.post(
-    "/dispatch/signup",
+    "/auth/dispatch/signup",
     validator.body(schemas.dispatch_signup),
     async (req: any, res: any, next: any) => {
       try {
@@ -506,11 +505,9 @@ export const services = (app: Application) => {
         req.body.password = Roles.Dispatch;
         const result = await app.service("users").create(req.body);
 
-        const instance = new Termii(
-          req.body.phone_number,
-          `Your OTP is ${req.body.otp}`
-        );
-        await instance.sendSMS();
+        const termii = new Termii();
+        await termii.sendSMS(req.body.phone_number,`Your OTP is ${req.body.otp}`);
+
         res.json(result);
       } catch (error: any) {
         logger.error({

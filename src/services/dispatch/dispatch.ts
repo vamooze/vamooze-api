@@ -20,7 +20,8 @@ import { DispatchService, getOptions } from "./dispatch.class";
 import { dispatchPath, dispatchMethods } from "./dispatch.shared";
 import { checkPermission } from "../../helpers/checkPermission";
 import userRoles from "../../helpers/permissions";
-import { ApprovalStatus } from "./dispatch.schema";
+
+
 import {
   successResponse,
   successResponseWithPagination,
@@ -75,6 +76,7 @@ const addUserInfo = async (context: HookContext) => {
       onboarding_completion: onboardingCompletion,
       average_rating: 4.5,
       number_of_deliveries: 500,
+      one_signal_player_id: user.one_signal_player_id
     };
   };
 
@@ -235,7 +237,7 @@ export const dispatch = (app: Application) => {
             ...context.data,
             //@ts-ignore
             user_id: context?.params?.user?.id,
-            approval_status: ApprovalStatus.PENDING,
+            approval_status: DispatchApprovalStatus.Pending,
           };
           return context;
         },

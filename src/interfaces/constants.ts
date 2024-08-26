@@ -38,9 +38,9 @@ export enum TemplateName {
 }
 
 export enum DispatchApprovalStatus {
-  pending = "pending",
-  approved = "approved",
-  rejected = "rejected",
+  Pending = "pending",
+  Approved = "approved",
+  Rejected = "rejected",
 }
 
 export enum Roles {

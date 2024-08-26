@@ -7,6 +7,7 @@ import type { HookContext } from "../../declarations";
 import { dataValidator, queryValidator } from "../../validators";
 import type { DispatchService } from "./dispatch.class";
 import { superAdmin } from "../../helpers/permissions";
+import { DispatchApprovalStatus } from '../../interfaces/constants'
 
 export enum TimeFrame {
   ALL_DAY = "All day",
@@ -16,12 +17,6 @@ export enum TimeFrame {
   LATE_AFTERNOON = "3pm - 6pm",
   EVENING = "6pm - 9pm",
   NIGHT = "9pm - 12am",
-}
-
-export enum ApprovalStatus {
-  PENDING = "pending",
-  APPROVED = "approved",
-  REJECTED = "rejected",
 }
 
 export enum Days {
@@ -50,7 +45,7 @@ export const dispatchSchema = Type.Object(
       Type.Object({}, { minProperties: 1 })
     ),
     drivers_license: Type.String({ format: "uri" }),
-    approval_status: Type.Enum(ApprovalStatus),
+    approval_status: Type.Enum(DispatchApprovalStatus),
     approved_by: Type.Optional(Type.Number()), // ID of the admin who approved/rejected
     approval_date: Type.Optional(Type.String({ format: "date-time" })),
     created_at: Type.String({ format: "date-time" }),
@@ -182,4 +177,17 @@ export const dispatchQueryValidator = getValidator(
 export const dispatchQueryResolver = resolve<
   DispatchQuery,
   HookContext<DispatchService>
->({});
+>({
+  
+});
+
+// export const userQueryResolver = resolve<UserQuery, HookContext<UserService>>({
+//   // If there is a user (e.g. with authentication), they are only allowed to see their own data
+//   id: async (value, user, context) => {
+//     if (context.params.user) {
+//       return context.params.user.id
+//     }
+
+//     return value
+//   }
+// })

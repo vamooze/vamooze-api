@@ -4,23 +4,19 @@ import { constants } from "./constants";
 import { logger } from "../logger";
 
 export class Termii {
-  public phoneNumber: string | undefined;
-  public message: string | undefined;
-  public business: string | undefined;
+  private business: string;
 
-  constructor(phoneNumber: string, message: string, business = "Loystar") {
-    this.phoneNumber = phoneNumber;
-    this.message = message;
+  constructor(business = "Loystar") {
     this.business = business;
   }
 
-  public async sendSMS() {
-    const phone = formatPhoneNumber(this.phoneNumber);
+  private async sendSingleSMS(phoneNumber: string, message: string): Promise<boolean> {
+    const phone = formatPhoneNumber(phoneNumber);
 
     const data = {
       to: phone,
       from: this.business,
-      sms: this.message,
+      sms: message,
       type: "plain",
       api_key: constants.termii.apiKey,
       channel: "generic",
@@ -37,9 +33,35 @@ export class Termii {
 
     try {
       const response = await axios(options);
-      logger.info(JSON.stringify(response.data, null, 2)); 
+      logger.info(`SMS sent successfully to ${phone}`);
+      logger.debug(JSON.stringify(response.data, null, 2));
+      return true;
     } catch (error) {
-      logger.error(error);
+      logger.error(`Failed to send SMS to ${phone}: ${error}`);
+      return false;
     }
+  }
+
+  public async sendSMS(phoneNumber: string, message: string): Promise<boolean> {
+    return this.sendSingleSMS(phoneNumber, message);
+  }
+
+  public async sendBatchSMS(phoneNumbers: string[], message: string): Promise<{ success: string[], failed: string[] }> {
+    const results = await Promise.all(
+      phoneNumbers.map(async (phone) => {
+        const success = await this.sendSingleSMS(phone, message);
+        return { phone, success };
+      })
+    );
+
+    const successfulNumbers = results.filter(r => r.success).map(r => r.phone);
+    const failedNumbers = results.filter(r => !r.success).map(r => r.phone);
+
+    logger.info(`Batch SMS sending completed. Success: ${successfulNumbers.length}, Failed: ${failedNumbers.length}`);
+
+    return {
+      success: successfulNumbers,
+      failed: failedNumbers
+    };
   }
 }

@@ -28,12 +28,13 @@ export const requestsSchema = Type.Object(
     //   }),
     //   email: Type.String(),
     // }),
-    delivery_price_details: Type.Optional(Type.Object({
-      total_amount: Type.Number({ minimum: 1 }),
-      base_fee: Type.Number({ minimum: 1 }),
-      fee_per_km: Type.Number({ minimum: 1 }),
-      fee_per_min: Type.Number({ minimum: 1 }),
-    })),
+    delivery_price_details: Type.Optional(Type.Object(
+      {}, { minProperties: 1 }
+      // total_amount: Type.Number({ minimum: 1 }),
+      // base_fee: Type.Number({ minimum: 1 }),
+      // fee_per_km: Type.Number({ minimum: 1 }),
+      // fee_per_min: Type.Number({ minimum: 1 }),
+    )),
     package_details: Type.Object({
       weight: Type.Optional(Type.Number({ minimum: 0 })),
       quantity: Type.Number({ minimum: 0 }),
