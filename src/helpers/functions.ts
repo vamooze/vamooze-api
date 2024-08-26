@@ -125,7 +125,7 @@ export const sendPush = async (
     oneSignalToken = constants.oneSignalToken;
     appId = constants.oneSignalAppId;
   }
-  const client = new OneSignal.Client(appId, oneSignalToken);
+  // const client = new OneSignal.Client(appId, oneSignalToken);
   let notification: any = {
     contents: {
       en: content,
@@ -139,14 +139,40 @@ export const sendPush = async (
     notification["adm_sound"] = "exploade_sound";
   }
 
+  const dataz = {
+    app_id: "f9a8a21c-a6f3-4165-8465-4d4d6a47a5ee",
+    contents: {
+      en: "Hello, World",
+      es: "Hola Mundo",
+      fr: "Bonjour le monde",
+      "zh-Hans": "你好世界"
+    },
+    target_channel: "push",
+    included_segments: ['1d86681b-c17c-4828-9b28-519625d49bc8']
+  };
+  
+  axios.post('https://api.onesignal.com/notifications', dataz, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic OGQwOWIwNDctNzM5MS00MjllLTgyZDAtYjQ1MWRhYTQ4Y2Jh',
+      'Connection': 'close'
+    }
+  })
+  .then(response => {
+    console.log('Notification sent successfully:', response.data);
+  })
+  .catch(error => {
+    console.error('Error sending notification:', error);
+  });
+
   try {
-    const response = await client.createNotification(notification);
-    logger.info(response.body);
+    // const response = await client.createNotification(notification);
+    // logger.info(response.body);
   } catch (e) {
     if (e instanceof OneSignal.HTTPError) {
       // When status code of HTTP response is not 2xx, HTTPError is thrown.
-      logger.info(e.statusCode);
-      logger.info(e.body);
+      // logger.info(e.statusCode);
+      // logger.info(e.body);
     }
   }
 };

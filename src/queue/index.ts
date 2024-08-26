@@ -17,8 +17,8 @@ export const connectionObject: QueueOptions = {
   connection: {
     host: constants.redisConfig.host,
     port: parseInt(constants.redisConfig.port, 10),
-    // password: constants.redisConfig.password,
-    // tls: constants.redisConfig.ssl ? {} : undefined
+    password: constants.redisConfig.password,
+    tls: constants.redisConfig.ssl ? {} : undefined
   } as ConnectionOptions
 };
 
