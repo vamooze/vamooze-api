@@ -166,9 +166,6 @@ export const requests = (app: Application) => {
             .service(estimatesRide)
             .create(tripLocationDetails);
 
-
-            console.log(result, '....')
-
           context.data = {
             ...context.data,
             //@ts-ignore
@@ -192,7 +189,7 @@ export const requests = (app: Application) => {
     },
     after: {
       async create(context: HookContext) {
-        await dispatchRequestQueue.add("new-req", context.result);
+       const jobRunning = await dispatchRequestQueue.add("new-req", context.result);
 
         const worker = new Worker(
           newDispatchRequest,
@@ -201,15 +198,15 @@ export const requests = (app: Application) => {
             // logger.info(
             //   `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
             // );
-            context.service.emit("new-delivery-requests", {
-              message: "Incoming delivery request",
-              data: job.data,
-            });
+            // context.service.emit("new-delivery-requests", {
+            //   message: "Incoming delivery request",
+            //   data: job.data,
+            // });
 
             // Query for suitable riders
             const suitableRidersData = await app.service("dispatch").find({
               query: {
-                // isAcceptingPickUps: true,
+                isAcceptingPickUps: true,
                 // onTrip: false,
                 // approval_status: DispatchApprovalStatus.Approved,
                 $sort: {
@@ -219,16 +216,18 @@ export const requests = (app: Application) => {
               },
             });
 
+            // console.log(job.id, suitableRidersData.data, context.result.id)
+
             if (!suitableRidersData.data.length) {
-              //emit to client no dispatch | And notify admin via email
-              // delete job  from queue
               pusher.trigger(
-                `noRiderAvailable-${job.data.requester}`,
-                "my-event",
+                `noDispatchAvailable-${context.result.id}`,
+                "no-dispatch-available",
                 {
-                  message: "hello world",
+                  message: "No dispatch available",
                 }
               );
+
+              if(job?.id) return await dispatchRequestQueue.remove(job?.id);
             }
 
             const suitableRiders = suitableRidersData.data;
