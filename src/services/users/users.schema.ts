@@ -26,7 +26,9 @@ export const userSchema = Type.Object(
       local_government_area: Type.Optional(Type.String()),
       state: Type.Optional(Type.String()),
       one_signal_player_id: Type.Optional(Type.String()),
+      one_signal_alias: Type.Optional(Type.String()),
       otp: Type.Optional(Type.Number())
+     
   },
   { $id: 'User', additionalProperties: false }
 )
@@ -40,7 +42,7 @@ export const userExternalResolver = resolve<User, HookContext<UserService>>({
 })
 
 // Schema for creating new entries
-export const userDataSchema = Type.Pick(userSchema, ['email', 'password', 'first_name', 'last_name', 'pin', 'phone_number', 'role', 'merchant_id', 'state', 'local_government_area', 'address', 'is_logged_in', 'is_verified', 'one_signal_player_id', 'otp'], {
+export const userDataSchema = Type.Pick(userSchema, ['email', 'password', 'first_name', 'last_name', 'pin', 'phone_number', 'role', 'merchant_id', 'state', 'local_government_area', 'address', 'is_logged_in', 'is_verified', 'one_signal_player_id', 'one_signal_alias' , 'otp'], {
   $id: 'UserData'
 })
 export type UserData = Static<typeof userDataSchema>
