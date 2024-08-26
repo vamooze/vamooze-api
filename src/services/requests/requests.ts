@@ -135,6 +135,8 @@ export const tripEstimates = (app: Application) => {
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const requests = (app: Application) => {
+  pusher.trigger("my-channel", "my-event", { message: "hello world" });
+
   // Register our service on the Feathers application
   app.use(requestsPath, new RequestsService(getOptions(app)), {
     // A list of all methods this service exposes externally
@@ -215,6 +217,10 @@ export const requests = (app: Application) => {
                 $limit: 50, // Adjust this number as needed
               },
             });
+
+            logger.info(
+              ` number  of suitable Riders: ${suitableRidersData.legth} `
+            );
 
             // console.log(job.id, suitableRidersData.data, context.result.id)
 
