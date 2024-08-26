@@ -9,14 +9,12 @@
       cluster: "eu",
     });
 
-    var channel = pusher.subscribe("my-channel");
-    channel.bind("my-event", function (data) {
+    var channel = pusher.subscribe("dispatch-channel");
+    channel.bind("no-dispatch-available", function (data) {
       alert(JSON.stringify(data));
     });
 
-    var channel = pusher.subscribe(
-      `noDispatchAvailable-${localStorage.getItem("requestId")}`
-    );
+  
 
     // Bind to the event
     channel.bind("no-dispatch-available", function (data) {
