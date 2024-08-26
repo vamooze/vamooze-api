@@ -218,7 +218,7 @@ export const requests = (app: Application) => {
               },
             });
 
-            logger.info(
+            logger.info( //@ts-ignore
               ` number  of suitable Riders: ${suitableRidersData.length} `
             );
 
