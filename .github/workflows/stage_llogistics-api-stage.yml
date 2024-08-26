@@ -40,10 +40,11 @@ jobs:
       GOOGLEDIRECTIONKEY: AIzaSyBAcpKW5cka27LaRVudbAh9vBoHAPVa7N8
       ONESIGNAL_APP_ID: baa2421e-d56f-4068-8259-5c97d1fd486d
       ONESIGNAL_TOKEN: MWI0MTM3YjctYmZhOS00MDFhLTlkMDMtZGYyZTA5YzMyOGMx
-      REDIS_HOST:logistics-redis.redis.cache.windows.net
-      REDIS_PORT:6380
-      REDIS_PASSWORD:C5dESXwCwOpLD7wmaMRqRhETSRXrDN7uEAzCaOiRiAo=
-      REDIS_SSL:true
+      REDIS_HOST: logistics-redis.redis.cache.windows.net
+      REDIS_PORT: 6380
+      REDIS_PASSWORD: C5dESXwCwOpLD7wmaMRqRhETSRXrDN7uEAzCaOiRiAo=
+      REDIS_SSL: true
+      
 
     steps:
       - uses: actions/checkout@v4
