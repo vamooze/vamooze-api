@@ -152,7 +152,17 @@ export const requests = (app: Application) => {
         schemaHooks.validateQuery(requestsQueryValidator),
         schemaHooks.resolveQuery(requestsQueryResolver),
       ],
-      find: [],
+      find: [
+        async (context) => {
+          const user = context.params.user; // Get authenticated user from context
+         
+          context.params.query = {
+            //@ts-ignore
+            requester: user.id,
+          }
+          return context;
+        }
+      ],
       get: [],
       create: [
         isVerified(),
