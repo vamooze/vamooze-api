@@ -56,11 +56,11 @@ const Pusher = require("pusher");
 const estimatesRide = "estimates/ride";
 
 const pusher = new Pusher({
-  appId: "1855037",
-  key: "ffde20945e50d430e18d",
-  secret: "3906ff5c20c344e87277",
-  cluster: "eu",
-  useTLS: true,
+  appId: "1855995",
+  key: "b61b69474645901192ed",
+  secret: "b8da7e509616474805d1",
+  cluster: "mt1",
+  useTLS: true
 });
 
 export const tripEstimates = (app: Application) => {
