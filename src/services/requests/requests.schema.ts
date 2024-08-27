@@ -93,8 +93,9 @@ export const requestsSchema = Type.Object(
     delivery_method: Type.Integer(),
     status: Type.Optional(Type.Enum(RequestStatus, { default: RequestStatus.Pending })),
     // reference: Type.Optional(Type.String({ format: "uuid" })),
+
   },
-  { $id: "Requests", additionalProperties: false }
+  { $id: "Requests", additionalProperties: true }
 );
 export type Requests = Static<typeof requestsSchema>;
 export const requestsValidator = getValidator(requestsSchema, dataValidator);
@@ -150,7 +151,8 @@ export const requestsDataResolver = resolve<
 >({});
 
 // Schema for updating existing entries
-export const requestsPatchSchema = Type.Partial(requestsSchema, {
+export const requestsPatchSchema = Type.Partial(requestsSchema, 
+  {
   $id: "RequestsPatch",
 });
 export type RequestsPatch = Static<typeof requestsPatchSchema>;

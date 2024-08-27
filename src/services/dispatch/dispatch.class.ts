@@ -27,6 +27,7 @@ export class DispatchService<
 
   //@ts-ignore
   async patch(id: string, data: DispatchPatch, params: DispatchParams) {
+    console.log(params, '>>>>>>>>>>>>>>>>>>>')
     const { user } = params;
     //@ts-ignore
     const userRole = await this.app.service("roles").get(user.role);

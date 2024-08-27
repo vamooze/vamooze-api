@@ -20,6 +20,7 @@ export const constants = {
   whiteLabelAminBaseFee: 2000,
   feePerKm: 5,
   feePerMin: 3,
+  oneSignalApiUrl: process.env.ONESIGNAL_URL,
 
 
   enumConfig: {

@@ -73,9 +73,9 @@ export const channels = (app: Application) => {
   console.log('.......', 55555555)
   });
 
-  app.service('requests').publish('new-delivery-requests', (data, context) => {
-    return  app.channel('anonymous')
-  });
+  // app.service('requests').publish('new-delivery-requests', (data, context) => {
+  //   return  app.channel('anonymous')
+  // });
 
   // eslint-disable-next-line no-unused-vars
   app.publish((data: any, context: HookContext) => {

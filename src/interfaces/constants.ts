@@ -57,6 +57,11 @@ export enum LeaseStatus {
   Expired = "expired",
 }
 
+export enum DispatchDecisionDTO {
+  Accept = "accept",
+  Reject = "reject",
+}
+
 export enum MaintenanceStatus {
   InProgress = "in-progress",
   Pending = "pending",
@@ -95,4 +100,15 @@ export enum RequestStatus {
   Enroute = "enroute",
   Delivered = "delivered",
   Expired =  "expired"
+}
+
+
+export interface PushDataDTO {
+  timeToUser: number;
+  amountFrom: number;
+  amountTo: number;
+  pickUpAddress: string;
+  dropOffAddress: string;
+  currency: string;
+  paymentType: string;
 }

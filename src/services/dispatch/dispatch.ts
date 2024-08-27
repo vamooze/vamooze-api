@@ -76,7 +76,8 @@ const addUserInfo = async (context: HookContext) => {
       onboarding_completion: onboardingCompletion,
       average_rating: 4.5,
       number_of_deliveries: 500,
-      one_signal_player_id: user.one_signal_player_id
+      one_signal_player_id: user.one_signal_player_id,
+      one_signal_alias:   user.one_signal_alias
     };
   };
 

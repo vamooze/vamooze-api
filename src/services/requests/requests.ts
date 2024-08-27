@@ -10,6 +10,7 @@ import {
   sendSms,
   sendPush,
 } from "../../helpers/functions";
+const moment = require("moment");
 import { Termii } from "../../helpers/termii";
 import { HookContext } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
@@ -60,7 +61,7 @@ const pusher = new Pusher({
   key: "b61b69474645901192ed",
   secret: "b8da7e509616474805d1",
   cluster: "mt1",
-  useTLS: true
+  useTLS: true,
 });
 
 export const tripEstimates = (app: Application) => {
@@ -124,8 +125,13 @@ export const tripEstimates = (app: Application) => {
             };
             return context;
           } else {
-            logger.error({ result: distanceResult, message: 'google api to generate estimate failling' })
-            throw new GeneralError("Failed to get trip price and distance estimate, Try again");
+            logger.error({
+              result: distanceResult,
+              message: "google api to generate estimate failling",
+            });
+            throw new GeneralError(
+              "Failed to get trip price and distance estimate, Try again"
+            );
           }
         },
       ],
@@ -135,13 +141,13 @@ export const tripEstimates = (app: Application) => {
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const requests = (app: Application) => {
-
+  const options = getOptions(app)
   // Register our service on the Feathers application
-  app.use(requestsPath, new RequestsService(getOptions(app)), {
+  app.use(requestsPath,  new RequestsService(options, app), {
     // A list of all methods this service exposes externally
     methods: requestsMethods,
     // You can add additional custom events to be sent to clients here
-    events: ["new-delivery-requests"],
+    // events: ["new-delivery-requests"],
   });
 
   // Initialize hooks
@@ -149,19 +155,19 @@ export const requests = (app: Application) => {
     before: {
       all: [
         authenticate("jwt"),
-        schemaHooks.validateQuery(requestsQueryValidator),
-        schemaHooks.resolveQuery(requestsQueryResolver),
+        // schemaHooks.validateQuery(requestsQueryValidator),
+        // schemaHooks.resolveQuery(requestsQueryResolver),
       ],
       find: [
         async (context) => {
           const user = context.params.user; // Get authenticated user from context
-         
+
           context.params.query = {
             //@ts-ignore
             requester: user.id,
-          }
+          };
           return context;
-        }
+        },
       ],
       get: [],
       create: [
@@ -199,101 +205,128 @@ export const requests = (app: Application) => {
       remove: [],
     },
     after: {
-      async create(context: HookContext) {
-       const jobRunning = await dispatchRequestQueue.add("new-req", context.result);
+      create: [
 
-        const worker = new Worker(
-          newDispatchRequest,
-          async (job) => {
-    
-            logger.info(
-              `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
-            );
-            // context.service.emit("new-delivery-requests", {
-            //   message: "Incoming delivery request",
-            //   data: job.data,
-            // });
-
-            // Query for suitable riders
-            const suitableRidersData = await app.service("dispatch").find({
-              query: {
-                isAcceptingPickUps: true,
-                // onTrip: false,
-                // approval_status: DispatchApprovalStatus.Approved,
-                $sort: {
-                  id: 1,
+        async (context: HookContext) => {
+          const user = context.params.user;
+          await dispatchRequestQueue.add("new-req", context.result);
+  
+          new Worker(
+            newDispatchRequest,
+            async (job) => {
+              logger.info(
+                `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
+              );
+              // context.service.emit("new-delivery-requests", {
+              //   message: "Incoming delivery request",
+              //   data: job.data,
+              // });
+  
+              // Query for suitable riders
+              const suitableRidersData = await app.service("dispatch").find({
+                query: {
+                  // isAcceptingPickUps: true,
+                  // onTrip: false,
+                  // approval_status: DispatchApprovalStatus.Approved,
+                  $sort: {
+                    id: 1,
+                  },
+                  $limit: 50, // Adjust this number as needed
                 },
-                $limit: 50, // Adjust this number as needed
-              },
-            });
-
-            logger.info( //@ts-ignore
-              ` number  of suitable Riders: ${suitableRidersData.length} `
-            );
-
-            // console.log(job.id, suitableRidersData.data, context.result.id)
-
-            if (!suitableRidersData.data.length) {
-              pusher.trigger(
-                `dispatch-channel`,
-                "no-dispatch-available",
-                {
+              });
+  
+              logger.info(
+                //@ts-ignore
+                ` number  of suitable Riders: ${suitableRidersData.data.length} `
+              );
+  
+              if (!suitableRidersData.data.length) {
+                pusher.trigger(`dispatch-channel`, "no-dispatch-available", {
                   message: "No dispatch available",
-                  requestid : context.result.id
-                }
+                  requestid: context.result.id,
+                });
+  
+                if (job?.id) return await dispatchRequestQueue.remove(job?.id);
+              }
+  
+              const suitableRiders = suitableRidersData.data;
+  
+              const messageToRiders = `Incoming request from ${user.first_name}:  (${job.data.pickup_address} - ${job.data.delivery_address}), ${moment(job.data.createdAt).format("h:mm:ss a")} on ${moment(job.data.createdAt).format("MMMM Do YYYY")}`;
+  
+              //**********send sms */
+              const suitableRidersPhoneNumbers = suitableRiders.map(
+                //@ts-ignore
+                (eachRider) => eachRider?.phone_number
               );
-
-              if(job?.id) return await dispatchRequestQueue.remove(job?.id);
-            }
-
-            const suitableRiders = suitableRidersData.data;
-
-            //**********send sms */
-            const suitableRidersPhoneNumbers = suitableRiders.map(
-              //@ts-ignore
-              (eachRider) => eachRider?.phone_number
-            );
-
-            const messageToRiders = `helllo`;
-
-            // const termii = new Termii();
-            // await termii.sendBatchSMS(suitableRidersPhoneNumbers, messageToRiders);
-            //**********send sms */
-
-            //**********send onse signal */
-            const suitableRidersOneSingalIds = suitableRiders
-              //@ts-ignore
-              .map((eachRider) => eachRider?.one_signal_player_id)
-              .filter((id) => id !== null && id !== undefined);
-
-            const msg = `You have been assigned to pick up a delivery from biola`;
-            // context.result,
-            await sendPush(
-              "dispatch",
-              msg,
-              suitableRidersOneSingalIds,
-              { name: "biola" },
-              true
-            );
-            //**********send onse signal */
-
-            //********** alert dispatch riders  */
-            suitableRiders.forEach((rider) => {
-              console.log(rider, ".......");
-              pusher.trigger(
-                `newDeliveryRequest-${rider.id}`,
-                "new-delivery-request",
-                {
-                  message: "hello world",
-                }
+              // const termii = new Termii();
+              // await termii.sendBatchSMS(
+              //   suitableRidersPhoneNumbers,
+              //   messageToRiders
+              // );
+              //**********send sms */
+  
+              //**********send onse signal */
+              const suitableRidersOneSingalAlias = suitableRiders
+                //@ts-ignore
+                .map((eachRider) => eachRider?.one_signal_alias)
+                .filter((id) => id !== null && id !== undefined);
+  
+              const dataForPushNotification = {
+                timeToUser: 10,
+                amountFrom: 0,
+                amountTo: job.data.delivery_price_details.totalPrice,
+                pickUpAddress:  job.data.pickup_address,
+                dropOffAddress: job.data.delivery_address,
+                currency: "N",
+                paymentType: "Cash",
+                ...job.data
+              };
+  
+              // console.log(job.data)
+              // {
+              //   id: 122,
+              //   requester: 105,
+              //   pickup_gps_location: { latitude: 6.5689, longitude: 3.3827 },
+              //   pickup_address: 'no 3 aso rock',
+              //   delivery_address: 'no 5 ojodu road',
+              //   delivery_gps_location: { latitude: 6.6201, longitude: 3.3683 },
+              //   scheduled: false,
+              //   delivery_instructions: 'drop it gently',
+              //   delivery_method: 1,
+              //   estimated_distance: '9.00',
+              //   estimated_delivery_time: '43.00',
+              //   package_details: {
+              //     weight: 0,
+              //     quantity: 0,
+              //     description: 'Fragile items, handle with care',
+              //     image: 'https://example.com/image.jpg',
+              //     estimated_worth: 0
+              //   },
+              //   status: 'pending',
+              //   dispatch: null,
+              //   delivery_price_details: {
+              //     totalPrice: 2174,
+              //     feeForKm: 45,
+              //     feeForTime: 129,
+              //     baseFeePerKm: 5,
+              //     baseFeePerMin: 3
+              //   }
+              // }
+  
+              await sendPush(
+                "dispatch",
+                messageToRiders,
+                suitableRidersOneSingalAlias,
+                dataForPushNotification,
+                true
               );
-            });
-            //********** alert dispatch riders  */
+              //**********send onse signal */
+            },
+            connectionObject
+          );
+        },
 
-          },
-          connectionObject
-        );
-      },
+      ]
     },
     error: {
       all: [],

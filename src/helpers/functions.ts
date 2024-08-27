@@ -1,11 +1,10 @@
 import { constants } from "./constants";
 import axios from "axios";
 import OneSignal from "onesignal-node";
-import { Forbidden } from "@feathersjs/errors";
 import type { HookContext } from "../declarations";
-import { EmailDTO } from "../interfaces/constants";
+import { EmailDTO, PushDataDTO  } from "../interfaces/constants";
 import { logger } from "../logger";
-
+import { GeneralError, Forbidden } from "@feathersjs/errors";
 export const formatPhoneNumber = (phoneNumber: string | undefined) => {
   if (phoneNumber) {
     if (phoneNumber.substring(0, 1) === "0") {
@@ -110,69 +109,64 @@ export const generateTrackingId = (len: number | undefined) => {
   ).toUpperCase();
 };
 
+type NotificationType = "dispatch" | "merchant";
+type NotificationContent = string | { [language: string]: string };
+
+
+
 export const sendPush = async (
-  type: string,
-  content: any,
-  ids: any,
-  data: any,
-  playSound: any
+  type: NotificationType,
+  headings: any,
+  ids: any[],
+  data: PushDataDTO,
+  playSound: boolean
 ) => {
-  let oneSignalToken: any, appId: any;
+  let oneSignalToken, appId;
+  let notification = {};
+
+  // Determine which OneSignal app to use based on the type
   if (type === "dispatch") {
-    oneSignalToken = constants.oneSignalToken;
+    oneSignalToken =  constants.oneSignalToken;
     appId = constants.oneSignalAppId;
+    notification = {
+      app_id: appId,
+      headings: { en: headings },
+      contents: { en: "A Ride is being requested" },
+      include_aliases: {
+        external_id: ids,
+      },
+      data: data,
+      target_channel: "push",
+      included_segments: ["Active Users"],
+      ios_sound: "mixkit-arabian-mystery-harp-notification-2489",
+      android_channel_id: "20e11aa0-ca6c-4d2b-bd35-53a673523f1b",
+      largeIcon: "ic_onesignal_large_icon_default",
+      lockScreenVisibility: 1,
+      smallIcon: "ic_stat_onesignal_default",
+      smallIconAccentColor: "008967",
+      android_sound: "mixkit_arabian_mystery_harp_notification_2489",
+      priority: 10,
+    };
   } else {
-    oneSignalToken = constants.oneSignalToken;
-    appId = constants.oneSignalAppId;
-  }
-  // const client = new OneSignal.Client(appId, oneSignalToken);
-  let notification: any = {
-    contents: {
-      en: content,
-    },
-    include_player_ids: ids,
-    data: data && data,
-  };
-  if (playSound) {
-    notification["ios_sound"] = "beep-notif.wav";
-    notification["android_channel_id"] = "50a280f7-91f6-40c6-a950-469b3505cd7f";
-    notification["adm_sound"] = "exploade_sound";
+    oneSignalToken =  constants.oneSignalTokenMerchant;
+    appId = constants.oneSignalAppIdMerchant
   }
 
-  const dataz = {
-    app_id: "f9a8a21c-a6f3-4165-8465-4d4d6a47a5ee",
-    contents: {
-      en: "Hello, World",
-      es: "Hola Mundo",
-      fr: "Bonjour le monde",
-      "zh-Hans": "你好世界"
-    },
-    target_channel: "push",
-    included_segments: ['1d86681b-c17c-4828-9b28-519625d49bc8']
-  };
-  
-  axios.post('https://api.onesignal.com/notifications', dataz, {
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Basic OGQwOWIwNDctNzM5MS00MjllLTgyZDAtYjQ1MWRhYTQ4Y2Jh',
-      'Connection': 'close'
-    }
-  })
-  .then(response => {
-    console.log('Notification sent successfully:', response.data);
-  })
-  .catch(error => {
-    console.error('Error sending notification:', error);
-  });
+  if(!constants.oneSignalApiUrl) throw new GeneralError('one signal url missing')
 
   try {
-    // const response = await client.createNotification(notification);
-    // logger.info(response.body);
-  } catch (e) {
-    if (e instanceof OneSignal.HTTPError) {
-      // When status code of HTTP response is not 2xx, HTTPError is thrown.
-      // logger.info(e.statusCode);
-      // logger.info(e.body);
+    const response = await axios.post(constants.oneSignalApiUrl, notification, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${oneSignalToken}`,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    if (error instanceof OneSignal.HTTPError) {
+      logger.info(error.statusCode);
+      logger.info(error.body);
     }
   }
 };

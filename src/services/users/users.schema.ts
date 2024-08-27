@@ -62,7 +62,7 @@ export const userPatchResolver = resolve<User, HookContext<UserService>>({
 })
 
 // Schema for allowed query properties
-export const userQueryProperties = Type.Pick(userSchema, ['id', 'email', 'role', 'merchant_id', 'first_name', 'last_name', 'is_logged_in', 'is_verified', 'otp', 'phone_number'])
+export const userQueryProperties = Type.Pick(userSchema, ['id', 'email', 'role', 'merchant_id', 'first_name', 'last_name', 'is_logged_in', 'is_verified', 'otp', 'phone_number', 'one_signal_alias'])
 export const userQuerySchema = Type.Intersect(
   [
     querySyntax(userQueryProperties),
