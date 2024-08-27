@@ -36,77 +36,86 @@ export class RequestsService<
   async patch(id: Id, data: any, params: Params) {
     const { user } = params;
 
+    if (params?.query?.dispatchDecision) {
+      await this.validateDispatchUser(user);
+
+      //@ts-ignore
+      const { dispatchDecision } = params?.query;
+      //@ts-ignore
+      delete params?.query.dispatchDecision;
+
+      this.validateDispatchDecision(dispatchDecision);
+
+      await this.getAndValidateRequest(id);
+
+      if (dispatchDecision === DispatchDecisionDTO.Reject) {
+        return successResponse(null, 200, "Successfully rejected");
+      }
+
+      //@ts-ignore
+      const dispatchId = await this.getDispatchId(user?.id);
+
+      const update = {
+        status: RequestStatus.Accepted,
+        dispatch: dispatchId,
+      };
+
+      const updatedRequest = await super.patch(id, update, params);
+
+      // Uncomment and adjust if you want to update dispatch status
+      // await this.updateDispatchStatus(user.id, true);
+
+      return successResponse(
+        updatedRequest,
+        200,
+        "Successfully assigned to trip"
+      );
+    }
+  }
+
+  private async validateDispatchUser(user: any) {
     //@ts-ignore
     const userRole = await this.app.service("roles").get(user.role);
-     //@ts-ignore
-    const dispatchUserDetails = await this.app.service("dispatch").find({
-      query: {
-        //@ts-ignore
-        user_id: user.id,
-      },
+    if (userRole.slug !== Roles.Dispatch) {
+      throw new BadRequest("Only dispatchers can accept or reject requests");
+    }
+  }
+
+  private validateDispatchDecision(decision: DispatchDecisionDTO) {
+    if (!Object.values(DispatchDecisionDTO).includes(decision)) {
+      throw new BadRequest(`Invalid dispatch decision: ${decision}`);
+    }
+  }
+
+  private async getAndValidateRequest(id: Id) {
+    const request = await super.get(id);
+    if (!request) {
+      throw new NotFound("Request not found");
+    }
+    if (request.dispatch) {
+      throw new Conflict("This request already has a dispatch assigned");
+    }
+    return request;
+  }
+
+  private async getDispatchId(userId: Id) {
+    //@ts-ignore
+    const dispatchResult = await this.app.service("dispatch").find({
+      query: { user_id: userId },
     });
 
-    if (dispatchUserDetails.data.length !== 1) {
+    if (dispatchResult.data.length !== 1) {
       throw new NotFound("Dispatch record does not exist");
     }
 
-    if (userRole.slug === Roles.Dispatch) {
-      const update: Partial<Requests> = {};
+    return dispatchResult.data[0].id;
+  }
 
-      if (params?.query?.dispatchDecision) {
-        const { dispatchDecision } = params?.query;
-
-        delete params?.query.dispatchDecision
-
-        if (!Object.values(DispatchDecisionDTO).includes(dispatchDecision))
-          throw new BadRequest(
-            `Invalid dispatch decision: ${dispatchDecision}`
-          );
-
-        const request = await super.get(id);
-
-        if (!request) {
-          throw new NotFound("Request not found");
-        }
-
-        if (request.dispatch) {
-          throw new Conflict("This request already has a dispatch assigned");
-        }
-
-        if (dispatchDecision === DispatchDecisionDTO.Reject)
-          return successResponse(null, 200, "Successfully rejected");
-
-        update.status = RequestStatus.Accepted;
-         //@ts-ignore
-        update.dispatch = dispatchUserDetails.data[0].id;
-   
-        //@ts-ignore
-        // await this.app
-        //   .service("dispatch")
-        //   .patch(
-        //     {
-        //       query: {
-        //         //@ts-ignore
-        //         user_id: user.id,
-        //       },
-        //     },
-        //     { onTrip: true }
-        //   );
-
- 
-
-        const updatedRequest = await super.patch(id, update, params);
-
-        return successResponse(
-          updatedRequest,
-          200,
-          "Successfully assigned to trip"
-        );
-      }
-
-
-
-    }
+  private async updateDispatchStatus(userId: Id, onTrip: boolean) {
+    //@ts-ignore
+    await this.app
+      .service("dispatch")
+      .patch(null, { onTrip }, { query: { user_id: userId } });
   }
 }
 

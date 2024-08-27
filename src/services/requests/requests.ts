@@ -142,11 +142,8 @@ export const tripEstimates = (app: Application) => {
 // A configure function that registers the service and its hooks via `app.configure`
 export const requests = (app: Application) => {
   const options = getOptions(app)
-  // Register our service on the Feathers application
   app.use(requestsPath,  new RequestsService(options, app), {
-    // A list of all methods this service exposes externally
     methods: requestsMethods,
-    // You can add additional custom events to be sent to clients here
     // events: ["new-delivery-requests"],
   });
 
