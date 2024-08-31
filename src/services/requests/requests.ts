@@ -144,7 +144,7 @@ export const requests = (app: Application) => {
   const options = getOptions(app)
   app.use(requestsPath,  new RequestsService(options, app), {
     methods: requestsMethods,
-    // events: ["new-delivery-requests"],
+    events: ["new-delivery-requests"],
   });
 
   // Initialize hooks
@@ -211,14 +211,15 @@ export const requests = (app: Application) => {
           new Worker(
             newDispatchRequest,
             async (job) => {
-              logger.info(
-                `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
-              );
-              // context.service.emit("new-delivery-requests", {
-              //   message: "Incoming delivery request",
-              //   data: job.data,
-              // });
+              // logger.info(
+              //   `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
+              // );
+              context.service.emit("new-delivery-requests", {
+                message: "Incoming delivery request",
+                data: job.data,
+              });
   
+              //use knex
               // Query for suitable riders
               const suitableRidersData = await app.service("dispatch").find({
                 query: {
@@ -232,10 +233,10 @@ export const requests = (app: Application) => {
                 },
               });
   
-              logger.info(
-                //@ts-ignore
-                ` number  of suitable Riders: ${suitableRidersData.data.length} `
-              );
+              // logger.info(
+              //   //@ts-ignore
+              //   ` number  of suitable Riders: ${suitableRidersData.data.length} `
+              // );
   
               if (!suitableRidersData.data.length) {
                 pusher.trigger(`dispatch-channel`, "no-dispatch-available", {

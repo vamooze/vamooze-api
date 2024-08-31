@@ -20,7 +20,7 @@ export const channels = (app: Application) => {
   app.on('connection', async (connection: RealTimeConnection) => {
 
     console.log('====================================');
-    console.log(`${connection?.user?._id} connected to socket`);
+    console.log(`${connection?.user} connected to socket`);
     console.log('====================================');
 
     try {
@@ -32,12 +32,18 @@ export const channels = (app: Application) => {
         app.channel('authenticated').join(connection);
 
         const auths = app.channel('authenticated').connections;
+
+
+        
+
         for (let index = 0; index < auths.length; index++) {
           const auth = auths[index];
           const roles = await app.service('roles').get(auth.user.role);
           app.channel(roles.slug).join(connection);
-          app.channel(`userIds/${auth.user._id}`).join(connection);
+          // app.channel(`userIds/${auth.user._id}`).join(connection);
         }
+
+        console.log('..', auths, app.channels)
         // Make the user with `_id` 5 leave the `admins` channel
         // app.channel('dispatch').leave(connection => {
         //   return connection.user._id === '5f7363e366e56d2a589b3aa1';
@@ -69,13 +75,13 @@ export const channels = (app: Application) => {
     }
   })
 
-  app.on('new-request', (order) => {
-  console.log('.......', 55555555)
-  });
 
-  // app.service('requests').publish('new-delivery-requests', (data, context) => {
-  //   return  app.channel('anonymous')
-  // });
+
+  app.service('requests').publish('new-delivery-requests', (data, context) => {
+    // console.log(data, 'new-delivery-requests', app.channel('dispatch').connections, '<><><><><><><>')
+    console.log('Publishing event to all dispatch riders');
+    return app.channel('anonymous');
+  });
 
   // eslint-disable-next-line no-unused-vars
   app.publish((data: any, context: HookContext) => {
