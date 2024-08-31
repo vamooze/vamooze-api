@@ -56,14 +56,6 @@ const Pusher = require("pusher");
 
 const estimatesRide = "estimates/ride";
 
-const pusher = new Pusher({
-  appId: "1855995",
-  key: "b61b69474645901192ed",
-  secret: "b8da7e509616474805d1",
-  cluster: "mt1",
-  useTLS: true,
-});
-
 export const tripEstimates = (app: Application) => {
   const options_ = getOptions(app);
   //@ts-ignore
@@ -144,7 +136,7 @@ export const requests = (app: Application) => {
   const options = getOptions(app)
   app.use(requestsPath,  new RequestsService(options, app), {
     methods: requestsMethods,
-    events: ["new-delivery-requests"],
+    events: ["new-delivery-requests", "no-dispatch-available"],
   });
 
   // Initialize hooks
@@ -223,9 +215,9 @@ export const requests = (app: Application) => {
               // Query for suitable riders
               const suitableRidersData = await app.service("dispatch").find({
                 query: {
-                  // isAcceptingPickUps: true,
-                  // onTrip: false,
-                  // approval_status: DispatchApprovalStatus.Approved,
+                  isAcceptingPickUps: true,
+                  onTrip: false,
+                  approval_status: DispatchApprovalStatus.Approved,
                   $sort: {
                     id: 1,
                   },
@@ -238,12 +230,12 @@ export const requests = (app: Application) => {
               //   ` number  of suitable Riders: ${suitableRidersData.data.length} `
               // );
   
+              console.log('suitableRiders available',  suitableRidersData)
               if (!suitableRidersData.data.length) {
-                pusher.trigger(`dispatch-channel`, "no-dispatch-available", {
-                  message: "No dispatch available",
-                  requestid: context.result.id,
-                });
-  
+                context.service.emit("no-dispatch-available", {
+                  message: "Incoming delivery request",
+                  data: job.data,
+                })
                 if (job?.id) return await dispatchRequestQueue.remove(job?.id);
               }
   
