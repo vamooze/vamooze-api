@@ -39,7 +39,7 @@ app.configure(rest())
 app.configure(
   socketio({
     cors: {
-      origin: app.get('origins') //app.get('origins') *
+      origin: '*' //app.get('origins') *
     }
   })
 )
