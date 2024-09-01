@@ -10,12 +10,14 @@ import {
   sendSms,
   sendPush,
 } from "../../helpers/functions";
+
 const moment = require("moment");
 import { Termii } from "../../helpers/termii";
 import { HookContext } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import { Request, Response } from "express";
 import { constants } from "../../helpers/constants";
+import textConstant from "../../helpers/textConstant";
 import {
   requestsDataValidator,
   requestsPatchValidator,
@@ -136,7 +138,7 @@ export const requests = (app: Application) => {
   const options = getOptions(app)
   app.use(requestsPath,  new RequestsService(options, app), {
     methods: requestsMethods,
-    events: ["new-delivery-requests", "no-dispatch-available"],
+    events: [textConstant.noDispatchAvailable, textConstant.requestAcceptedByDispatch],
   });
 
   // Initialize hooks
@@ -198,26 +200,24 @@ export const requests = (app: Application) => {
 
         async (context: HookContext) => {
           const user = context.params.user;
+
           await dispatchRequestQueue.add("new-req", context.result);
   
           new Worker(
             newDispatchRequest,
             async (job) => {
-              // logger.info(
-              //   `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
-              // );
-              context.service.emit("new-delivery-requests", {
-                message: "Incoming delivery request",
-                data: job.data,
-              });
+              logger.info(
+                `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
+              );
+             
   
               //use knex
               // Query for suitable riders
               const suitableRidersData = await app.service("dispatch").find({
                 query: {
-                  isAcceptingPickUps: true,
-                  onTrip: false,
-                  approval_status: DispatchApprovalStatus.Approved,
+                  // isAccept ingPickUps: true,
+                  // onTrip: fnalse,
+                  // approval_status: DispatchApprovalStatus.Approved,
                   $sort: {
                     id: 1,
                   },
@@ -225,24 +225,27 @@ export const requests = (app: Application) => {
                 },
               });
   
-              // logger.info(
-              //   //@ts-ignore
-              //   ` number  of suitable Riders: ${suitableRidersData.data.length} `
-              // );
-  
-              console.log('suitableRiders available',  suitableRidersData)
               if (!suitableRidersData.data.length) {
-                context.service.emit("no-dispatch-available", {
-                  message: "Incoming delivery request",
+                context.service.emit(textConstant.noDispatchAvailable, {
+                  message: textConstant.english.noDispatchAvailableMessage,
                   data: job.data,
                 })
                 if (job?.id) return await dispatchRequestQueue.remove(job?.id);
+                return
               }
   
               const suitableRiders = suitableRidersData.data;
+
+              const smsMessageDetails = {
+                name : user.first_name,
+                pickup_address: job.data.pickup_address,
+                delivery_address: job.data.delivery_address,
+                hour_time: moment(job.data.createdAt).format("h:mm:ss a"),
+                month_time: moment(job.data.createdAt).format("MMMM Do YYYY"),
+              }
   
-              const messageToRiders = `Incoming request from ${user.first_name}:  (${job.data.pickup_address} - ${job.data.delivery_address}), ${moment(job.data.createdAt).format("h:mm:ss a")} on ${moment(job.data.createdAt).format("MMMM Do YYYY")}`;
-  
+              const messageToRiders = textConstant.english.messageToRiders(smsMessageDetails)
+          
               //**********send sms */
               const suitableRidersPhoneNumbers = suitableRiders.map(
                 //@ts-ignore
@@ -302,6 +305,11 @@ export const requests = (app: Application) => {
               //     baseFeePerMin: 3
               //   }
               // }
+
+              // context.service.emit("new-delivery-requests", {
+              //   message: "Incoming delivery request",
+              //   data: { dispatchRiders:suitableRidersData.data  , requestInfo:job.data}
+              // });
   
               await sendPush(
                 "dispatch",

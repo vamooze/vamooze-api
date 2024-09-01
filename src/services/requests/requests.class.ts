@@ -7,6 +7,7 @@ import {
   RequestStatus,
   DispatchDecisionDTO,
 } from "../../interfaces/constants";
+import textConstant from "../../helpers/textConstant";
 import type { Application } from "../../declarations";
 import type {
   Requests,
@@ -36,40 +37,70 @@ export class RequestsService<
   async patch(id: Id, data: any, params: Params) {
     const { user } = params;
 
-    if (params?.query?.dispatchDecision) {
+    if (data.dispatchDecision) {  // For dispatch drivers accepting or rejecting a request
       await this.validateDispatchUser(user);
 
       //@ts-ignore
-      const { dispatchDecision } = params?.query;
-      //@ts-ignore
-      delete params?.query.dispatchDecision;
+      const { dispatchDecision } = data;
 
       this.validateDispatchDecision(dispatchDecision);
 
-      await this.getAndValidateRequest(id);
+      const request = await this.getAndValidateRequest(id);
 
       if (dispatchDecision === DispatchDecisionDTO.Reject) {
         return successResponse(null, 200, "Successfully rejected");
       }
 
       //@ts-ignore
-      const dispatchId = await this.getDispatchId(user?.id);
+      const dispatch = await this.getDispatchData(user?.id);
 
-      const update = {
-        status: RequestStatus.Accepted,
-        dispatch: dispatchId,
-      };
+  
+      // Use transaction for atomic updates
+       //@ts-ignore
+      const knex = this.app.get('postgresqlClient');
+      try {
+        const updatedRequest = await knex.transaction(async (trx: any) => {
+          // Update the request with the dispatch assignment
+          const update = {
+            status: RequestStatus.Accepted,
+            dispatch: dispatch.id,
+          };
 
-      const updatedRequest = await super.patch(id, update, params);
+          // Update the request with new dispatch details
+          const [updatedRequest] = await trx('requests')
+            .where({ id })
+            .update(update)
+            .returning('*'); // Return the updated request
 
-      // Uncomment and adjust if you want to update dispatch status
-      // await this.updateDispatchStatus(user.id, true);
+          // Update the dispatch 'onTrip' status
+          await trx('dispatch')
+            .where({ id: dispatch.id })
+            .update({ onTrip: true });
 
-      return successResponse(
-        updatedRequest,
-        200,
-        "Successfully assigned to trip"
-      );
+          // Return the updated request inside the transaction
+          return updatedRequest;
+        });
+
+        delete dispatch.id
+
+        //@ts-ignore
+        this.emit(textConstant.requestAcceptedByDispatch, {
+          request: id,
+          requester: request?.requester,
+          dispatchDetails: dispatch,
+          message: 'Request accepted by dispatch',
+        });
+
+        // Return success response
+        return successResponse(
+          updatedRequest,
+          200,
+          "Successfully assigned to trip"
+        );
+      } catch (error) {
+        console.error('Error assigning dispatch to request:', error);
+        throw new Error('Failed to assign dispatch to request');
+      }
     }
   }
 
@@ -98,24 +129,35 @@ export class RequestsService<
     return request;
   }
 
-  private async getDispatchId(userId: Id) {
-    //@ts-ignore
-    const dispatchResult = await this.app.service("dispatch").find({
-      query: { user_id: userId },
-    });
+  private async getDispatchData(userId: Id) {
 
-    if (dispatchResult.data.length !== 1) {
-      throw new NotFound("Dispatch record does not exist");
-    }
+     //@ts-ignore
+  const knex = this.app.get('postgresqlClient');
 
-    return dispatchResult.data[0].id;
+
+    const dispatchResult = await knex('dispatch')
+    .join('users', 'dispatch.user_id', 'users.id')
+    .where('dispatch.user_id', userId)
+    .select(
+      'users.phone_number',
+      'users.first_name',
+      'users.last_name',
+      'dispatch.address',
+      'dispatch.city',
+      'dispatch.state',
+      'dispatch.lga',
+      'dispatch.country',
+      'dispatch.available_days',
+      'dispatch.available_time_frames',
+      'dispatch.id'
+    )
+    .first();
+
+  if (!dispatchResult) {
+    throw new NotFound("Dispatch record does not exist");
   }
 
-  private async updateDispatchStatus(userId: Id, onTrip: boolean) {
-    //@ts-ignore
-    await this.app
-      .service("dispatch")
-      .patch(null, { onTrip }, { query: { user_id: userId } });
+  return dispatchResult;
   }
 }
 
