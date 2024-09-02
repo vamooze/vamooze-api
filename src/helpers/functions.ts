@@ -1,9 +1,12 @@
+import { dispatch } from './../services/dispatch/dispatch';
 import { constants } from "./constants";
 import axios from "axios";
 import OneSignal from "onesignal-node";
 import type { HookContext } from "../declarations";
 import { EmailDTO, PushDataDTO  } from "../interfaces/constants";
 import { logger } from "../logger";
+import textConstant from './textConstant';
+
 import { GeneralError, Forbidden } from "@feathersjs/errors";
 export const formatPhoneNumber = (phoneNumber: string | undefined) => {
   if (phoneNumber) {
@@ -109,7 +112,7 @@ export const generateTrackingId = (len: number | undefined) => {
   ).toUpperCase();
 };
 
-type NotificationType = "dispatch" | "merchant";
+type NotificationType = "dispatch" | "merchants" 
 type NotificationContent = string | { [language: string]: string };
 
 
@@ -131,7 +134,7 @@ export const sendPush = async (
     notification = {
       app_id: appId,
       headings: { en: headings },
-      contents: { en: `A Ride is being requested. \n \nPickup from ${data.pickUpAddress} and deliver to ${data.dropOffAddress} ` },
+      contents: { en: `A Ride is being requested. \n \nPickup from ${data.pickUpAddress} and deliver to ${data.dropOffAddress}` },
       include_aliases: {
         external_id: ids,
       },

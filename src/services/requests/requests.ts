@@ -313,7 +313,7 @@ export const requests = (app: Application) => {
   
               await sendPush(
                 "dispatch",
-                messageToRiders,
+                textConstant.english.new_dispatch_push_notification_heading,
                 suitableRidersOneSingalAlias,
                 dataForPushNotification,
                 true
