@@ -20,7 +20,6 @@ import { dispatchPath, dispatchMethods } from "./dispatch.shared";
 import { checkPermission } from "../../helpers/checkPermission";
 import userRoles from "../../helpers/permissions";
 
-
 import {
   successResponse,
   successResponseWithPagination,
@@ -76,7 +75,7 @@ const addUserInfo = async (context: HookContext) => {
       average_rating: 4.5,
       number_of_deliveries: 500,
       one_signal_player_id: user.one_signal_player_id,
-      one_signal_alias:   user.one_signal_alias
+      one_signal_alias: user.one_signal_alias,
     };
   };
 
@@ -179,7 +178,7 @@ const quizData = [
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const dispatch = (app: Application) => {
-  const options = getOptions(app)
+  const options = getOptions(app);
 
   app.use(dispatchPath, new DispatchService(options, app), {
     // A list of all methods this service exposes externally
@@ -188,23 +187,20 @@ export const dispatch = (app: Application) => {
     events: [],
   });
 
-   //@ts-ignore
-  app.use('/dispatch/assigned-requests', {
+  //@ts-ignore
+  app.use("/dispatch/assigned-requests", {
     async find(params: Params) {
-      const dispatchService = app.service('dispatch');
-      const dispatchId = 24
-  
+      const dispatchService = app.service("dispatch");
       return await dispatchService.findAssignedRequests(params);
-    }
-  })
-
-   //@ts-ignore
-  app.service('dispatch/assigned-requests').hooks({
-    before: {
-      all: [authenticate('jwt')], // Custom hooks
     },
-  })
-  
+  });
+
+  //@ts-ignore
+  app.service("dispatch/assigned-requests").hooks({
+    before: {
+      all: [authenticate("jwt")], // Custom hooks
+    },
+  });
 
   app.service("dispatch").hooks({
     before: {
@@ -215,7 +211,7 @@ export const dispatch = (app: Application) => {
       ],
       find: async (context) => {
         const user = context.params.user; // Get authenticated user from context
-       
+
         if (!user) return;
 
         //@ts-ignore
@@ -223,8 +219,8 @@ export const dispatch = (app: Application) => {
           .service("roles")
           //@ts-ignore
           .get(context.params.user.role);
-          //@ts-ignore
-          context.params.user.roleName = userRole.slug
+        //@ts-ignore
+        context.params.user.roleName = userRole.slug;
 
         if (userRole.slug !== Roles.SuperAdmin) {
           context.params.query = {
@@ -279,19 +275,21 @@ export const dispatch = (app: Application) => {
       find: [
         addUserInfo,
         async (context) => {
+          context.result =
           //@ts-ignore
-          context.result = context?.params?.user?.roleName === Roles.SuperAdmin ?  successResponseWithPagination(
-            //@ts-ignore
-            context.result,
-            200,
-            dispatchDetailsAdmin
-          ) : successResponse(
-            //@ts-ignore
-            context.result.data,
-            200,
-            dispatchDetails
-          )
-
+            context?.params?.user?.roleName === Roles.SuperAdmin
+              ? successResponseWithPagination(
+                  //@ts-ignore
+                  context.result,
+                  200,
+                  dispatchDetailsAdmin
+                )
+              : successResponse(
+                  //@ts-ignore
+                  context.result.data,
+                  200,
+                  dispatchDetails
+                );
         },
       ],
       get: [
