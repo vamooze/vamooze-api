@@ -30,7 +30,6 @@ import {
 } from "./requests.schema";
 import {
   RequestStatus,
-  DispatchApprovalStatus,
 } from "../../interfaces/constants";
 import { Queue, Worker } from "bullmq";
 import {
@@ -54,7 +53,6 @@ export * from "./requests.class";
 export * from "./requests.schema";
 
 const { BadRequest } = require("@feathersjs/errors");
-const Pusher = require("pusher");
 
 const estimatesRide = "estimates/ride";
 

@@ -1,7 +1,7 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 import { authenticate } from "@feathersjs/authentication";
 import { NotFound, Forbidden, Conflict } from "@feathersjs/errors";
-import { HookContext } from "@feathersjs/feathers";
+import { HookContext, Params } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import { Roles, DispatchApprovalStatus } from "../../interfaces/constants";
 import {
@@ -14,7 +14,6 @@ import {
   dispatchPatchResolver,
   dispatchQueryResolver,
 } from "./dispatch.schema";
-
 import type { Application } from "../../declarations";
 import { DispatchService, getOptions } from "./dispatch.class";
 import { dispatchPath, dispatchMethods } from "./dispatch.shared";
@@ -188,6 +187,24 @@ export const dispatch = (app: Application) => {
     // You can add additional custom events to be sent to clients here
     events: [],
   });
+
+   //@ts-ignore
+  app.use('/dispatch/assigned-requests', {
+    async find(params: Params) {
+      const dispatchService = app.service('dispatch');
+      const dispatchId = 24
+  
+      return await dispatchService.findAssignedRequests(params);
+    }
+  })
+
+   //@ts-ignore
+  app.service('dispatch/assigned-requests').hooks({
+    before: {
+      all: [authenticate('jwt')], // Custom hooks
+    },
+  })
+  
 
   app.service("dispatch").hooks({
     before: {

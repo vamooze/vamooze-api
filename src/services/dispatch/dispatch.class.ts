@@ -10,7 +10,10 @@ import type {
   DispatchQuery,
 } from "./dispatch.schema";
 import { Roles, DispatchApprovalStatus } from "../../interfaces/constants";
-import {  successResponse } from "../../helpers/functions";
+import {
+  successResponse,
+  successResponseWithPagination,
+} from "../../helpers/functions";
 
 export type { Dispatch, DispatchData, DispatchPatch, DispatchQuery };
 
@@ -27,7 +30,6 @@ export class DispatchService<
 
   //@ts-ignore
   async patch(id: string, data: DispatchPatch, params: DispatchParams) {
-    console.log(params, '>>>>>>>>>>>>>>>>>>>')
     const { user } = params;
     //@ts-ignore
     const userRole = await this.app.service("roles").get(user.role);
@@ -35,17 +37,17 @@ export class DispatchService<
     //@ts-ignore
     const one_signal_player_id = data?.one_signal_player_id;
     //@ts-ignore
-    const one_signal_alias = data?.one_signal_alias
+    const one_signal_alias = data?.one_signal_alias;
 
     if (one_signal_player_id && typeof one_signal_player_id !== "string") {
-      throw new BadRequest(`One signal id  must be string`)
+      throw new BadRequest(`One signal id  must be string`);
     }
 
     // Determine the dispatch record to update
     let dispatchId: string;
     if (userRole.slug === Roles.SuperAdmin) {
       if (!id) {
-        throw new BadRequest("No dispatch ID provided")
+        throw new BadRequest("No dispatch ID provided");
       }
       dispatchId = id;
     } else {
@@ -78,8 +80,10 @@ export class DispatchService<
       }
 
       if (data.approval_status !== undefined) {
-        if (!Object.values(DispatchApprovalStatus).includes(data.approval_status)) {
-          throw new BadRequest(`Invalid approval status`)
+        if (
+          !Object.values(DispatchApprovalStatus).includes(data.approval_status)
+        ) {
+          throw new BadRequest(`Invalid approval status`);
         }
         update.approval_status = data.approval_status;
         //@ts-ignore
@@ -90,12 +94,12 @@ export class DispatchService<
       // dispatch user only updates occur here
 
       if (data.suspended || data.approval_status) {
-        throw new Forbidden(`Unauthorized operation for dispatch`)
+        throw new Forbidden(`Unauthorized operation for dispatch`);
       }
 
       if (data.isAcceptingPickUps !== undefined) {
         if (typeof data.isAcceptingPickUps !== "boolean") {
-          throw new BadRequest(`isAcceptingPickUps must be boolean`)
+          throw new BadRequest(`isAcceptingPickUps must be boolean`);
         }
         update.isAcceptingPickUps = data.isAcceptingPickUps;
       }
@@ -104,7 +108,7 @@ export class DispatchService<
     if (Object.keys(update).length === 0) {
       //@ts-ignore
       if (!one_signal_player_id && !one_signal_alias) {
-        throw new BadRequest('No valid fields to update')
+        throw new BadRequest("No valid fields to update");
       }
 
       //@ts-ignore
@@ -124,6 +128,50 @@ export class DispatchService<
         "Dispatch updated successfully"
       );
     }
+  }
+
+  async findAssignedRequests(params: Params) {
+    //@ts-ignore
+    const knex = this.app.get("postgresqlClient");
+    const { user } = params;
+    //@ts-ignore
+    const { query } = params;
+
+    // Find the dispatch record for the user
+    const dispatchRecord = await knex("dispatch")
+      .where({ user_id: user?.id })
+      .select("id")
+      .first();
+
+    if (!dispatchRecord) {
+      throw new NotFound("Dispatch record not found for this user.");
+    }
+    // Set default pagination values
+    const limit = query?.limit || 10;
+    const skip = query?.skip || 0;
+
+    // Fetch the paginated assigned requests
+    const assignedRequestsQuery = knex("requests")
+      .where({ dispatch: dispatchRecord.id })
+      .limit(limit)
+      .offset(skip);
+
+    const [total, data] = await Promise.all([
+      assignedRequestsQuery.clone().count("* as total").first(),
+      assignedRequestsQuery.select("*"), // Adjust the fields as needed
+    ]);
+
+    const responseData = {
+      total: total.total, // Total number of requests
+      limit,
+      skip,
+      data, // The paginated data
+    };
+    return successResponseWithPagination(
+      responseData,
+      200,
+      "All dispatch requests received"
+    );
   }
 }
 
