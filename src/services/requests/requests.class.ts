@@ -25,7 +25,7 @@ export interface RequestsParams extends KnexAdapterParams<RequestsQuery> {}
 
 // By default calls the standard Knex adapter service methods but can be customized with your own functionality.
 export class RequestsService<
-  ServiceParams extends Params = RequestsParams,
+  ServiceParams extends Params = RequestsParams
 > extends KnexService<Requests, RequestsData, RequestsParams, RequestsPatch> {
   constructor(options: KnexAdapterOptions, app: Application) {
     super(options);
@@ -37,7 +37,8 @@ export class RequestsService<
   async patch(id: Id, data: any, params: Params) {
     const { user } = params;
 
-    if (data.dispatchDecision) {  // For dispatch drivers accepting or rejecting a request
+    if (data.dispatchDecision) {
+      // For dispatch drivers accepting or rejecting a request
       await this.validateDispatchUser(user);
 
       //@ts-ignore
@@ -54,10 +55,9 @@ export class RequestsService<
       //@ts-ignore
       const dispatch = await this.getDispatchData(user?.id);
 
-  
       // Use transaction for atomic updates
-       //@ts-ignore
-      const knex = this.app.get('postgresqlClient');
+      //@ts-ignore
+      const knex = this.app.get("postgresqlClient");
       try {
         const updatedRequest = await knex.transaction(async (trx: any) => {
           // Update the request with the dispatch assignment
@@ -67,13 +67,13 @@ export class RequestsService<
           };
 
           // Update the request with new dispatch details
-          const [updatedRequest] = await trx('requests')
+          const [updatedRequest] = await trx("requests")
             .where({ id })
             .update(update)
-            .returning('*'); // Return the updated request
+            .returning("*"); // Return the updated request
 
           // Update the dispatch 'onTrip' status
-          await trx('dispatch')
+          await trx("dispatch")
             .where({ id: dispatch.id })
             .update({ onTrip: true });
 
@@ -81,14 +81,14 @@ export class RequestsService<
           return updatedRequest;
         });
 
-        delete dispatch.id
+        delete dispatch.id;
 
         //@ts-ignore
         this.emit(textConstant.requestAcceptedByDispatch, {
           request: id,
           requester: request?.requester,
           dispatchDetails: dispatch,
-          message: 'Request accepted by dispatch',
+          message: "Request accepted by dispatch",
         });
 
         // Return success response
@@ -98,9 +98,42 @@ export class RequestsService<
           "Successfully assigned to trip"
         );
       } catch (error) {
-        console.error('Error assigning dispatch to request:', error);
-        throw new Error('Failed to assign dispatch to request');
+        console.error("Error assigning dispatch to request:", error);
+        throw new Error("Failed to assign dispatch to request");
       }
+    }
+
+    if (data.status) {
+      // Check for status update in request data
+      await this.validateDispatchUser(user);
+
+      const newStatus = data.status;
+
+      this.validateRequestStatus(newStatus); // Add validation for new status
+
+      const request = await this.getAndValidateRequest(id);
+
+      if (
+        [RequestStatus.Delivered, RequestStatus.Expired].includes(
+          //@ts-ignore
+          request?.status
+        )
+      ) {
+        throw new Conflict("This request cannot be updated.");
+      }
+
+      const updatedRequest = await this.updateRequestStatus(
+        request.id,
+        newStatus
+      );
+
+      // Emit event or perform other actions based on new status (optional)
+
+      return successResponse(
+        updatedRequest,
+        200,
+        "Successfully updated request status"
+      );
     }
   }
 
@@ -108,8 +141,26 @@ export class RequestsService<
     //@ts-ignore
     const userRole = await this.app.service("roles").get(user.role);
     if (userRole.slug !== Roles.Dispatch) {
-      throw new BadRequest("Only dispatchers can accept or reject requests");
+      throw new BadRequest("Only dispatchers can perform this operation");
     }
+  }
+
+  private async validateRequestStatus(status: RequestStatus) {
+    if (!Object.values(RequestStatus).includes(status)) {
+      throw new BadRequest(`Invalid request status: ${status}`);
+    }
+  }
+
+  private async updateRequestStatus(id: Id, status: RequestStatus) {
+    //@ts-ignore
+    const knex = this.app.get("postgresqlClient");
+
+    const [updatedRequest] = await knex("requests")
+      .where({ id })
+      .update({ status })
+      .returning("*");
+
+    return updatedRequest;
   }
 
   private validateDispatchDecision(decision: DispatchDecisionDTO) {
@@ -130,34 +181,32 @@ export class RequestsService<
   }
 
   private async getDispatchData(userId: Id) {
+    //@ts-ignore
+    const knex = this.app.get("postgresqlClient");
 
-     //@ts-ignore
-  const knex = this.app.get('postgresqlClient');
+    const dispatchResult = await knex("dispatch")
+      .join("users", "dispatch.user_id", "users.id")
+      .where("dispatch.user_id", userId)
+      .select(
+        "users.phone_number",
+        "users.first_name",
+        "users.last_name",
+        "dispatch.address",
+        "dispatch.city",
+        "dispatch.state",
+        "dispatch.lga",
+        "dispatch.country",
+        "dispatch.available_days",
+        "dispatch.available_time_frames",
+        "dispatch.id"
+      )
+      .first();
 
+    if (!dispatchResult) {
+      throw new NotFound("Dispatch record does not exist");
+    }
 
-    const dispatchResult = await knex('dispatch')
-    .join('users', 'dispatch.user_id', 'users.id')
-    .where('dispatch.user_id', userId)
-    .select(
-      'users.phone_number',
-      'users.first_name',
-      'users.last_name',
-      'dispatch.address',
-      'dispatch.city',
-      'dispatch.state',
-      'dispatch.lga',
-      'dispatch.country',
-      'dispatch.available_days',
-      'dispatch.available_time_frames',
-      'dispatch.id'
-    )
-    .first();
-
-  if (!dispatchResult) {
-    throw new NotFound("Dispatch record does not exist");
-  }
-
-  return dispatchResult;
+    return dispatchResult;
   }
 }
 
@@ -171,7 +220,7 @@ export const getOptions = (app: Application): KnexAdapterOptions => {
 };
 
 export class TripEstimateService<
-  ServiceParams extends Params = RequestsParams,
+  ServiceParams extends Params = RequestsParams
 > extends KnexService<Requests, RequestsData, RequestsParams, RequestsPatch> {
   constructor(options: KnexAdapterOptions, app: Application) {
     super(options);

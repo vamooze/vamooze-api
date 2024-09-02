@@ -96,10 +96,12 @@ export enum DeliveryMethod {
 export enum RequestStatus {
   Pending = "pending",
   Accepted = "accepted",
-  EnrouteToPickUp = "enroute_to_pickup",
-  Enroute = "enroute",
+  EnrouteToPickUp = "to_pickup",
+  EnrouteToDropOff = "to_drop_off",
   Delivered = "delivered",
-  Expired =  "expired"
+  Expired =  "expired",
+  CompletePickUp = 'complete_pick_up',
+  CompleteDropOff = 'complete_drop_off'
 }
 
 
