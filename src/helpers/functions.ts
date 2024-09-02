@@ -131,7 +131,7 @@ export const sendPush = async (
     notification = {
       app_id: appId,
       headings: { en: headings },
-      contents: { en: "A Ride is being requested" },
+      contents: { en: `A Ride is being requested. \n \nPickup from ${data.pickUpAddress} and deliver to ${data.dropOffAddress} ` },
       include_aliases: {
         external_id: ids,
       },
