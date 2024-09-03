@@ -52,6 +52,10 @@ export class RequestsService<
         return successResponse(null, 200, "Successfully rejected");
       }
 
+      if (request.dispatch) {
+        throw new Conflict("This request already has a dispatch assigned");
+      }
+
       //@ts-ignore
       const dispatch = await this.getDispatchData(user?.id);
 
@@ -173,9 +177,6 @@ export class RequestsService<
     const request = await super.get(id);
     if (!request) {
       throw new NotFound("Request not found");
-    }
-    if (request.dispatch) {
-      throw new Conflict("This request already has a dispatch assigned");
     }
     return request;
   }

@@ -111,6 +111,7 @@ export const tripEstimates = (app: Application) => {
                 feeForTime: time * constants.feePerMin,
                 baseFeePerKm: constants.feePerKm,
                 baseFeePerMin: constants.feePerMin,
+                currency: 'NGN'
               },
               time,
               distance,
