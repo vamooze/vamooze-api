@@ -10,31 +10,30 @@ import {
   DeliveryMethod,
   PaymentMethod,
   RequestStatus,
-  dispatchRequestValidators
+  dispatchRequestValidators,
 } from "../../interfaces/constants";
-
 
 // Main data model schema
 export const requestsSchema = Type.Object(
   {
     id: Type.Number(),
     requester: Type.Number(),
-    // receiver: Type.Object({
-    //   name: Type.String({
-    //     maxLength: dispatchRequestValidators.receiver_name_length,
-    //   }),
-    //   phone_number: Type.String({
-    //     maxLength: dispatchRequestValidators.receiver_phone_number_length,
-    //   }),
-    //   email: Type.String(),
-    // }),
-    delivery_price_details: Type.Optional(Type.Object(
-      {}, { minProperties: 1 }
-      // total_amount: Type.Number({ minimum: 1 }),
-      // base_fee: Type.Number({ minimum: 1 }),
-      // fee_per_km: Type.Number({ minimum: 1 }),
-      // fee_per_min: Type.Number({ minimum: 1 }),
-    )),
+    receipient_name: Type.Optional(
+      Type.String({
+        maxLength: dispatchRequestValidators.receiver_name_length,
+      })
+    ),
+    recepient_phone_number: Type.Optional(Type.String()),
+    delivery_price_details: Type.Optional(
+      Type.Object(
+        {},
+        { minProperties: 1 }
+        // total_amount: Type.Number({ minimum: 1 }),
+        // base_fee: Type.Number({ minimum: 1 }),
+        // fee_per_km: Type.Number({ minimum: 1 }),
+        // fee_per_min: Type.Number({ minimum: 1 }),
+      )
+    ),
     package_details: Type.Object({
       weight: Type.Optional(Type.Number({ minimum: 0 })),
       quantity: Type.Number({ minimum: 0 }),
@@ -91,9 +90,10 @@ export const requestsSchema = Type.Object(
     ),
     delivery_date: Type.Optional(Type.String({ format: "date-time" })),
     delivery_method: Type.Integer(),
-    status: Type.Optional(Type.Enum(RequestStatus, { default: RequestStatus.Pending })),
+    status: Type.Optional(
+      Type.Enum(RequestStatus, { default: RequestStatus.Pending })
+    ),
     // reference: Type.Optional(Type.String({ format: "uuid" })),
-
   },
   { $id: "Requests", additionalProperties: true }
 );
@@ -119,6 +119,8 @@ export const requestsDataSchema = Type.Pick(
     // "receiver_gps_location",
     "delivery_address",
     "delivery_price_details",
+    "receipient_name",
+    "recepient_phone_number",
     // "priority",
     "delivery_gps_location",
     "pickup_address",
@@ -151,8 +153,7 @@ export const requestsDataResolver = resolve<
 >({});
 
 // Schema for updating existing entries
-export const requestsPatchSchema = Type.Partial(requestsSchema, 
-  {
+export const requestsPatchSchema = Type.Partial(requestsSchema, {
   $id: "RequestsPatch",
 });
 export type RequestsPatch = Static<typeof requestsPatchSchema>;
@@ -171,6 +172,8 @@ export const requestsQueryProperties = Type.Pick(requestsSchema, [
   "requester",
   // "receiver",
   "package_details",
+  "receipient_name",
+  "recepient_phone_number",
   // "payment_method",
   // "receiver_gps_location",
   "delivery_price_details",
