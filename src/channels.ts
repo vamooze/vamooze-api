@@ -20,7 +20,7 @@ export const channels = (app: Application) => {
 
     try {
       if (connection.user) {
-        console.log(connection.user.role, connection.user.id, '.....')
+      
         const roles = await app.service("roles").get(connection.user.role);
 
         // for now we only allow instant websocket connection to the server for dispatch riders
@@ -31,6 +31,9 @@ export const channels = (app: Application) => {
         } else {
           app.channel(`userIds/${connection.user.id}`).join(connection);
         }
+
+
+        console.log("..app.channels...", app.channels, "..app.channels...");
         // The connection is no longer anonymous, remove it
         // app.channel("anonymous").leave(connection);
 
@@ -53,11 +56,14 @@ export const channels = (app: Application) => {
         // On a new real-time connection, add it to the anonymous channel
         // app.channel(textConstant.anonymous).join(connection);
       }
-
     } catch (error) {
-      console.log("=============socket connection error=======================");
+      console.log(
+        "=============socket connection error======================="
+      );
       console.log(error);
-      console.log("=============socket connection error=======================");
+      console.log(
+        "=============socket connection error======================="
+      );
       throw error;
     }
     // On a new real-time connection, add it to the anonymous channel
@@ -82,23 +88,21 @@ export const channels = (app: Application) => {
   app
     .service("requests")
     .publish(textConstant.requestAcceptedByDispatch, (data, context) => {
-
-  
       const newObjectForRequester = {
-     message: 'Dispatch found',
-     data: {
-         //@ts-ignore
-        request: data.request,
-         //@ts-ignore
-  ...data?.dispatchDetails,
-     }
-};
+        message: "Dispatch found",
+        data: {
+          //@ts-ignore
+          request: data.request,
+          //@ts-ignore
+          ...data?.dispatchDetails,
+        },
+      };
 
-
+      console.log('>>>>>dispatch has accepted', app.channels)
 
       return [
-         //@ts-ignore
-         app.channel(`userIds/${data?.requester}`).send(newObjectForRequester),
+        //@ts-ignore
+        app.channel(`userIds/${data?.requester}`).send(newObjectForRequester),
       ];
     });
 
@@ -106,10 +110,8 @@ export const channels = (app: Application) => {
     .service("requests")
     .publish(textConstant.noDispatchAvailable, (data, context) => {
       //@ts-ignore
-      const requesterId = data?.data?.requester
-      return [
-        app.channel(`userIds/${requesterId}`),
-      ];
+      const requesterId = data?.data?.requester;
+      return [app.channel(`userIds/${requesterId}`)];
     });
 
   // eslint-disable-next-line no-unused-vars
