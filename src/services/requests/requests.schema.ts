@@ -99,6 +99,37 @@ export const requestsSchema = Type.Object(
     status: Type.Optional(
       Type.Enum(RequestStatus, { default: RequestStatus.Pending })
     ),
+    drop_off_recipient_name: Type.Optional(
+      Type.String({
+        maxLength: dispatchRequestValidators.receiver_name_length,
+      })
+    ),
+
+    drop_off_recipient_phone_number: Type.Optional(Type.String()),
+
+    pickup_recipient_name: Type.Optional(
+      Type.String({
+        maxLength: dispatchRequestValidators.receiver_name_length,
+      })
+    ),
+
+    pickup_recipient_phone_number: Type.Optional(Type.String()),
+
+    initial_dispatch_location: Type.Optional(
+      Type.Object({
+        longitude: Type.Number({ minimum: -180 }),
+        latitude: Type.Number({ minimum: -90 }),
+      })
+    ),
+    dispatch_pickup_time: Type.Optional(Type.String({ format: "date-time" })),
+    dispatch_drop_off_time: Type.Optional(Type.String({ format: "date-time" })),
+    estimated_time_for_dispatch_delivery: Type.Optional(
+      Type.Number({ minimum: 0 })
+    ),
+    estimated_time_for_dispatch_pickup: Type.Optional(
+      Type.Number({ minimum: 0 })
+    ),
+
     // reference: Type.Optional(Type.String({ format: "uuid" })),
   },
   { $id: "Requests", additionalProperties: true }
@@ -144,6 +175,14 @@ export const requestsDataSchema = Type.Pick(
     // "reference",
     "current_dispatch_location",
     "delivery_method",
+    "drop_off_recipient_name",
+    "drop_off_recipient_phone_number",
+    "pickup_recipient_phone_number",
+    "initial_dispatch_location",
+    "dispatch_pickup_time",
+    "dispatch_drop_off_time",
+    "estimated_time_for_dispatch_delivery",
+    "estimated_time_for_dispatch_pickup"
   ],
   {
     $id: "RequestsData",
@@ -202,6 +241,14 @@ export const requestsQueryProperties = Type.Pick(requestsSchema, [
   "current_dispatch_location",
   // "reference",
   "delivery_method",
+  "drop_off_recipient_name",
+  "drop_off_recipient_phone_number",
+  "pickup_recipient_phone_number",
+  "initial_dispatch_location",
+  "dispatch_pickup_time",
+  "dispatch_drop_off_time",
+  "estimated_time_for_dispatch_delivery",
+  "estimated_time_for_dispatch_pickup"
 ]);
 export const requestsQuerySchema = Type.Intersect(
   [
