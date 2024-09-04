@@ -139,6 +139,32 @@ export class RequestsService<
         "Successfully updated request status"
       );
     }
+
+    if (data.current_dispatch_location) {
+      // Validate the dispatch user
+      await this.validateDispatchUser(user);
+
+      // Ensure the request exists and is valid
+      const request = await this.getAndValidateRequest(id);
+
+      // Update the request with the current dispatch location
+      //@ts-ignore
+      const knex = this.app.get("postgresqlClient");
+      const [updatedRequest] = await knex('requests')
+        .where({ id })
+        .update({ current_dispatch_location: data.current_dispatch_location })
+        .returning('*');
+
+      // Optionally, emit an event or take additional actions here
+
+      // Return success response
+      return successResponse(
+        updatedRequest,
+        200,
+        'Successfully updated current dispatch location'
+      );
+    }
+
   }
 
   private async validateDispatchUser(user: any) {

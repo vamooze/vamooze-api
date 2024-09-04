@@ -66,6 +66,12 @@ export const requestsSchema = Type.Object(
         latitude: Type.Number({ minimum: -90 }),
       })
     ),
+    current_dispatch_location: Type.Optional(
+      Type.Object({
+        longitude: Type.Number({ minimum: -180 }),
+        latitude: Type.Number({ minimum: -90 }),
+      })
+    ),
     pickup_gps_location: Type.Optional(
       Type.Object({
         longitude: Type.Number({ minimum: -180 }),
@@ -136,6 +142,7 @@ export const requestsDataSchema = Type.Pick(
     "estimated_delivery_time",
     "status",
     // "reference",
+    "current_dispatch_location",
     "delivery_method",
   ],
   {
@@ -192,6 +199,7 @@ export const requestsQueryProperties = Type.Pick(requestsSchema, [
   "estimated_distance",
   "estimated_delivery_time",
   "status",
+  "current_dispatch_location",
   // "reference",
   "delivery_method",
 ]);
