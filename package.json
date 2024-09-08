@@ -82,6 +82,7 @@
     "onesignal-node": "^3.4.0",
     "pg": "^8.11.5",
     "pusher": "^5.2.0",
+    "redis": "^4.7.0",
     "slugify": "^1.6.6",
     "winston": "^3.13.0"
   },

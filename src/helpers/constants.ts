@@ -36,7 +36,7 @@ export const constants = {
     password: process.env.REDIS_PASSWORD,
     host: process.env.REDIS_HOST || '127.0.0.1',
     port: process.env.REDIS_PORT || '6379',
-    ssl : true,
+    ssl : process.env.REDIS_SSL || false,
   },
 
   queueConfig: {

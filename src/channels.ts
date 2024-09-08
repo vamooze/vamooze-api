@@ -7,6 +7,7 @@ import { logger } from "./logger";
 import textConstant from "./helpers/textConstant";
 import { requestsPath } from "./services/requests/requests.shared";
 import { Roles } from "./interfaces/constants";
+import { client } from "./app";
 
 export const channels = (app: Application) => {
   const requests = app.service(requestsPath);
@@ -20,7 +21,6 @@ export const channels = (app: Application) => {
 
     try {
       if (connection.user) {
-      
         const roles = await app.service("roles").get(connection.user.role);
 
         // for now we only allow instant websocket connection to the server for dispatch riders
@@ -31,7 +31,6 @@ export const channels = (app: Application) => {
         } else {
           app.channel(`userIds/${connection.user.id}`).join(connection);
         }
-
 
         console.log("..app.channels...", app.channels, "..app.channels...");
         // The connection is no longer anonymous, remove it
@@ -87,7 +86,7 @@ export const channels = (app: Application) => {
 
   app
     .service("requests")
-    .publish(textConstant.requestAcceptedByDispatch, (data, context) => {
+    .publish(textConstant.requestAcceptedByDispatch, async (data, context) => {
       const newObjectForRequester = {
         message: "Dispatch found",
         data: {
@@ -98,12 +97,39 @@ export const channels = (app: Application) => {
         },
       };
 
-      console.log('>>>>>dispatch has accepted', app.channels)
-
-      return [
+      const value = await client.get(
         //@ts-ignore
-        app.channel(`userIds/${data?.requester}`).send(newObjectForRequester),
-      ];
+        `${textConstant.requests}-dispatch-pool-${data?.request}`
+      );
+
+      if (value) {
+        const dispatchPoolUserIds = JSON.parse(value);
+        //@ts-ignore
+        const dispatchWhoAccepted = data?.dispatch_who_accepted_user_id;
+        const dispatchesWhoDidNotAccept = dispatchPoolUserIds.filter(
+          //@ts-ignore
+          (id) => id !== dispatchWhoAccepted
+        );
+
+        const dispatchesWhoDidNotAcceptChannels = dispatchesWhoDidNotAccept.map(
+          //@ts-ignore
+          (id) => `dispatch-channel/${id}`
+        );
+
+        return [
+          //@ts-ignore
+          app.channel(`userIds/${data?.requester}`).send(newObjectForRequester),
+          app
+            .channel(dispatchesWhoDidNotAcceptChannels)
+            //@ts-ignore
+            .send({ message: "Dispatch Matched", request: data?.request }),
+        ];
+      } else {
+        return [
+          //@ts-ignore
+          app.channel(`userIds/${data?.requester}`).send(newObjectForRequester),
+        ];
+      }
     });
 
   app

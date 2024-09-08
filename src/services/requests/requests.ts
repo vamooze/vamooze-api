@@ -10,6 +10,7 @@ import {
   sendSms,
   sendPush,
 } from "../../helpers/functions";
+import { client } from "../../app";
 
 const moment = require("moment");
 import { Termii } from "../../helpers/termii";
@@ -28,9 +29,7 @@ import {
   requestsPatchResolver,
   requestsQueryResolver,
 } from "./requests.schema";
-import {
-  RequestStatus,
-} from "../../interfaces/constants";
+import { RequestStatus, DispatchApprovalStatus  } from "../../interfaces/constants";
 import { Queue, Worker } from "bullmq";
 import {
   dispatchRequestQueue,
@@ -111,7 +110,7 @@ export const tripEstimates = (app: Application) => {
                 feeForTime: time * constants.feePerMin,
                 baseFeePerKm: constants.feePerKm,
                 baseFeePerMin: constants.feePerMin,
-                currency: 'NGN'
+                currency: "NGN",
               },
               time,
               distance,
@@ -134,10 +133,13 @@ export const tripEstimates = (app: Application) => {
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const requests = (app: Application) => {
-  const options = getOptions(app)
-  app.use(requestsPath,  new RequestsService(options, app), {
+  const options = getOptions(app);
+  app.use(requestsPath, new RequestsService(options, app), {
     methods: requestsMethods,
-    events: [textConstant.noDispatchAvailable, textConstant.requestAcceptedByDispatch],
+    events: [
+      textConstant.noDispatchAvailable,
+      textConstant.requestAcceptedByDispatch,
+    ],
   });
 
   // Initialize hooks
@@ -196,120 +198,100 @@ export const requests = (app: Application) => {
     },
     after: {
       create: [
-
         async (context: HookContext) => {
           const user = context.params.user;
 
           await dispatchRequestQueue.add("new-req", context.result);
-  
+
           new Worker(
             newDispatchRequest,
             async (job) => {
               logger.info(
                 `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
               );
-             
-  
-              //use knex
-              // Query for suitable riders
-              const suitableRidersData = await app.service("dispatch").find({
-                query: {
-                  // isAccept ingPickUps: true,
-                  // onTrip: fnalse,
+
+              const knex = app.get("postgresqlClient");
+              const suitableRidersData = await knex("dispatch")
+                .join("users", "dispatch.user_id", "users.id")
+                .select(
+                  "users.phone_number",
+                  "users.first_name",
+                  "users.last_name",
+                  "users.one_signal_player_id",
+                  "users.one_signal_alias",
+                  "dispatch.address",
+                  "dispatch.city",
+                  "dispatch.state",
+                  "dispatch.lga",
+                  "dispatch.country",
+                  "dispatch.available_days",
+                  "dispatch.available_time_frames",
+                  "dispatch.id",
+                  "dispatch.onTrip",
+                  "dispatch.isAcceptingPickUps",
+                  "dispatch.user_id",
+                )
+                .where({
+                  // isAcceptingPickUps: true, // Add necessary conditions here
+                  // onTrip: false,
                   // approval_status: DispatchApprovalStatus.Approved,
-                  $sort: {
-                    id: 1,
-                  },
-                  $limit: 50, // Adjust this number as needed
-                },
-              });
-  
-              if (!suitableRidersData.data.length) {
+                })
+                .orderBy("id", "asc")
+                .limit(50);
+
+              if (!suitableRidersData || !suitableRidersData.length) {
                 context.service.emit(textConstant.noDispatchAvailable, {
                   message: textConstant.english.noDispatchAvailableMessage,
                   data: job.data,
-                })
+                });
                 if (job?.id) return await dispatchRequestQueue.remove(job?.id);
-                return
+                return;
               }
-  
-              const suitableRiders = suitableRidersData.data;
 
               const smsMessageDetails = {
-                name : user.first_name,
+                name: user.first_name,
                 pickup_address: job.data.pickup_address,
                 delivery_address: job.data.delivery_address,
                 hour_time: moment(job.data.createdAt).format("h:mm:ss a"),
                 month_time: moment(job.data.createdAt).format("MMMM Do YYYY"),
-              }
-  
-              const messageToRiders = textConstant.english.messageToRiders(smsMessageDetails)
-          
+              };
+
+              const messageToRiders =
+                textConstant.english.messageToRiders(smsMessageDetails);
+
               //**********send sms */
-              const suitableRidersPhoneNumbers = suitableRiders.map(
-                //@ts-ignore
-                (eachRider) => eachRider?.phone_number
-              );
+              // const suitableRidersPhoneNumbers = suitableRidersData.map(
+              //   //@ts-ignore
+              //   (eachRider) => eachRider?.phone_number
+              // );
               // const termii = new Termii();
               // await termii.sendBatchSMS(
               //   suitableRidersPhoneNumbers,
               //   messageToRiders
               // );
               //**********send sms */
-  
+
+             const dispatchPoolUserIds = suitableRidersData.map((eachRider) => eachRider?.user_id)
+
+             client.set(`${textConstant.requests}-dispatch-pool-${job.data.id}`, JSON.stringify(dispatchPoolUserIds))
+
               //**********send onse signal */
-              const suitableRidersOneSingalAlias = suitableRiders
+              const suitableRidersOneSingalAlias = suitableRidersData
                 //@ts-ignore
                 .map((eachRider) => eachRider?.one_signal_alias)
                 .filter((id) => id !== null && id !== undefined);
-  
+
               const dataForPushNotification = {
                 timeToUser: 10,
                 amountFrom: 0,
                 amountTo: job.data.delivery_price_details.totalPrice,
-                pickUpAddress:  job.data.pickup_address,
+                pickUpAddress: job.data.pickup_address,
                 dropOffAddress: job.data.delivery_address,
                 currency: "N",
                 paymentType: "Cash",
-                ...job.data
+                ...job.data,
               };
-  
-              // console.log(job.data)
-              // {
-              //   id: 122,
-              //   requester: 105,
-              //   pickup_gps_location: { latitude: 6.5689, longitude: 3.3827 },
-              //   pickup_address: 'no 3 aso rock',
-              //   delivery_address: 'no 5 ojodu road',
-              //   delivery_gps_location: { latitude: 6.6201, longitude: 3.3683 },
-              //   scheduled: false,
-              //   delivery_instructions: 'drop it gently',
-              //   delivery_method: 1,
-              //   estimated_distance: '9.00',
-              //   estimated_delivery_time: '43.00',
-              //   package_details: {
-              //     weight: 0,
-              //     quantity: 0,
-              //     description: 'Fragile items, handle with care',
-              //     image: 'https://example.com/image.jpg',
-              //     estimated_worth: 0
-              //   },
-              //   status: 'pending',
-              //   dispatch: null,
-              //   delivery_price_details: {
-              //     totalPrice: 2174,
-              //     feeForKm: 45,
-              //     feeForTime: 129,
-              //     baseFeePerKm: 5,
-              //     baseFeePerMin: 3
-              //   }
-              // }
 
-              // context.service.emit("new-delivery-requests", {
-              //   message: "Incoming delivery request",
-              //   data: { dispatchRiders:suitableRidersData.data  , requestInfo:job.data}
-              // });
-  
               await sendPush(
                 "dispatch",
                 textConstant.english.new_dispatch_push_notification_heading,
@@ -317,13 +299,13 @@ export const requests = (app: Application) => {
                 dataForPushNotification,
                 true
               );
-              //**********send onse signal */
+               //**********send onse signal */
+          
             },
             connectionObject
           );
         },
-
-      ]
+      ],
     },
     error: {
       all: [],

@@ -38,11 +38,12 @@ export class RequestsService<
     const { user } = params;
 
     if (data.dispatchDecision) {
+      
       // For dispatch drivers accepting or rejecting a request
       await this.validateDispatchUser(user);
 
       //@ts-ignore
-      const { dispatchDecision } = data;
+      const { dispatchDecision, requestId, initial_dispatch_location } = data;
 
       this.validateDispatchDecision(dispatchDecision);
 
@@ -92,6 +93,7 @@ export class RequestsService<
           request: id,
           requester: request?.requester,
           dispatchDetails: dispatch,
+          dispatch_who_accepted_user_id: dispatch.user_id,
           message: "Request accepted by dispatch",
         });
 
@@ -225,7 +227,8 @@ export class RequestsService<
         "dispatch.country",
         "dispatch.available_days",
         "dispatch.available_time_frames",
-        "dispatch.id"
+        "dispatch.id",
+        "dispatch.user_id"
       )
       .first();
 
