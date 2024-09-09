@@ -15,7 +15,10 @@ import type {
   RequestsPatch,
   RequestsQuery,
 } from "./requests.schema";
-import { successResponse } from "../../helpers/functions";
+import {
+  successResponse,
+  checkDistanceAndTimeUsingLongLat,
+} from "../../helpers/functions";
 import type { Params, Id, NullableId } from "@feathersjs/feathers";
 import { NotFound, Forbidden, BadRequest, Conflict } from "@feathersjs/errors";
 
@@ -25,7 +28,7 @@ export interface RequestsParams extends KnexAdapterParams<RequestsQuery> {}
 
 // By default calls the standard Knex adapter service methods but can be customized with your own functionality.
 export class RequestsService<
-  ServiceParams extends Params = RequestsParams
+  ServiceParams extends Params = RequestsParams,
 > extends KnexService<Requests, RequestsData, RequestsParams, RequestsPatch> {
   constructor(options: KnexAdapterOptions, app: Application) {
     super(options);
@@ -38,7 +41,6 @@ export class RequestsService<
     const { user } = params;
 
     if (data.dispatchDecision) {
-      
       // For dispatch drivers accepting or rejecting a request
       await this.validateDispatchUser(user);
 
@@ -60,16 +62,40 @@ export class RequestsService<
       //@ts-ignore
       const dispatch = await this.getDispatchData(user?.id);
 
+      const update = {
+        status: RequestStatus.Accepted,
+        dispatch: dispatch.id,
+      };
+
+      const pickupEstimate = await checkDistanceAndTimeUsingLongLat(
+        initial_dispatch_location,
+        request.pickup_gps_location
+      );
+      const deliveryEstimate = await checkDistanceAndTimeUsingLongLat(
+        request.pickup_gps_location,
+        request.delivery_gps_location
+      );
+
+      if (pickupEstimate && pickupEstimate.status === "OK") {
+        //@ts-ignore
+        update.estimated_time_for_dispatch_pickup = Math.ceil(
+          pickupEstimate.routes[0].legs[0].duration.value / 60
+        );
+      }
+
+      if (deliveryEstimate && deliveryEstimate.status === "OK") {
+        //@ts-ignore
+        update.estimated_time_for_dispatch_delivery = Math.ceil(
+          deliveryEstimate.routes[0].legs[0].duration.value / 60
+        );
+      }
+
       // Use transaction for atomic updates
       //@ts-ignore
       const knex = this.app.get("postgresqlClient");
       try {
         const updatedRequest = await knex.transaction(async (trx: any) => {
           // Update the request with the dispatch assignment
-          const update = {
-            status: RequestStatus.Accepted,
-            dispatch: dispatch.id,
-          };
 
           // Update the request with new dispatch details
           const [updatedRequest] = await trx("requests")
@@ -152,10 +178,10 @@ export class RequestsService<
       // Update the request with the current dispatch location
       //@ts-ignore
       const knex = this.app.get("postgresqlClient");
-      const [updatedRequest] = await knex('requests')
+      const [updatedRequest] = await knex("requests")
         .where({ id })
         .update({ current_dispatch_location: data.current_dispatch_location })
-        .returning('*');
+        .returning("*");
 
       // Optionally, emit an event or take additional actions here
 
@@ -163,10 +189,9 @@ export class RequestsService<
       return successResponse(
         updatedRequest,
         200,
-        'Successfully updated current dispatch location'
+        "Successfully updated current dispatch location"
       );
     }
-
   }
 
   private async validateDispatchUser(user: any) {
@@ -176,6 +201,8 @@ export class RequestsService<
       throw new BadRequest("Only dispatchers can perform this operation");
     }
   }
+
+  private async calculateDistance() {}
 
   private async validateRequestStatus(status: RequestStatus) {
     if (!Object.values(RequestStatus).includes(status)) {
@@ -250,7 +277,7 @@ export const getOptions = (app: Application): KnexAdapterOptions => {
 };
 
 export class TripEstimateService<
-  ServiceParams extends Params = RequestsParams
+  ServiceParams extends Params = RequestsParams,
 > extends KnexService<Requests, RequestsData, RequestsParams, RequestsPatch> {
   constructor(options: KnexAdapterOptions, app: Application) {
     super(options);
