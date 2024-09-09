@@ -1,4 +1,4 @@
-require('dotenv').config();
+require("dotenv").config();
 
 export const constants = {
   accessToken: process.env.ACCESSTOKEN,
@@ -22,40 +22,49 @@ export const constants = {
   feePerMin: 3,
   oneSignalApiUrl: process.env.ONESIGNAL_URL,
 
-
   enumConfig: {
-    vehicleTypes: process.env.VEHICLETYPES ? process.env.VEHICLETYPES.split(',') : ['Bike', 'Car', 'Van', 'Truck']
+    vehicleTypes: process.env.VEHICLETYPES
+      ? process.env.VEHICLETYPES.split(",")
+      : ["Bike", "Car", "Van", "Truck"],
   },
 
   googleDirectionConfig: {
-    url: process.env.GOOGLEDIRECTIONBASEURL || 'https://maps.googleapis.com/maps/api/directions/json?',
-    key: process.env.GOOGLEDIRECTIONKEY
+    url:
+      process.env.GOOGLEDIRECTIONBASEURL ||
+      "https://maps.googleapis.com/maps/api/directions/json?",
+    key: process.env.GOOGLEDIRECTIONKEY,
   },
 
   redisConfig: {
     password: process.env.REDIS_PASSWORD,
-    host: process.env.REDIS_HOST || '127.0.0.1',
-    port: process.env.REDIS_PORT || '6379',
-    ssl : process.env.REDIS_SSL || false,
+    host: process.env.REDIS_HOST || "127.0.0.1",
+    port: process.env.REDIS_PORT || "6379",
+    ssl: process.env.REDIS_SSL || false,
   },
 
   queueConfig: {
-    concurrency: process.env.CONCURRENCY || 5
+    concurrency: process.env.CONCURRENCY || 5,
   },
 
   mailchimpConfig: {
-    apiKey: process.env.MAILCHIMP_API_KEY
+    apiKey: process.env.MAILCHIMP_API_KEY,
   },
   azureStorageConfig: {
-    connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING
+    connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING,
   },
   termii: {
     apiKey: process.env.TERMII_API_KEY,
-    baseUrl: process.env.TERMII_BASE_URL
+    baseUrl: process.env.TERMII_BASE_URL,
   },
 
   azureEmailConfig: {
     senderAddress: process.env.AZURE_EMAIL_SENDER_ADDRESS,
-    connectionString: process.env.AZURE_EMAIL_CONNECTION_STRING
-  }
-}
+    connectionString: process.env.AZURE_EMAIL_CONNECTION_STRING,
+  },
+
+  whatsAppApi: {
+    api_key: process.env.WHATSAPP_LOYSTAR_API_KEY,
+    merchant_id: process.env.WHATSAPP_LOYSTAR_MERCHANT_ID,
+    phone_wid: process.env.WHATSAPP_LOYSTAR_PHONE_WID,
+  },
+};
