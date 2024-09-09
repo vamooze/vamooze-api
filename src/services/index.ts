@@ -285,7 +285,7 @@ export const services = (app: Application) => {
     }
   );
 
-  app.post("/send-otp-via-whatsapp",  validator.body(schemas.dispatch_login) ,async (req: any, res: any) => {
+  app.post("/otp-via-whatsapp",  validator.body(schemas.dispatch_login) ,async (req: any, res: any) => {
     const { phone_number } = req.body;
 
     try {
@@ -305,7 +305,6 @@ export const services = (app: Application) => {
 
       let otp;
 
-      console.log(userDetails.data[0].otp, '>>>>>>>>')
       if (!userDetails.data[0].otp) {
         otp = getOtp();
 
