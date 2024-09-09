@@ -285,7 +285,9 @@ export const services = (app: Application) => {
     }
   );
 
-  app.post("/otp-via-whatsapp",  validator.body(schemas.dispatch_login) ,async (req: any, res: any) => {
+  app.post("/otp-via-whatsapp",  validator.body(schemas.dispatch_login) ,
+  
+  async (req: any, res: any) => {
     const { phone_number } = req.body;
 
     try {
@@ -613,7 +615,76 @@ export const services = (app: Application) => {
   app.post(
     "/auth/dispatch/resend-otp",
     validator.body(schemas.dispatch_login),
-    handleOtpDispatch
+    async (req: any, res: any) => {
+      const { phone_number } = req.body;
+  
+      try {
+        const User = app.service("users");
+        const userDetails = await User.find({
+          query: {
+            phone_number,
+          },
+        });
+  
+        if (userDetails?.data.length === 0) {
+          return res.status(404).json({
+            status: 404,
+            message: "User not found",
+          });
+        }
+  
+        let otp;
+  
+        if (!userDetails.data[0].otp) {
+          otp = getOtp();
+  
+          await app
+          .service("users")
+          .patch(userDetails?.data[0]?.id, { otp: req.body.otp });
+  
+        } else {
+          otp = userDetails.data[0].otp;
+        }
+  
+        // Prepare the request to the external API
+        const apiUrl = "https://wa-notif.loystar.co/v1/app/otp";
+        const headers = {
+          api_key: constants.whatsAppApi.api_key, // Store in environment variables
+          merchant_id: constants.whatsAppApi.merchant_id, // Store in environment variables
+          phone_wid: constants.whatsAppApi.phone_wid, // Store in environment variables
+        };
+  
+        const data = {
+          toPhoneNumber: phone_number,
+          otp: otp,
+        };
+  
+        // Make the POST request using Axios
+        const response = await axios.post(apiUrl, data, { headers });
+  
+        // If the request to the external API is successful
+        if (response.status === 200) {
+          return res.json({
+            success: true,
+            message: "OTP sent successfully via WhatsApp",
+            data: response.data,
+          });
+        } else {
+          return res.status(response.status).json({
+            success: false,
+            message: "Failed to send OTP via WhatsApp",
+            error: response.data,
+          });
+        }
+      } catch (error) {
+        return res.status(500).json({
+          success: false,
+          message: "An error occurred while processing your request",
+          //@ts-ignore
+          error: error.message,
+        });
+      }
+    }
   );
 
   app.post(
