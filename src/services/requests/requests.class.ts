@@ -7,6 +7,7 @@ import {
   RequestStatus,
   DispatchDecisionDTO,
 } from "../../interfaces/constants";
+import { addLocationUpdateJob } from '../../queue/request'
 import textConstant from "../../helpers/textConstant";
 import type { Application } from "../../declarations";
 import type {
@@ -121,6 +122,13 @@ export class RequestsService<
           dispatchDetails: dispatch,
           dispatch_who_accepted_user_id: dispatch.user_id,
           message: "Request accepted by dispatch",
+        });
+
+        // register a job to have the mobile frequently update the redis cache with current location
+        await addLocationUpdateJob({
+          dispatch_who_accepted_user_id: dispatch.user_id,
+          frequency: 30000,
+          request: Number(id),
         });
 
         // Return success response

@@ -45,16 +45,14 @@ client
 
 const app: Application = express(feathers());
 
-// const testRedis = async () => {
-//   await client.set("foo", "bar");
-//   const value = await client.get("foo");
+const testRedis = async () => {
+  // await client.flushDb();  // Clears the current database only
+  const keys = await client.keys('*');
+  console.log('Stored keys:', keys);
+  
+};
 
-//   const keys = await client.keys("bull:*"); // Get keys matching pattern
-//   if (keys.length > 0) {
-//     await client.del(keys); // Delete all matched keys
-//     console.log("Keys deleted:", keys);
-//   }
-// };
+testRedis()
 
 // Load app configuration
 app.configure(configuration(configurationValidator));

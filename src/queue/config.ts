@@ -1,4 +1,4 @@
-import { Queue, Worker, QueueEvents, ConnectionOptions, QueueOptions } from 'bullmq'
+import { ConnectionOptions, QueueOptions } from 'bullmq'
 import { constants } from "../helpers/constants";
 
 

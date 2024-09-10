@@ -136,6 +136,7 @@ export const requests = (app: Application) => {
     events: [
       textConstant.noDispatchAvailable,
       textConstant.requestAcceptedByDispatch,
+      textConstant.locationUpdateRequest
     ],
   });
 
@@ -195,8 +196,6 @@ export const requests = (app: Application) => {
     after: {
       create: [
         async (context: HookContext) => {
-          const user = context.params.user;
-
           addDispatchRequestJob(context.result);
         },
       ],
