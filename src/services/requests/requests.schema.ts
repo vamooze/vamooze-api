@@ -87,7 +87,6 @@ export const requestsSchema = Type.Object(
       })
     ),
     estimated_distance: Type.Optional(Type.Number({ minimum: 1 })),
-    estimated_delivery_time: Type.Optional(Type.Number({ minimum: 1 })),
     pickup_landmark: Type.Optional(
       Type.String({ maxLength: dispatchRequestValidators.landmark_length })
     ),
@@ -170,7 +169,6 @@ export const requestsDataSchema = Type.Pick(
     // "delivery_landmark",
     // "delivery_date",
     "estimated_distance",
-    "estimated_delivery_time",
     "status",
     // "reference",
     "current_dispatch_location",
@@ -236,7 +234,6 @@ export const requestsQueryProperties = Type.Pick(requestsSchema, [
   // "delivery_landmark",
   // "delivery_date",
   "estimated_distance",
-  "estimated_delivery_time",
   "status",
   "current_dispatch_location",
   // "reference",

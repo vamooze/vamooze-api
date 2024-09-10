@@ -34,7 +34,6 @@ export async function up(knex: Knex): Promise<void> {
       .integer("delivery_method")
       .notNullable()
     table.decimal("estimated_distance", 10, 2).nullable();
-    table.decimal("estimated_delivery_time", 10, 2).nullable();
     table.json("package_details").notNullable();
     table
       .enum("status", Object.values(RequestStatus))
@@ -68,9 +67,6 @@ export async function up(knex: Knex): Promise<void> {
 
     // Commented out as 'estimated_distance' is not in the JSON
     // table.decimal('estimated_distance', 10, 2).nullable()
-
-    // Commented out as 'estimated_delivery_time' is not in the JSON
-    // table.decimal('estimated_delivery_time', 10, 2).nullable()
 
     // Commented out as 'pickup_landmark' is not in the JSON
     // table.string('pickup_landmark', dispatchRequestValidators.landmark_length).nullable()

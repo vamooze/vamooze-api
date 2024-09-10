@@ -182,7 +182,6 @@ export const requests = (app: Application) => {
             status: RequestStatus.Pending,
             delivery_price_details: result.data.priceDetails,
             estimated_distance: result.data.distance,
-            estimated_delivery_time: result.data.time,
           };
           return context;
         },
