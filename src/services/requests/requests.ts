@@ -12,8 +12,6 @@ import {
 } from "../../helpers/functions";
 import { client } from "../../app";
 
-const moment = require("moment");
-import { Termii } from "../../helpers/termii";
 import { HookContext } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import { Request, Response } from "express";
@@ -29,15 +27,14 @@ import {
   requestsPatchResolver,
   requestsQueryResolver,
 } from "./requests.schema";
-import { RequestStatus, DispatchApprovalStatus  } from "../../interfaces/constants";
-import { Queue, Worker } from "bullmq";
 import {
-  dispatchRequestQueue,
-  generateJobName,
-  newDispatchRequest,
-  connectionObject,
-} from "../../queue";
+  RequestStatus,
+  DispatchApprovalStatus,
+} from "../../interfaces/constants";
+import { Queue, Worker } from "bullmq";
+
 import { app } from "../../app";
+import { addDispatchRequestJob } from "../../queue/request";
 import { logger } from "../../logger";
 import type { Application } from "../../declarations";
 import {
@@ -200,109 +197,7 @@ export const requests = (app: Application) => {
         async (context: HookContext) => {
           const user = context.params.user;
 
-          await dispatchRequestQueue.add("new-req", context.result);
-
-          new Worker(
-            newDispatchRequest,
-            async (job) => {
-              logger.info(
-                `running background job for new delivery request of id : ${job.data.id} with job id: ${job.id} `
-              );
-
-              const knex = app.get("postgresqlClient");
-              const suitableRidersData = await knex("dispatch")
-                .join("users", "dispatch.user_id", "users.id")
-                .select(
-                  "users.phone_number",
-                  "users.first_name",
-                  "users.last_name",
-                  "users.one_signal_player_id",
-                  "users.one_signal_alias",
-                  "dispatch.address",
-                  "dispatch.city",
-                  "dispatch.state",
-                  "dispatch.lga",
-                  "dispatch.country",
-                  "dispatch.available_days",
-                  "dispatch.available_time_frames",
-                  "dispatch.id",
-                  "dispatch.onTrip",
-                  "dispatch.isAcceptingPickUps",
-                  "dispatch.user_id",
-                )
-                .where({
-                  // isAcceptingPickUps: true, // Add necessary conditions here
-                  // onTrip: false,
-                  // approval_status: DispatchApprovalStatus.Approved,
-                })
-                .orderBy("id", "asc")
-                .limit(50);
-
-              if (!suitableRidersData || !suitableRidersData.length) {
-                context.service.emit(textConstant.noDispatchAvailable, {
-                  message: textConstant.english.noDispatchAvailableMessage,
-                  data: job.data,
-                });
-                if (job?.id) return await dispatchRequestQueue.remove(job?.id);
-                return;
-              }
-
-              const smsMessageDetails = {
-                name: user.first_name,
-                pickup_address: job.data.pickup_address,
-                delivery_address: job.data.delivery_address,
-                hour_time: moment(job.data.createdAt).format("h:mm:ss a"),
-                month_time: moment(job.data.createdAt).format("MMMM Do YYYY"),
-              };
-
-              const messageToRiders =
-                textConstant.english.messageToRiders(smsMessageDetails);
-
-              //**********send sms */
-              // const suitableRidersPhoneNumbers = suitableRidersData.map(
-              //   //@ts-ignore
-              //   (eachRider) => eachRider?.phone_number
-              // );
-              // const termii = new Termii();
-              // await termii.sendBatchSMS(
-              //   suitableRidersPhoneNumbers,
-              //   messageToRiders
-              // );
-              //**********send sms */
-
-             const dispatchPoolUserIds = suitableRidersData.map((eachRider) => eachRider?.user_id)
-
-             client.set(`${textConstant.requests}-dispatch-pool-${job.data.id}`, JSON.stringify(dispatchPoolUserIds))
-
-              //**********send onse signal */
-              const suitableRidersOneSingalAlias = suitableRidersData
-                //@ts-ignore
-                .map((eachRider) => eachRider?.one_signal_alias)
-                .filter((id) => id !== null && id !== undefined);
-
-              const dataForPushNotification = {
-                timeToUser: 10,
-                amountFrom: 0,
-                amountTo: job.data.delivery_price_details.totalPrice,
-                pickUpAddress: job.data.pickup_address,
-                dropOffAddress: job.data.delivery_address,
-                currency: "N",
-                paymentType: "Cash",
-                ...job.data,
-              };
-
-              await sendPush(
-                "dispatch",
-                textConstant.english.new_dispatch_push_notification_heading,
-                suitableRidersOneSingalAlias,
-                dataForPushNotification,
-                true
-              );
-               //**********send onse signal */
-          
-            },
-            connectionObject
-          );
+          addDispatchRequestJob(context.result);
         },
       ],
     },
