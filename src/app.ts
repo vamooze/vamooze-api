@@ -46,7 +46,7 @@ client
 const app: Application = express(feathers());
 
 const testRedis = async () => {
-  await client.flushDb();  // Clears the current database only
+  // await client.flushDb();  // Clears the current database only
   // const keys = await client.keys('*');
   // console.log('Stored keys:', keys);
   
