@@ -103,9 +103,21 @@ export const assets = (app: Application) => {
 
         if (!user) return;
 
-        context.params.query = {
-          user: user.id,
-        };
+        //@ts-ignore
+        const userRole = await app
+          .service("roles")
+          //@ts-ignore
+          .get(user.role);
+        //@ts-ignore
+        context.params.user.roleName = userRole.slug;
+
+        if (userRole.slug === Roles.SuperAdmin) {
+          // doing nothing ensures it doesn't filter asset by user
+        } else {
+          context.params.query = {
+            user: user.id,
+          };
+        }
 
         return context;
       },
