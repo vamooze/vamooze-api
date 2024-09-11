@@ -136,7 +136,8 @@ export const requests = (app: Application) => {
     events: [
       textConstant.noDispatchAvailable,
       textConstant.requestAcceptedByDispatch,
-      textConstant.locationUpdateRequest
+      textConstant.locationUpdateDispatch,
+      textConstant.locationUpdateRequester,
     ],
   });
 

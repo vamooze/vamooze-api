@@ -142,17 +142,27 @@ export const channels = (app: Application) => {
 
   app
     .service("requests")
-    .publish(textConstant.locationUpdateRequest, (data, context) => {
+    .publish(textConstant.locationUpdateDispatch, (data, context) => {
       return [
         app  //@ts-ignore
           .channel(`dispatch-channel/${data?.dispatch_who_accepted_user_id}`)
           .send({
-            message: "update dispatch location",
+            message: "Update dispatch location",
              //@ts-ignore
             request: data?.request,
           }),
       ];
     });
+
+    app
+    .service("requests")
+    .publish(textConstant.locationUpdateRequester, (data, context) => {
+       //@ts-ignore
+      const requesterId = data?.data?.requester;
+      return [app.channel(`userIds/${requesterId}`)];
+
+    });
+    
 
   // eslint-disable-next-line no-unused-vars
   app.publish((data: any, context: HookContext) => {

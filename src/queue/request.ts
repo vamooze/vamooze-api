@@ -164,7 +164,7 @@ export const locationUpdateWorker = new Worker(
   LOCATION_UPDATE_QUEUE,
   async (job) => {
     const { request, dispatch_who_accepted_user_id } = job.data;
-    app.service("requests").emit(textConstant.locationUpdateRequest, {
+    app.service("requests").emit(textConstant.locationUpdateDispatch, {
       request,
       dispatch_who_accepted_user_id,
     });

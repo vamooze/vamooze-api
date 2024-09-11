@@ -7,7 +7,7 @@ import {
   RequestStatus,
   DispatchDecisionDTO,
 } from "../../interfaces/constants";
-import { addLocationUpdateJob } from '../../queue/request'
+import { addLocationUpdateJob } from "../../queue/request";
 import textConstant from "../../helpers/textConstant";
 import type { Application } from "../../declarations";
 import type {
@@ -50,6 +50,8 @@ export class RequestsService<
 
       this.validateDispatchDecision(dispatchDecision);
 
+      this.validateLongLat(initial_dispatch_location);
+
       const request = await this.getAndValidateRequest(id);
 
       if (dispatchDecision === DispatchDecisionDTO.Reject) {
@@ -66,6 +68,7 @@ export class RequestsService<
       const update = {
         status: RequestStatus.Accepted,
         dispatch: dispatch.id,
+        initial_dispatch_location,
       };
 
       const pickupEstimate = await checkDistanceAndTimeUsingLongLat(
@@ -178,10 +181,10 @@ export class RequestsService<
 
     if (data.current_dispatch_location) {
       // Validate the dispatch user
-      await this.validateDispatchUser(user);
+      // await this.validateDispatchUser(user);
 
       // Ensure the request exists and is valid
-      const request = await this.getAndValidateRequest(id);
+      // const request = await this.getAndValidateRequest(id);
 
       // Update the request with the current dispatch location
       //@ts-ignore
@@ -192,6 +195,11 @@ export class RequestsService<
         .returning("*");
 
       // Optionally, emit an event or take additional actions here
+      //@ts-ignore
+      this.emit(textConstant.locationUpdateRequester, {
+        message: "Request details updated",
+        data: updatedRequest,
+      });
 
       // Return success response
       return successResponse(
@@ -215,6 +223,18 @@ export class RequestsService<
   private async validateRequestStatus(status: RequestStatus) {
     if (!Object.values(RequestStatus).includes(status)) {
       throw new BadRequest(`Invalid request status: ${status}`);
+    }
+  }
+
+  private validateLongLat(location: any) {
+    if (
+      typeof location !== "object" ||
+      typeof location.latitude !== "number" ||
+      typeof location.longitude !== "number"
+    ) {
+      throw new BadRequest(
+        "Initial dispatch location must be an object with latitude and longitude as numbers."
+      );
     }
   }
 
