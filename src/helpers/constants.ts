@@ -12,7 +12,6 @@ export const constants = {
   amazonAccessKeyId: process.env.AMAZONACCESSKEYID,
   amazonSecretAccessKey: process.env.AMAZONSECRETACCESSKEY,
   awsRegion: process.env.AWSREGION,
-  paystackPrivateKey: process.env.PAYSTACKPRIVATEKEY,
   paystackVerifyUrl: process.env.PAYSTACKVERIFYURL,
   oneSignalAppIdMerchant: process.env.ONESIGNAL_APP_IDMERCHANT,
   oneSignalTokenMerchant: process.env.ONESIGNAL_TOKENMERCHANT,
@@ -67,4 +66,8 @@ export const constants = {
     merchant_id: process.env.WHATSAPP_LOYSTAR_MERCHANT_ID,
     phone_wid: process.env.WHATSAPP_LOYSTAR_PHONE_WID,
   },
+
+  paystack:{
+    key: process.env.PAYSTACK_SECRET_KEY_TEST
+  }
 };

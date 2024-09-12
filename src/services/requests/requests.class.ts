@@ -218,8 +218,6 @@ export class RequestsService<
     }
   }
 
-  private async calculateDistance() {}
-
   private async validateRequestStatus(status: RequestStatus) {
     if (!Object.values(RequestStatus).includes(status)) {
       throw new BadRequest(`Invalid request status: ${status}`);

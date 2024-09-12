@@ -4,6 +4,17 @@ import type { TransportConnection, Application } from '@feathersjs/feathers'
 import authenticationClient from '@feathersjs/authentication-client'
 import type { AuthenticationClientOptions } from '@feathersjs/authentication-client'
 
+import { transactionsClient } from './services/transactions/transactions.shared'
+export type {
+  Transactions,
+  TransactionsData,
+  TransactionsQuery,
+  TransactionsPatch
+} from './services/transactions/transactions.shared'
+
+import { walletClient } from './services/wallet/wallet.shared'
+export type { Wallet, WalletData, WalletQuery, WalletPatch } from './services/wallet/wallet.shared'
+
 import { dispatchClient } from './services/dispatch/dispatch.shared'
 export type {
   Dispatch,
@@ -136,5 +147,7 @@ export const createClient = <Configuration = any,>(
   client.configure(businessDispatchesClient)
   client.configure(requestsClient)
   client.configure(dispatchClient)
+  client.configure(walletClient)
+  client.configure(transactionsClient)
   return client
 }

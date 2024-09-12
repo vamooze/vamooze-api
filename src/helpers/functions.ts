@@ -1,11 +1,11 @@
-import { dispatch } from './../services/dispatch/dispatch';
+import { dispatch } from "./../services/dispatch/dispatch";
 import { constants } from "./constants";
 import axios from "axios";
 import OneSignal from "onesignal-node";
 import type { HookContext } from "../declarations";
-import { EmailDTO, PushDataDTO  } from "../interfaces/constants";
+import { EmailDTO, PushDataDTO } from "../interfaces/constants";
 import { logger } from "../logger";
-import textConstant from './textConstant';
+import textConstant from "./textConstant";
 
 import { GeneralError, Forbidden } from "@feathersjs/errors";
 export const formatPhoneNumber = (phoneNumber: string | undefined) => {
@@ -112,10 +112,8 @@ export const generateTrackingId = (len: number | undefined) => {
   ).toUpperCase();
 };
 
-type NotificationType = "dispatch" | "merchants" 
+type NotificationType = "dispatch" | "merchants";
 type NotificationContent = string | { [language: string]: string };
-
-
 
 export const sendPush = async (
   type: NotificationType,
@@ -129,12 +127,14 @@ export const sendPush = async (
 
   // Determine which OneSignal app to use based on the type
   if (type === "dispatch") {
-    oneSignalToken =  constants.oneSignalToken;
+    oneSignalToken = constants.oneSignalToken;
     appId = constants.oneSignalAppId;
     notification = {
       app_id: appId,
       headings: { en: headings },
-      contents: { en: `A Ride is being requested. \n \nPickup from ${data.pickUpAddress} and deliver to ${data.dropOffAddress}` },
+      contents: {
+        en: `A Ride is being requested. \n \nPickup from ${data.pickUpAddress} and deliver to ${data.dropOffAddress}`,
+      },
       include_aliases: {
         external_id: ids,
       },
@@ -151,11 +151,12 @@ export const sendPush = async (
       priority: 10,
     };
   } else {
-    oneSignalToken =  constants.oneSignalTokenMerchant;
-    appId = constants.oneSignalAppIdMerchant
+    oneSignalToken = constants.oneSignalTokenMerchant;
+    appId = constants.oneSignalAppIdMerchant;
   }
 
-  if(!constants.oneSignalApiUrl) throw new GeneralError('one signal url missing')
+  if (!constants.oneSignalApiUrl)
+    throw new GeneralError("one signal url missing");
 
   try {
     const response = await axios.post(constants.oneSignalApiUrl, notification, {
@@ -192,7 +193,7 @@ export const checkPaystackPayment = async (paymentRef: any) => {
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${constants.paystackPrivateKey}`,
+          Authorization: `Bearer ${constants.paystack.key}`,
         },
       }
     );
@@ -335,4 +336,39 @@ export const validateLatLongObject = (location: any): boolean => {
     typeof location.latitude === "number" &&
     typeof location.longitude === "number"
   );
+};
+
+export const initializeTransaction = async (email: string, amount: number) => {
+  try {
+    const response = await axios.post(
+      "https://api.paystack.co/transaction/initialize",
+      { email, amount: amount * 100 }, // Paystack expects amount in kobo
+      {
+        headers: {
+          Authorization: `Bearer ${constants.paystack.key}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw new GeneralError("Failed to initialize Paystack transaction");
+  }
+};
+
+export const verifyTransaction = async (reference: string) => {
+  try {
+    const response = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        headers: {
+          Authorization: `Bearer ${constants.paystack.key}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw new GeneralError("Failed to initialize Paystack transaction");
+  }
 };
