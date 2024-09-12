@@ -6,7 +6,7 @@ const tableName = 'transactions';
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable( tableName, (table) => {
     table.increments('id');
-    table.integer('wallet_id').unsigned().references('id').inTable('wallets');
+    table.integer('wallet_id').unsigned().references('id').inTable('wallet');
     table.enum('type', ['deposit', 'withdrawal']).notNullable();
     table.decimal('amount', 12, 2).notNullable();
     table.enum('status', ['pending', 'completed', 'failed']).defaultTo('pending');
