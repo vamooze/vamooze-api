@@ -352,7 +352,8 @@ export const initializeTransaction = async (email: string, amount: number) => {
     );
     return response.data;
   } catch (error) {
-    throw new GeneralError("Failed to initialize Paystack transaction");
+    //@ts-ignore
+    throw new GeneralError(error.message || "Failed to initialize Paystack transaction");
   }
 };
 
