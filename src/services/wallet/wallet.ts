@@ -5,7 +5,7 @@ import { hooks as schemaHooks } from "@feathersjs/schema";
 import crypto from "crypto";
 import { Response, Request } from "express";
 import { BadRequest } from "@feathersjs/errors";
-import { Paginated } from '@feathersjs/feathers';
+import { Paginated } from "@feathersjs/feathers";
 import {
   walletDataValidator,
   walletPatchValidator,
@@ -18,19 +18,16 @@ import {
 } from "./wallet.schema";
 import { constants } from "../../helpers/constants";
 import { initializeTransaction, sendEmail } from "../../helpers/functions";
-import {
-  TransactionStatus,
-  TransactionType,
-} from "../../interfaces/constants";
-
+import { TransactionStatus, TransactionType } from "../../interfaces/constants";
+import { logger } from "../../logger";
 import type { Application } from "../../declarations";
 import { WalletService, getOptions } from "./wallet.class";
 import { walletPath, walletMethods } from "./wallet.shared";
-import { TransactionsData} from '../transactions/transactions.schema'
+import { TransactionsData } from "../transactions/transactions.schema";
 
 export * from "./wallet.class";
 export * from "./wallet.schema";
-import { Wallet } from './wallet.schema';
+import { Wallet } from "./wallet.schema";
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const wallet = (app: Application) => {
@@ -89,12 +86,12 @@ export const wallet = (app: Application) => {
       }
 
       const walletService = app.service("wallet");
-      let walletResult = await walletService.find({
+      let walletResult = (await walletService.find({
         query: { user_id: param.user.id },
-      }) as Paginated<Wallet>;
-      
+      })) as Paginated<Wallet>;
+
       let wallet: Wallet | null = null;
-      
+
       if (walletResult.data.length === 0) {
         // If no wallet exists, create a new one
         wallet = await walletService.create({
@@ -114,27 +111,24 @@ export const wallet = (app: Application) => {
       // Use the reference from Paystack's response
       const { reference, access_code } = response.data;
 
-      const transactionService = app.service('transactions');
-      const transactionData: Omit<TransactionsData, 'id'> = {
+      const transactionService = app.service("transactions");
+      const transactionData: Omit<TransactionsData, "id"> = {
         wallet_id: wallet.id,
         type: TransactionType.Deposit,
         amount: data.amount,
         status: TransactionStatus.Pending,
         reference: reference,
-        metadata: { 
+        metadata: {
           initiatedBy: param.user.id,
-          paymentMethod: 'Paystack',
-          access_code
-        }
+          paymentMethod: "Paystack",
+          access_code,
+        },
       };
-      
+
       //@ts-ignore
       const transaction = await transactionService.create(transactionData);
-      
-  
-      return { transaction, paymentResponse: response };
 
- 
+      return { transaction, paymentResponse: response };
     },
   });
 
@@ -148,40 +142,42 @@ export const wallet = (app: Application) => {
   async function processPaystackEvent(app: any, event: any) {
     // Extract necessary data from the Paystack event
     const { event: eventType, data } = event;
-  
+
     sendEmail({
       toEmail: "balogunbiola101@gmail.com", // Your email address
-      subject: 'Paystack Event Received',
+      subject: "Paystack Event Received",
       templateData: JSON.stringify(event, null, 2), // Convert the event object to a readable JSON format
-      receiptName: "Balogun Akeem Abiola" // Your name or any suitable receipt name
+      receiptName: "Balogun Akeem Abiola", // Your name or any suitable receipt name
     });
 
     // Handle successful payment event
     if (eventType === "charge.success") {
       const { amount, customer, reference, status } = data;
-  
+
       // Ensure payment status is successful
       if (status === "success") {
         // Find the user by email
         const userService = app.service("users");
-        const userResult = await userService.find({ query: { email: customer.email } });
-  
+        const userResult = await userService.find({
+          query: { email: customer.email },
+        });
+
         if (userResult.data.length > 0) {
           const userId = userResult.data[0].id;
-  
+
           // Find the existing transaction using the Paystack reference
           const transactionService = app.service("transactions");
           const transactionResult = await transactionService.find({
             query: { reference },
           });
-  
+
           if (transactionResult.data.length > 0) {
             const transaction = transactionResult.data[0];
-  
+
             // Ensure the transaction is still pending before updating
             if (transaction.status === TransactionStatus.Pending) {
               const knex = app.get("postgresqlClient");
-  
+
               try {
                 // Use Knex transaction to ensure atomicity
                 await knex.transaction(async (trx: any) => {
@@ -191,7 +187,7 @@ export const wallet = (app: Application) => {
                     { status: TransactionStatus.Completed },
                     { trx }
                   );
-  
+
                   // Update the user's wallet balance (assuming amount is in kobo)
                   const walletService = app.service("wallet");
                   await walletService.patch(
@@ -200,14 +196,21 @@ export const wallet = (app: Application) => {
                     { trx }
                   );
                 });
-  
-                console.log(`User ${customer.email} wallet funded with ₦${amount / 100}`);
+
+                console.log(
+                  `User ${customer.email} wallet funded with ₦${amount / 100}`
+                );
               } catch (error) {
-                console.error(`Error processing transaction ${reference}: `, error);
+                console.error(
+                  `Error processing transaction ${reference}: `,
+                  error
+                );
                 throw new Error("Transaction failed. Rolling back.");
               }
             } else {
-              console.log(`Transaction ${reference} has already been processed.`);
+              console.log(
+                `Transaction ${reference} has already been processed.`
+              );
             }
           } else {
             console.log(`Transaction with reference ${reference} not found.`);
@@ -220,6 +223,11 @@ export const wallet = (app: Application) => {
   }
 
   app.post("/webhook/paystack", async (req: Request, res: Response) => {
+    logger.info({
+      message: `Paystack web hook called`,
+      data: req.body,
+    });
+
     const secret = constants.paystack.key;
 
     if (!secret) {
