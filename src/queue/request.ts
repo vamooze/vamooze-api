@@ -3,6 +3,7 @@ import { queueOptions } from "./config";
 import { logger } from "../logger";
 import { app, client } from "../app";
 import { Termii } from "../helpers/termii";
+import { DispatchApprovalStatus } from '../interfaces/constants'
 
 import textConstant from "../helpers/textConstant";
 const moment = require("moment");
@@ -79,9 +80,9 @@ export const dispatchRequestWorker = new Worker(
         "dispatch.user_id"
       )
       .where({
-        // isAcceptingPickUps: true, // Add necessary conditions here
-        // onTrip: false,
-        // approval_status: DispatchApprovalStatus.Approved,
+        isAcceptingPickUps: true, // Add necessary conditions here
+        onTrip: false,
+        approval_status: DispatchApprovalStatus.Approved,
       })
       .orderBy("id", "asc")
       .limit(50);
