@@ -5,7 +5,7 @@ import type { Static } from "@feathersjs/typebox";
 import {
   TransactionStatus,
   TransactionType,
-} from "../../../src/interfaces/constants";
+} from "../../interfaces/constants";
 import type { HookContext } from "../../declarations";
 import { dataValidator, queryValidator } from "../../validators";
 import type { TransactionsService } from "./transactions.class";
