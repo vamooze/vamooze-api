@@ -147,7 +147,7 @@ export const wallet = (app: Application) => {
   });
 
   async function processPaystackEvent(app: any, event: any) {
-    // Extract necessary data from event
+    // Extract necessary data from the Paystack event
     const { event: eventType, data } = event;
   
     // Handle successful payment event
@@ -158,35 +158,56 @@ export const wallet = (app: Application) => {
       if (status === "success") {
         // Find the user by email
         const userService = app.service("users");
-        const user = await userService.find({ query: { email: customer.email } });
+        const userResult = await userService.find({ query: { email: customer.email } });
   
-        if (user.data.length > 0) {
-          const userId = user.data[0].id;
+        if (userResult.data.length > 0) {
+          const userId = userResult.data[0].id;
   
-          // Find the existing transaction using the reference
+          // Find the existing transaction using the Paystack reference
           const transactionService = app.service("transactions");
           const transactionResult = await transactionService.find({
             query: { reference },
-          }) 
+          });
   
           if (transactionResult.data.length > 0) {
             const transaction = transactionResult.data[0];
   
-            // Update the transaction status to 'Completed'
-            await transactionService.patch(transaction.id, {
-              status: TransactionStatus.Completed,
-            });
+            // Ensure the transaction is still pending before updating
+            if (transaction.status === TransactionStatus.Pending) {
+              const knex = app.get("postgresqlClient");
   
-            // Add the amount to the user's wallet (assuming amount is in kobo)
-            const walletService = app.service("wallets");
-            await walletService.patch(transaction.wallet_id, {
-              $inc: { balance: amount / 100 }, // Convert kobo to Naira
-            });
+              try {
+                // Use Knex transaction to ensure atomicity
+                await knex.transaction(async (trx: any) => {
+                  // Update the transaction status to 'Completed'
+                  await transactionService.patch(
+                    transaction.id,
+                    { status: TransactionStatus.Completed },
+                    { trx }
+                  );
   
-            console.log(`User ${customer.email} wallet funded with ₦${amount / 100}`);
+                  // Update the user's wallet balance (assuming amount is in kobo)
+                  const walletService = app.service("wallet");
+                  await walletService.patch(
+                    transaction.wallet_id,
+                    { $inc: { balance: amount / 100 } }, // Convert kobo to Naira
+                    { trx }
+                  );
+                });
+  
+                console.log(`User ${customer.email} wallet funded with ₦${amount / 100}`);
+              } catch (error) {
+                console.error(`Error processing transaction ${reference}: `, error);
+                throw new Error("Transaction failed. Rolling back.");
+              }
+            } else {
+              console.log(`Transaction ${reference} has already been processed.`);
+            }
           } else {
             console.log(`Transaction with reference ${reference} not found.`);
           }
+        } else {
+          console.log(`User with email ${customer.email} not found.`);
         }
       }
     }
