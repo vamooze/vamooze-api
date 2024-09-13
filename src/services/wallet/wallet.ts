@@ -17,7 +17,7 @@ import {
   walletQueryResolver,
 } from "./wallet.schema";
 import { constants } from "../../helpers/constants";
-import { initializeTransaction } from "../../helpers/functions";
+import { initializeTransaction, sendEmail } from "../../helpers/functions";
 import {
   TransactionStatus,
   TransactionType,
@@ -84,7 +84,6 @@ export const wallet = (app: Application) => {
         throw new BadRequest("Amount must be a number and at least 2000.");
       }
 
-      param.user.email = "balogunbiola101@gmail.com";
       if (!param.user.email) {
         throw new BadRequest("Invalid Email");
       }
@@ -150,6 +149,13 @@ export const wallet = (app: Application) => {
     // Extract necessary data from the Paystack event
     const { event: eventType, data } = event;
   
+    sendEmail({
+      toEmail: "balogunbiola101@gmail.com", // Your email address
+      subject: 'Paystack Event Received',
+      templateData: JSON.stringify(event, null, 2), // Convert the event object to a readable JSON format
+      receiptName: "Balogun Akeem Abiola" // Your name or any suitable receipt name
+    });
+
     // Handle successful payment event
     if (eventType === "charge.success") {
       const { amount, customer, reference, status } = data;
