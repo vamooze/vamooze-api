@@ -1,4 +1,4 @@
-// // For more information about this file see https://dove.feathersjs.com/guides/cli/service.schemas.html
+// For more information about this file see https://dove.feathersjs.com/guides/cli/service.schemas.html
 import { resolve } from '@feathersjs/schema'
 import { Type, getValidator, querySyntax } from '@feathersjs/typebox'
 import type { Static } from '@feathersjs/typebox'
@@ -11,7 +11,10 @@ import type { WalletService } from './wallet.class'
 export const walletSchema = Type.Object(
   {
     id: Type.Number(),
-    text: Type.String()
+    user_id: Type.Number(),
+    balance: Type.Number({ minimum: 0, maximum: 9999999999.99 }),
+    createdAt: Type.String({ format: 'date-time' }),
+    updatedAt: Type.String({ format: 'date-time' })
   },
   { $id: 'Wallet', additionalProperties: false }
 )
@@ -22,7 +25,7 @@ export const walletResolver = resolve<Wallet, HookContext<WalletService>>({})
 export const walletExternalResolver = resolve<Wallet, HookContext<WalletService>>({})
 
 // Schema for creating new entries
-export const walletDataSchema = Type.Pick(walletSchema, ['text'], {
+export const walletDataSchema = Type.Pick(walletSchema, ['user_id', 'balance'], {
   $id: 'WalletData'
 })
 export type WalletData = Static<typeof walletDataSchema>
@@ -38,7 +41,7 @@ export const walletPatchValidator = getValidator(walletPatchSchema, dataValidato
 export const walletPatchResolver = resolve<Wallet, HookContext<WalletService>>({})
 
 // Schema for allowed query properties
-export const walletQueryProperties = Type.Pick(walletSchema, ['id', 'text'])
+export const walletQueryProperties = Type.Pick(walletSchema, ['id', 'user_id', 'balance'])
 export const walletQuerySchema = Type.Intersect(
   [
     querySyntax(walletQueryProperties),

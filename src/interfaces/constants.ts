@@ -43,13 +43,24 @@ export enum DispatchApprovalStatus {
   Rejected = "rejected",
 }
 
+export enum TransactionStatus {
+  Pending = "pending",
+  Completed = "Completed",
+  Failed = "failed",
+}
+
+export enum TransactionType {
+  Deposit = "deposit",
+  Withdrawal = "withdrawal",
+}
+
 export enum Roles {
   Admin = "admin",
   AssetOwner = "asset-owner",
   Dispatch = "dispatch",
   SuperAdmin = "super-admin",
   BusinessOwner = "business-owner",
-  GuestUser = "guest-user"
+  GuestUser = "guest-user",
 }
 
 export enum LeaseStatus {
@@ -99,11 +110,10 @@ export enum RequestStatus {
   EnrouteToPickUp = "to_pickup",
   EnrouteToDropOff = "to_drop_off",
   Delivered = "delivered",
-  Expired =  "expired",
-  CompletePickUp = 'complete_pick_up',
-  CompleteDropOff = 'complete_drop_off'
+  Expired = "expired",
+  CompletePickUp = "complete_pick_up",
+  CompleteDropOff = "complete_drop_off",
 }
-
 
 export interface PushDataDTO {
   timeToUser: number;

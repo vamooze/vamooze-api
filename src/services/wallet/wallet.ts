@@ -5,7 +5,7 @@ import { hooks as schemaHooks } from "@feathersjs/schema";
 import crypto from "crypto";
 import { Response, Request } from "express";
 import { BadRequest } from "@feathersjs/errors";
-
+import { Paginated } from '@feathersjs/feathers';
 import {
   walletDataValidator,
   walletPatchValidator,
@@ -18,13 +18,19 @@ import {
 } from "./wallet.schema";
 import { constants } from "../../helpers/constants";
 import { initializeTransaction } from "../../helpers/functions";
+import {
+  TransactionStatus,
+  TransactionType,
+} from "../../interfaces/constants";
 
 import type { Application } from "../../declarations";
 import { WalletService, getOptions } from "./wallet.class";
 import { walletPath, walletMethods } from "./wallet.shared";
+import { TransactionsData} from '../transactions/transactions.schema'
 
 export * from "./wallet.class";
 export * from "./wallet.schema";
+import { Wallet } from './wallet.schema';
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const wallet = (app: Application) => {
@@ -83,14 +89,53 @@ export const wallet = (app: Application) => {
         throw new BadRequest("Invalid Email");
       }
 
+      const walletService = app.service("wallet");
+      let walletResult = await walletService.find({
+        query: { user_id: param.user.id },
+      }) as Paginated<Wallet>;
+      
+      let wallet: Wallet | null = null;
+      
+      if (walletResult.data.length === 0) {
+        // If no wallet exists, create a new one
+        wallet = await walletService.create({
+          user_id: param.user.id,
+          balance: 0.0, // New wallet starts with a balance of 0
+        });
+      } else {
+        // Use the existing wallet
+        wallet = walletResult.data[0];
+      }
+
       const response = await initializeTransaction(
         param.user.email,
         data.amount
       );
-      // const walletService = app.service("wallet");
-      // return await walletService.fundWallet(params);
 
-      return response;
+      // Use the reference from Paystack's response
+      const { reference, access_code } = response.data;
+
+      const transactionService = app.service('transactions');
+      const transactionData: Omit<TransactionsData, 'id'> = {
+        wallet_id: wallet.id,
+        type: TransactionType.Deposit,
+        amount: data.amount,
+        status: TransactionStatus.Pending,
+        reference: reference,
+        metadata: { 
+          initiatedBy: param.user.id,
+          paymentMethod: 'Paystack',
+          access_code
+        }
+      };
+      
+      //@ts-ignore
+      const transaction = await transactionService.create(transactionData);
+      
+  
+      return { transaction, paymentResponse: response };
+
+ 
     },
   });
 
@@ -100,6 +145,52 @@ export const wallet = (app: Application) => {
       all: [authenticate("jwt")], // Custom hooks
     },
   });
+
+  async function processPaystackEvent(app: any, event: any) {
+    // Extract necessary data from event
+    const { event: eventType, data } = event;
+  
+    // Handle successful payment event
+    if (eventType === "charge.success") {
+      const { amount, customer, reference, status } = data;
+  
+      // Ensure payment status is successful
+      if (status === "success") {
+        // Find the user by email
+        const userService = app.service("users");
+        const user = await userService.find({ query: { email: customer.email } });
+  
+        if (user.data.length > 0) {
+          const userId = user.data[0].id;
+  
+          // Find the existing transaction using the reference
+          const transactionService = app.service("transactions");
+          const transactionResult = await transactionService.find({
+            query: { reference },
+          }) 
+  
+          if (transactionResult.data.length > 0) {
+            const transaction = transactionResult.data[0];
+  
+            // Update the transaction status to 'Completed'
+            await transactionService.patch(transaction.id, {
+              status: TransactionStatus.Completed,
+            });
+  
+            // Add the amount to the user's wallet (assuming amount is in kobo)
+            const walletService = app.service("wallets");
+            await walletService.patch(transaction.wallet_id, {
+              $inc: { balance: amount / 100 }, // Convert kobo to Naira
+            });
+  
+            console.log(`User ${customer.email} wallet funded with ₦${amount / 100}`);
+          } else {
+            console.log(`Transaction with reference ${reference} not found.`);
+          }
+        }
+      }
+    }
+  }
 
   app.post("/webhook/paystack", async (req: Request, res: Response) => {
     const secret = constants.paystack.key;
@@ -130,14 +221,9 @@ export const wallet = (app: Application) => {
         return res.status(401).send("Unauthorized");
       }
 
-      // Retrieve event from Paystack
-      const event = req.body;
-
-      // Acknowledge receipt of webhook (send 200 OK immediately)
       res.status(200).send("OK");
 
-      // Process the event asynchronously after sending 200 OK
-      // await processPaystackEvent(app, event);
+      await processPaystackEvent(app, req.body);
     } catch (error) {
       console.error("Webhook error:", error);
       res.status(500).send("Internal Server Error");
