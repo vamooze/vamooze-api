@@ -179,7 +179,7 @@ export const wallet = (app: Application) => {
               const knex = app.get("postgresqlClient");
 
               try {
-                // Use Knex transaction to ensure atomicity
+             
                 await knex.transaction(async (trx: any) => {
                   // Update the transaction status to 'Completed'
                   await transactionService.patch(
