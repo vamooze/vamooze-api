@@ -144,6 +144,11 @@ export const wallet = (app: Application) => {
   async function processPaystackEvent(app: any, event: any) {
     // Extract necessary data from the Paystack event
     const { event: eventType, data } = event;
+
+    logger.info({
+      message: `${eventType}`,
+      data,
+    });
    
     // Handle successful payment event
     if (eventType === "charge.success") {
