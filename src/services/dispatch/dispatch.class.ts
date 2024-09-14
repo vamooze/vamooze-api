@@ -13,7 +13,11 @@ import { Roles, DispatchApprovalStatus } from "../../interfaces/constants";
 import {
   successResponse,
   successResponseWithPagination,
+  sendPush,
 } from "../../helpers/functions";
+import textConstant from "../../helpers/textConstant";
+
+
 
 export type { Dispatch, DispatchData, DispatchPatch, DispatchQuery };
 
@@ -89,6 +93,30 @@ export class DispatchService<
         //@ts-ignore
         update.approved_by = user.id;
         update.approval_date = new Date().toISOString();
+
+        if(data.approval_status ===  DispatchApprovalStatus.Approved){
+           //@ts-ignore
+          const knex = this.app.get("postgresqlClient");
+          const result = await knex("dispatch")
+          .join("users", "dispatch.user_id", "users.id")
+          .where("dispatch.id", dispatchId)
+          .select(
+            "dispatch.id as dispatchId",
+            "dispatch.user_id",
+            "users.id as userId",
+            "users.one_signal_alias",
+            "users.first_name",
+            "users.last_name"
+          )
+          .first();
+
+          sendPush(
+            textConstant.dispatchApproval,
+            textConstant.pushNotifications.english.dispatchApprovalMessage,
+            [result.one_signal_alias],
+            { status: DispatchApprovalStatus.Approved }
+          )
+        }
       }
     } else {
       // dispatch user only updates occur here

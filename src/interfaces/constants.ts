@@ -1,3 +1,5 @@
+import textConstant from "../helpers/textConstant";
+
 export enum AssetStatus {
   Active = "active",
   Inactive = "inactive",
@@ -115,7 +117,10 @@ export enum RequestStatus {
   CompleteDropOff = "complete_drop_off",
 }
 
-export interface PushDataDTO {
+
+
+
+ interface DispatchRequestDTO {
   timeToUser: number;
   amountFrom: number;
   amountTo: number;
@@ -123,4 +128,31 @@ export interface PushDataDTO {
   dropOffAddress: string;
   currency: string;
   paymentType: string;
+}
+
+export type PushDataDTO = DispatchRequestDTO | Record<string, any>;
+
+export type PushType =
+  | typeof textConstant.dispatchRequest
+  | typeof textConstant.dispatchApproval;
+
+
+export interface NotificationBase {
+  app_id: string;
+  data: PushDataDTO;
+  include_aliases: {
+    external_id: string[];
+  };
+  target_channel: "push";
+  included_segments: string[];
+  ios_sound: string;
+  android_channel_id: string;
+  largeIcon: string;
+  lockScreenVisibility: number;
+  smallIcon: string;
+  smallIconAccentColor: string;
+  android_sound: string;
+  priority: number;
+  headings: { en: string };
+  contents: { en: string };
 }

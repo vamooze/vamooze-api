@@ -3,7 +3,7 @@ import { queueOptions } from "./config";
 import { logger } from "../logger";
 import { app, client } from "../app";
 import { Termii } from "../helpers/termii";
-import { DispatchApprovalStatus } from '../interfaces/constants'
+import { DispatchApprovalStatus } from "../interfaces/constants";
 
 import textConstant from "../helpers/textConstant";
 const moment = require("moment");
@@ -151,11 +151,10 @@ export const dispatchRequestWorker = new Worker(
     };
 
     await sendPush(
-      "dispatch",
+      textConstant.dispatchRequest,
       textConstant.english.new_dispatch_push_notification_heading,
       suitableRidersOneSingalAlias,
-      dataForPushNotification,
-      true
+      dataForPushNotification
     );
   },
   queueOptions

@@ -36,7 +36,10 @@ const client = createClient({
   },
 });
 
-client.on("error", (err) => console.log("Redis Connection Error"));
+client.on("error", (err) => {
+  console.log("Redis Connection Error")
+  logger.error(err)
+});
 
 client
   .connect()

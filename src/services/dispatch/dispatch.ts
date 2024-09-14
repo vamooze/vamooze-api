@@ -244,7 +244,8 @@ export const dispatch = (app: Application) => {
             },
           });
 
-          if (existingDispatch.total > 0) {
+  
+          if (existingDispatch.data.length) {
             throw new Conflict("User already has a dispatch record.");
           }
           context.data = {

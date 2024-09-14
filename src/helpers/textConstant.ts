@@ -1,4 +1,5 @@
 const textConstant = {
+  push: "push",
   requests: "requests",
   created: "created",
   dispatch: "dispatch",
@@ -11,6 +12,8 @@ const textConstant = {
   locationUpdateRequester: "location_update_requester",
   connection: "connection",
   login: "login",
+  dispatchRequest: "dispatch_request",
+  dispatchApproval: "dispatch_approval",
   english: {
     new_dispatch_push_notification_heading: "New Delivery Request.",
     noDispatchAvailableMessage: "No dispatch available",
@@ -18,6 +21,12 @@ const textConstant = {
       return `Incoming request from ${smsMessageDetails.name}:  (${smsMessageDetails.pickup_address} - ${smsMessageDetails.delivery_address}), ${smsMessageDetails.hour_time} on ${smsMessageDetails.month_time}`;
     },
   },
+  pushNotifications: {
+    english: {
+      dispatchApprovalMessage: "You have been approved",
+      generic: "New notification"
+    }
+  }
 };
 
 export default textConstant;

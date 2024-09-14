@@ -3,7 +3,12 @@ import { constants } from "./constants";
 import axios from "axios";
 import OneSignal from "onesignal-node";
 import type { HookContext } from "../declarations";
-import { EmailDTO, PushDataDTO } from "../interfaces/constants";
+import {
+  EmailDTO,
+  PushDataDTO,
+  NotificationBase,
+  PushType,
+} from "../interfaces/constants";
 import { logger } from "../logger";
 import textConstant from "./textConstant";
 
@@ -112,51 +117,86 @@ export const generateTrackingId = (len: number | undefined) => {
   ).toUpperCase();
 };
 
-type NotificationType = "dispatch" | "merchants";
-type NotificationContent = string | { [language: string]: string };
+const getAppId = (type: PushType): string => {
+  if (
+    type === textConstant.dispatchRequest ||
+    type === textConstant.dispatchApproval
+  ) {
+    return constants.oneSignalAppId ?? "";
+  }
+  // Add more conditions here if needed for other PushTypes
+  return constants.oneSignalAppIdMerchant ?? "";
+};
 
-export const sendPush = async (
-  type: NotificationType,
-  headings: any,
-  ids: any[],
-  data: PushDataDTO,
-  playSound: boolean
-) => {
-  let oneSignalToken, appId;
-  let notification = {};
-
-  // Determine which OneSignal app to use based on the type
-  if (type === "dispatch") {
-    oneSignalToken = constants.oneSignalToken;
-    appId = constants.oneSignalAppId;
-    notification = {
-      app_id: appId,
-      headings: { en: headings },
-      contents: {
-        en: `A Ride is being requested. \n \nPickup from ${data.pickUpAddress} and deliver to ${data.dropOffAddress}`,
-      },
-      include_aliases: {
-        external_id: ids,
-      },
-      data: data,
-      target_channel: "push",
-      included_segments: ["Active Users"],
-      ios_sound: "mixkit-arabian-mystery-harp-notification-2489",
-      android_channel_id: "20e11aa0-ca6c-4d2b-bd35-53a673523f1b",
-      largeIcon: "ic_onesignal_large_icon_default",
-      lockScreenVisibility: 1,
-      smallIcon: "ic_stat_onesignal_default",
-      smallIconAccentColor: "008967",
-      android_sound: "mixkit_arabian_mystery_harp_notification_2489",
-      priority: 10,
-    };
-  } else {
-    oneSignalToken = constants.oneSignalTokenMerchant;
-    appId = constants.oneSignalAppIdMerchant;
+const createNotification = (
+  type: PushType,
+  headings: string,
+  ids: string[],
+  data: PushDataDTO
+): NotificationBase => {
+  const appId = getAppId(type);
+  if (!appId) {
+    throw new Error(`No app ID found for push type: ${type}`);
   }
 
-  if (!constants.oneSignalApiUrl)
-    throw new GeneralError("one signal url missing");
+  const baseNotification: NotificationBase = {
+    app_id: appId,
+    data,
+    include_aliases: { external_id: ids },
+    target_channel: "push",
+    included_segments: ["Active Users"],
+    ios_sound: "mixkit-arabian-mystery-harp-notification-2489",
+    android_channel_id: "20e11aa0-ca6c-4d2b-bd35-53a673523f1b",
+    largeIcon: "ic_onesignal_large_icon_default",
+    lockScreenVisibility: 1,
+    smallIcon: "ic_stat_onesignal_default",
+    smallIconAccentColor: "008967",
+    android_sound: "mixkit_arabian_mystery_harp_notification_2489",
+    priority: 10,
+    headings: { en: headings },
+    contents: { en: "" }, // We'll set this based on the type
+  };
+
+  // Set contents based on the push type
+  if (
+    type === textConstant.dispatchRequest &&
+    "pickUpAddress" in data &&
+    "dropOffAddress" in data
+  ) {
+    baseNotification.contents.en = `A Ride is being requested. \n \nPickup from ${data.pickUpAddress} and deliver to ${data.dropOffAddress}`;
+  } else if (type === textConstant.dispatchApproval) {
+    baseNotification.contents.en =
+      textConstant.pushNotifications.english.dispatchApprovalMessage;
+  } else {
+    // For other types, you might want to set a default message or handle it differently
+    baseNotification.contents.en =
+      textConstant.pushNotifications.english.generic;
+  }
+
+  return baseNotification;
+};
+
+export const sendPush = async (
+  type: PushType,
+  headings: string,
+  ids: string[],
+  data: PushDataDTO
+): Promise<any> => {
+  if (!constants.oneSignalApiUrl) {
+    throw new Error("OneSignal API URL is missing");
+  }
+
+  const oneSignalToken =
+    type === textConstant.dispatchApproval ||
+    type === textConstant.dispatchRequest
+      ? constants.oneSignalToken
+      : constants.oneSignalTokenMerchant;
+
+  if (!oneSignalToken) {
+    throw new Error(`No OneSignal token found for push type: ${type}`);
+  }
+
+  const notification = createNotification(type, headings, ids, data);
 
   try {
     const response = await axios.post(constants.oneSignalApiUrl, notification, {
@@ -169,9 +209,12 @@ export const sendPush = async (
     return response.data;
   } catch (error) {
     if (error instanceof OneSignal.HTTPError) {
-      logger.info(error.statusCode);
-      logger.info(error.body);
+      logger.info(`OneSignal HTTP Error - Status Code: ${error.statusCode}`);
+      logger.info(`Error Body: ${JSON.stringify(error.body)}`);
+    } else {
+      logger.error("An unexpected error occurred", error);
     }
+    throw error; // Re-throw the error for the caller to handle
   }
 };
 
@@ -352,8 +395,10 @@ export const initializeTransaction = async (email: string, amount: number) => {
     );
     return response.data;
   } catch (error) {
-    //@ts-ignore
-    throw new GeneralError(error.message || "Failed to initialize Paystack transaction");
+    throw new GeneralError(
+      //@ts-ignore
+      error.message || "Failed to initialize Paystack transaction"
+    );
   }
 };
 
