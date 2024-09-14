@@ -81,8 +81,10 @@ export const wallet = (app: Application) => {
         throw new BadRequest("Amount must be a number and at least 2000.");
       }
 
-      if (!param.user.email) {
-        throw new BadRequest("Invalid Email");
+      param.user.email = 'payment@vamooze.com'
+
+      if (!param.user.email && !param.user.phone_number) {
+        throw new BadRequest("Ensure either an email or phone number is passed");
       }
 
       const walletService = app.service("wallet");
@@ -104,7 +106,7 @@ export const wallet = (app: Application) => {
       }
 
       const response = await initializeTransaction(
-        param.user.email,
+        param.user,
         data.amount
       );
 
@@ -142,24 +144,17 @@ export const wallet = (app: Application) => {
   async function processPaystackEvent(app: any, event: any) {
     // Extract necessary data from the Paystack event
     const { event: eventType, data } = event;
-
-    sendEmail({
-      toEmail: "balogunbiola101@gmail.com", // Your email address
-      subject: "Paystack Event Received",
-      templateData: JSON.stringify(event, null, 2), // Convert the event object to a readable JSON format
-      receiptName: "Balogun Akeem Abiola", // Your name or any suitable receipt name
-    });
-
+   
     // Handle successful payment event
     if (eventType === "charge.success") {
-      const { amount, customer, reference, status } = data;
+      const { amount, customer, reference, status, phone } = data;
 
       // Ensure payment status is successful
       if (status === "success") {
         // Find the user by email
         const userService = app.service("users");
         const userResult = await userService.find({
-          query: { email: customer.email },
+          query: { phone_number: phone  },
         });
 
         if (userResult.data.length > 0) {
@@ -251,6 +246,8 @@ export const wallet = (app: Application) => {
         .createHmac("sha512", secret)
         .update(JSON.stringify(req.body))
         .digest("hex");
+
+        console.log( hash , '>>>>>>>>>', req.headers["x-paystack-signature"])
 
       if (hash !== req.headers["x-paystack-signature"]) {
         return res.status(401).send("Unauthorized");

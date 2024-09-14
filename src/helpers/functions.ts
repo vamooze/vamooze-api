@@ -381,11 +381,26 @@ export const validateLatLongObject = (location: any): boolean => {
   );
 };
 
-export const initializeTransaction = async (email: string, amount: number) => {
+export const initializeTransaction = async (user: any, amount: number) => {
+
   try {
+    const payload: any = {
+      amount: amount * 100, // Paystack expects amount in kobo
+      first_name: user.first_name,
+      last_name: user.last_name,
+    };
+
+    if (user.email) {
+      payload.email = user.email;
+    }
+
+    if (user.phone_number) {
+      payload.phone = user.phone_number;
+    }
+
     const response = await axios.post(
       "https://api.paystack.co/transaction/initialize",
-      { email, amount: amount * 100 }, // Paystack expects amount in kobo
+      payload, // Paystack expects amount in kobo
       {
         headers: {
           Authorization: `Bearer ${constants.paystack.key}`,
@@ -397,7 +412,7 @@ export const initializeTransaction = async (email: string, amount: number) => {
   } catch (error) {
     throw new GeneralError(
       //@ts-ignore
-      error.message || "Failed to initialize Paystack transaction"
+      error
     );
   }
 };
