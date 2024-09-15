@@ -234,27 +234,14 @@ export const wallet = (app: Application) => {
       throw new Error("SECRET_KEY is not defined in environment variables");
     }
 
-    const allowedIps = ["52.31.139.75", "52.49.173.169", "52.214.14.220"];
+
     try {
-      // Check if request IP is allowed (optional for extra security)
-      // const requestIp =
-      //   req.ip ||
-      //   req.headers["x-forwarded-for"] ||
-      //   req.connection.remoteAddress;
-      // //@ts-ignore
-      // if (!allowedIps.includes(requestIp)) {
-      //   return res.status(403).send("Forbidden");
-      // }
-
-      console.log('req.ip.....', req.ip, req.headers["x-forwarded-for"], req.connection.remoteAddress )
-
+  
       // Validate the signature
       const hash = crypto
         .createHmac("sha512", secret)
         .update(JSON.stringify(req.body))
         .digest("hex");
-
-        console.log( hash , '>>>>>>>>>', req.headers["x-paystack-signature"])
 
       if (hash !== req.headers["x-paystack-signature"]) {
         return res.status(401).send("Unauthorized");

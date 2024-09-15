@@ -47,7 +47,7 @@ export enum DispatchApprovalStatus {
 
 export enum TransactionStatus {
   Pending = "pending",
-  Completed = "Completed",
+  Completed = "completed",
   Failed = "failed",
 }
 
