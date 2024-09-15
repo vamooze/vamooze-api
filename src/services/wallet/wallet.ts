@@ -81,10 +81,12 @@ export const wallet = (app: Application) => {
         throw new BadRequest("Amount must be a number and at least 2000.");
       }
 
-      param.user.email = 'payment@vamooze.com'
+      param.user.email = "payment@vamooze.com";
 
       if (!param.user.email && !param.user.phone_number) {
-        throw new BadRequest("Ensure either an email or phone number is passed");
+        throw new BadRequest(
+          "Ensure either an email or phone number is passed"
+        );
       }
 
       const walletService = app.service("wallet");
@@ -105,10 +107,7 @@ export const wallet = (app: Application) => {
         wallet = walletResult.data[0];
       }
 
-      const response = await initializeTransaction(
-        param.user,
-        data.amount
-      );
+      const response = await initializeTransaction(param.user, data.amount);
 
       // Use the reference from Paystack's response
       const { reference, access_code } = response.data;
@@ -149,7 +148,7 @@ export const wallet = (app: Application) => {
       message: `${eventType}`,
       data,
     });
-   
+
     // Handle successful payment event
     if (eventType === "charge.success") {
       const { amount, customer, reference, status, phone } = data;
@@ -159,64 +158,62 @@ export const wallet = (app: Application) => {
         // Find the user by email
         const userService = app.service("users");
         const userResult = await userService.find({
-          query: { phone_number: phone  },
+          query: { phone_number: phone },
         });
 
-        if (userResult.data.length > 0) {
-          const userId = userResult.data[0].id;
+        if (userResult.data.length === 0) {
+          logger.warn(`User with phone number: ${phone} not found.`);
+          return;
+        }
 
-          // Find the existing transaction using the Paystack reference
-          const transactionService = app.service("transactions");
-          const transactionResult = await transactionService.find({
-            query: { reference },
+        const userId = userResult.data[0].id;
+
+        // Find the existing transaction using the Paystack reference
+        const transactionService = app.service("transactions");
+        const transactionResult = await transactionService.find({
+          query: { reference },
+        });
+
+        if (transactionResult.data.length === 0) {
+          logger.warn(`Transaction with reference ${reference} not found.`);
+          return;
+        }
+
+        const transaction = transactionResult.data[0];
+
+        if (transaction.status !== TransactionStatus.Pending) {
+          logger.info(
+            `Transaction ${reference} has already been processed or expired`
+          );
+          return;
+        }
+
+        const knex = app.get("postgresqlClient");
+
+        try {
+          await knex.transaction(async (trx: any) => {
+            // Update the transaction status to 'Completed'
+            await transactionService.patch(
+              transaction.id,
+              { status: TransactionStatus.Completed },
+              { trx }
+            );
+
+            // Update the user's wallet balance (assuming amount is in kobo)
+            const walletService = app.service("wallet");
+            await walletService.patch(
+              transaction.wallet_id,
+              { $inc: { balance: amount / 100 } }, // Convert kobo to Naira
+              { trx }
+            );
           });
 
-          if (transactionResult.data.length > 0) {
-            const transaction = transactionResult.data[0];
-
-            // Ensure the transaction is still pending before updating
-            if (transaction.status === TransactionStatus.Pending) {
-              const knex = app.get("postgresqlClient");
-
-              try {
-             
-                await knex.transaction(async (trx: any) => {
-                  // Update the transaction status to 'Completed'
-                  await transactionService.patch(
-                    transaction.id,
-                    { status: TransactionStatus.Completed },
-                    { trx }
-                  );
-
-                  // Update the user's wallet balance (assuming amount is in kobo)
-                  const walletService = app.service("wallet");
-                  await walletService.patch(
-                    transaction.wallet_id,
-                    { $inc: { balance: amount / 100 } }, // Convert kobo to Naira
-                    { trx }
-                  );
-                });
-
-                console.log(
-                  `User ${customer.email} wallet funded with ₦${amount / 100}`
-                );
-              } catch (error) {
-                console.error(
-                  `Error processing transaction ${reference}: `,
-                  error
-                );
-                throw new Error("Transaction failed. Rolling back.");
-              }
-            } else {
-              console.log(
-                `Transaction ${reference} has already been processed.`
-              );
-            }
-          } else {
-            console.log(`Transaction with reference ${reference} not found.`);
-          }
-        } else {
-          console.log(`User with email ${customer.email} not found.`);
+          logger.info(
+            `User ${customer.email} wallet funded with ₦${amount / 100}`
+          );
+        } catch (error) {
+          logger.error(`Error processing transaction ${reference}:`, error);
+          throw new Error("Transaction failed. Rolling back.");
         }
       }
     }
@@ -234,9 +231,7 @@ export const wallet = (app: Application) => {
       throw new Error("SECRET_KEY is not defined in environment variables");
     }
 
-
     try {
-  
       // Validate the signature
       const hash = crypto
         .createHmac("sha512", secret)
