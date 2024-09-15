@@ -237,14 +237,16 @@ export const wallet = (app: Application) => {
     const allowedIps = ["52.31.139.75", "52.49.173.169", "52.214.14.220"];
     try {
       // Check if request IP is allowed (optional for extra security)
-      const requestIp =
-        req.ip ||
-        req.headers["x-forwarded-for"] ||
-        req.connection.remoteAddress;
-      //@ts-ignore
-      if (!allowedIps.includes(requestIp)) {
-        return res.status(403).send("Forbidden");
-      }
+      // const requestIp =
+      //   req.ip ||
+      //   req.headers["x-forwarded-for"] ||
+      //   req.connection.remoteAddress;
+      // //@ts-ignore
+      // if (!allowedIps.includes(requestIp)) {
+      //   return res.status(403).send("Forbidden");
+      // }
+
+      console.log('req.ip.....', req.ip, req.headers["x-forwarded-for"], req.connection.remoteAddress )
 
       // Validate the signature
       const hash = crypto
