@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { Response, Request } from "express";
 import { BadRequest } from "@feathersjs/errors";
 import { Paginated } from "@feathersjs/feathers";
+import axios from "axios";
 import {
   walletDataValidator,
   walletPatchValidator,
@@ -249,6 +250,43 @@ export const wallet = (app: Application) => {
       console.error("Webhook error:", error);
       res.status(500).send("Internal Server Error");
     }
+  });
+
+  //@ts-ignore
+  app.use("/verify-bank-account", {
+    async create(data: any, params: any) {
+      const { account_number, bank_code } = data;
+
+      // Validate input
+      if (!account_number || !bank_code) {
+        throw new BadRequest("Account number and bank code are required");
+      }
+
+      // Build the Paystack API URL
+      const url = `https://api.paystack.co/bank/resolve?account_number=${account_number}&bank_code=${bank_code}`;
+
+      try {
+        // Make a GET request to Paystack API using axios
+        const response = await axios.get(url, {
+          headers: {
+            Authorization: `Bearer ${constants.paystack.key}`,
+          },
+        });
+
+        // Handle successful response
+        if (response.data.status === true) {
+          const { data } = response.data;
+
+          return data;
+        } else {
+          throw new BadRequest(
+            "Account verification failed: " + response.data.message
+          );
+        }
+      } catch (error) {
+        throw new BadRequest("Account verification failed"); // Generic error message for the user
+      }
+    },
   });
 };
 

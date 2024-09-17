@@ -63,6 +63,7 @@ export enum Roles {
   SuperAdmin = "super-admin",
   BusinessOwner = "business-owner",
   GuestUser = "guest-user",
+  InHouseManager = 'In-house-manager'
 }
 
 export enum LeaseStatus {

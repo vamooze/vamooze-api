@@ -5,7 +5,8 @@ const roles = [
     { id: 3, name: 'Dispatch', slug: 'dispatch', description: 'Dispatch role with permissions to accept orders' },
     { id: 4, name: 'Super-admin', slug: Roles.SuperAdmin, description: 'Administrator role with full permissions' },
     { id: 5, name: 'Business-owner', slug: Roles.BusinessOwner, description: 'Business owner role with full permission over a business' },
-    { id: 6, name: 'Guest-user', slug: Roles.GuestUser, description: 'Guest users who require delivery services' }
+    { id: 6, name: 'Guest-user', slug: Roles.GuestUser, description: 'Guest users who require delivery services' },
+    { id: 7, name: 'In-House Manager', slug: Roles.InHouseManager, description: 'Inhose managers invited by B2B admin' }
 ];
 
 export default roles 

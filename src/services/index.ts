@@ -45,12 +45,12 @@ const joi_phone_number_validator = Joi.string().pattern(phoneRegex).required().m
 const schemas = {
   forgotPassword: Joi.object().keys({
     email: Joi.string().required().email(),
-    phoneNumber: Joi.string().optional().length(11)
+    phoneNumber: joi_phone_number_validator
   }),
   resetPassword: Joi.object().keys({
     email: Joi.string().required().email(),
     otp: Joi.number().required().integer(),
-    phoneNumber: Joi.string().optional().length(11),
+    phoneNumber: joi_phone_number_validator,
     password: Joi.string().required()
   }),
   changePassword: Joi.object().keys({
@@ -82,6 +82,16 @@ const schemas = {
     state: Joi.string().optional(),
     address: Joi.string().optional(),
     local_government_area: Joi.string().optional()
+  }),
+
+  in_house_manager_invite: Joi.object().keys({
+    first_name: Joi.string().required(),
+    last_name: Joi.string().required(),
+    email: Joi.string().required().email(),
+    role: Joi.string()
+      .required()
+      .valid(...Object.values(Roles)),
+    phone_number: joi_phone_number_validator,
   }),
 
   google_signin: Joi.object().keys({
@@ -702,4 +712,33 @@ export const services = (app: Application) => {
       }
     }
   )
+
+  app.post(
+    '/inhouse-invite',
+    validator.body(schemas.in_house_manager_invite),
+    async (req: any, res: any, next: any) => {
+      try {
+        const user = await app.service('users').find({ query: { email: req.body.email } })
+
+        if (user?.data?.length > 0) {
+          throw new Conflict('User with this email already exists')
+        }
+        const role = await app.service('roles').find({ query: { $limit: 1, slug: Roles.GuestUser } })
+        if (role?.data?.length === 0) {
+          throw new NotFound('Role not found')
+        }
+        req.body.role = role?.data[0]?.id
+        req.body.otp = getOtp()
+        const result = await app.service('users').create(req.body)
+        res.json(result)
+      } catch (error: any) {
+        return res.status(400).json({
+          status: 400,
+          message: error.message
+        })
+      }
+    }
+  )
+
+  
 }
