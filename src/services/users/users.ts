@@ -1,6 +1,6 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 import { authenticate } from "@feathersjs/authentication";
-import { NotFound, BadRequest, Conflict, GeneralError } from "@feathersjs/errors";
+import { NotFound, BadRequest, Conflict, GeneralError, NotAuthenticated } from "@feathersjs/errors";
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import * as crypto from "crypto";
 import {
@@ -138,6 +138,13 @@ export const user = (app: Application) => {
       try {
         const { email, first_name, last_name, phone_number } = data;
 
+
+
+        if(!params.user.id){
+          console.log(params.user.id, '....in house....')
+          throw new NotAuthenticated('Un Authorized');
+        }
+
         try {
           await inhouseInviteValidator.validateAsync(data);
         } catch (validationError) {
@@ -161,8 +168,6 @@ export const user = (app: Application) => {
         if (role.data.length === 0) {
           throw new BadRequest("In-House Manager role not found");
         }
-
-        console.log(role, "........");
 
         // Generate a default password
         const defaultPassword = crypto.randomBytes(8).toString("hex");
