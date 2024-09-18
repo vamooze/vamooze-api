@@ -727,32 +727,32 @@ export const services = (app: Application) => {
     }
   )
 
-  app.post(
-    '/inhouse-invite',
-    validator.body(schemas.in_house_manager_invite),
-    async (req: any, res: any, next: any) => {
-      try {
-        const user = await app.service('users').find({ query: { email: req.body.email } })
+  // app.post(
+  //   '/inhouse-invite',
+  //   validator.body(schemas.in_house_manager_invite),
+  //   async (req: any, res: any, next: any) => {
+  //     try {
+  //       const user = await app.service('users').find({ query: { email: req.body.email } })
 
-        if (user?.data?.length > 0) {
-          throw new Conflict('User with this email already exists')
-        }
-        const role = await app.service('roles').find({ query: { $limit: 1, slug: Roles.GuestUser } })
-        if (role?.data?.length === 0) {
-          throw new NotFound('Role not found')
-        }
-        req.body.role = role?.data[0]?.id
-        req.body.otp = getOtp()
-        const result = await app.service('users').create(req.body)
-        res.json(result)
-      } catch (error: any) {
-        return res.status(400).json({
-          status: 400,
-          message: error.message
-        })
-      }
-    }
-  )
+  //       if (user?.data?.length > 0) {
+  //         throw new Conflict('User with this email already exists')
+  //       }
+  //       const role = await app.service('roles').find({ query: { $limit: 1, slug: Roles.GuestUser } })
+  //       if (role?.data?.length === 0) {
+  //         throw new NotFound('Role not found')
+  //       }
+  //       req.body.role = role?.data[0]?.id
+  //       req.body.otp = getOtp()
+  //       const result = await app.service('users').create(req.body)
+  //       res.json(result)
+  //     } catch (error: any) {
+  //       return res.status(400).json({
+  //         status: 400,
+  //         message: error.message
+  //       })
+  //     }
+  //   }
+  // )
 
   
 }
