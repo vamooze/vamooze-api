@@ -8,6 +8,7 @@ const textConstant = {
   newDeliveryRequest: "new_delivery_request",
   noDispatchAvailable: "no_dispatch_available",
   requestAcceptedByDispatch: 'request_accepted_by_dispatch',
+requestCancelledByRequester: 'request_cancelled_by_requester',
   locationUpdateDispatch: "location_update_dispatch",
   locationUpdateRequester: "location_update_requester",
   connection: "connection",

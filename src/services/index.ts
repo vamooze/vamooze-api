@@ -35,6 +35,9 @@ import emailTemplates from '../helpers/emailTemplates'
 
 const validator = createValidator({ passError: true, statusCode: 400 })
 
+
+
+
 const phoneRegex = /^\+\d{7,15}$/
 
 const joi_phone_number_validator = Joi.string().pattern(phoneRegex).required().messages({
@@ -116,6 +119,17 @@ const schemas = {
     otp: Joi.number().required()
   })
 }
+
+export const inhouseInviteValidator = Joi.object().keys({
+  first_name: Joi.string().required(),
+  last_name: Joi.string().required(),
+  email: Joi.string().required().email(),
+  // role: Joi.string()
+  //   .required()
+  //   .valid(...Object.values(Roles)),
+  phone_number: joi_phone_number_validator, // Assuming this is defined elsewhere
+});
+
 import { Response, Request } from 'express'
 
 export const services = (app: Application) => {

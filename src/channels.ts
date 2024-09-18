@@ -132,6 +132,27 @@ export const channels = (app: Application) => {
       }
     });
 
+
+    app
+    .service("requests")
+    .publish(textConstant.requestCancelledByRequester, async (data, context) => {
+      const newObjectForDispatch = {
+        //@ts-ignore
+        message: data?.message,
+        data: {
+          //@ts-ignore
+          request: data.request,
+          //@ts-ignore
+          ...data?.dispatchDetails,
+        },
+      };
+        return [
+          //@ts-ignore
+          app.channel(`dispatch-channel/${data?.requester}`).send(newObjectForDispatch),
+        ];
+      });
+    
+
   app
     .service("requests")
     .publish(textConstant.noDispatchAvailable, (data, context) => {

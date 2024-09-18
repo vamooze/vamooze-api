@@ -208,6 +208,79 @@ export class RequestsService<
         "Successfully updated current dispatch location"
       );
     }
+
+    if (data.cancel_request_requester) {
+      const request = await this.getAndValidateRequest(id);
+
+      if (
+        request.status === RequestStatus.Delivered ||
+        request.status === RequestStatus.Expired
+      ) {
+        throw new Conflict("This request cannot be cancelled.");
+      }
+
+      //@ts-ignore
+      // const dispatch = await this.getDispatchDataFromRequest(user?.id);
+
+      // Use transaction for atomic updates
+      //@ts-ignore
+      const knex = this.app.get("postgresqlClient");
+      try {
+        const queryData = await knex.transaction(async (trx: any) => {
+          // Update the request status to Cancelled
+          const [updatedRequest] = await trx("requests")
+            .where({ id })
+            .update({
+              status: RequestStatus.Cancelled,
+              //@ts-ignore
+              cancelled_by: user.id,
+              cancellation_reason: data.cancellation_reason,
+              cancelled_at: knex.fn.now(),
+            })
+            .returning("*");
+
+          // If a dispatch was assigned, update their 'onTrip' status
+          if (updatedRequest.dispatch) {
+            const [updatedDispatch] = await trx("dispatch")
+              .where({ id: updatedRequest.dispatch })
+              .update({ onTrip: false })
+              .returning("*");
+           
+
+            return { updatedRequest, updatedDispatch };
+          }
+          return { updatedRequest };
+        });
+
+        if (queryData.updatedDispatch) {
+          // Remove the location update job if it exists
+          // await removeLocationUpdateJob
+          //   dispatch_who_accepted_user_id: updatedRequest.dispatch,
+          //   request: Number(id),
+          // });
+
+          // Emit cancellation event
+          //@ts-ignore
+          this.emit(textConstant.requestCancelledByRequester, {
+            request: id,
+            //@ts-ignore
+            requester: user.id,
+            //@ts-ignore
+            dispatch_who_accepted_user_id: queryData.updatedDispatch.user_id,
+            message: "Request cancelled by requester",
+          });
+        }
+
+        return successResponse(
+          queryData.updatedRequest,
+          200,
+          "Successfully cancelled the request"
+        );
+      } catch (error) {
+        console.error("Error cancelling request:", error);
+        throw new Error("Failed to cancel the request");
+      }
+    }
   }
 
   private async validateDispatchUser(user: any) {

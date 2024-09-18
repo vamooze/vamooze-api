@@ -47,6 +47,17 @@ export async function up(knex: Knex): Promise<void> {
       .inTable("dispatch")
       .onDelete("CASCADE");
     table.json("delivery_price_details").notNullable();
+
+
+     // New fields for cancellation
+     table.integer("cancelled_by")
+     .unsigned()
+     .nullable()
+     .references("id")
+     .inTable("users")
+     .onDelete("SET NULL");
+   table.text("cancellation_reason").nullable();
+   table.timestamp("cancelled_at").nullable();
     // Commented out as 'package' is not in the JSON
     // table.json('package').notNullable()
 

@@ -275,9 +275,8 @@ export const wallet = (app: Application) => {
 
         // Handle successful response
         if (response.data.status === true) {
-          const { data } = response.data;
-
-          return data;
+      
+          return response.data;
         } else {
           throw new BadRequest(
             "Account verification failed: " + response.data.message

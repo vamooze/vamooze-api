@@ -116,6 +116,7 @@ export enum RequestStatus {
   Expired = "expired",
   CompletePickUp = "complete_pick_up",
   CompleteDropOff = "complete_drop_off",
+  Cancelled = 'cancelled'
 }
 
 
