@@ -133,82 +133,78 @@ export const user = (app: Application) => {
   });
 
   //@ts-ignore
-  // app.use("/invite-in-house-manager", {
-  //   async create(data: any, params: any) {
-  //     try {
-  //       const { email, first_name, last_name, phone_number } = data;
+  app.use("/invite-in-house-manager", {
+    async create(data: any, params: any) {
+      try {
+        const { email, first_name, last_name, phone_number } = data;
 
-  //       try {
-  //         await inhouseInviteValidator.validateAsync(data);
-  //       } catch (validationError) {
-  //         //@ts-ignore
-  //         throw new BadRequest(validationError.details[0].message);
-  //       }
+        try {
+          await inhouseInviteValidator.validateAsync(data);
+        } catch (validationError) {
+          //@ts-ignore
+          throw new BadRequest(validationError.details[0].message);
+        }
 
-  //       const usersService = app.service("users");
+        const usersService = app.service("users");
 
-  //       // Check if user already exists
-  //       const existingUser = await usersService.find({ query: { email } });
-  //       if (existingUser.total > 0) {
-  //         throw new Conflict("User with this email already exists");
-  //       }
+        // Check if user already exists
+        const existingUser = await usersService.find({ query: { email } });
+        if (existingUser.total > 0) {
+          throw new Conflict("User with this email already exists");
+        }
 
-  //       // Get the In-House Manager role
-  //       const rolesService = app.service("roles");
-  //       const role = await rolesService.find({
-  //         query: { slug: Roles.InHouseManager, $limit: 1 },
-  //       });
-  //       if (role.data.length === 0) {
-  //         throw new BadRequest("In-House Manager role not found");
-  //       }
+        // Get the In-House Manager role
+        const rolesService = app.service("roles");
+        const role = await rolesService.find({
+          query: { slug: Roles.InHouseManager, $limit: 1 },
+        });
+        if (role.data.length === 0) {
+          throw new BadRequest("In-House Manager role not found");
+        }
 
-  //       console.log(role, "........");
+        console.log(role, "........");
 
-  //       // Generate a default password
-  //       const defaultPassword = crypto.randomBytes(8).toString("hex");
+        // Generate a default password
+        const defaultPassword = crypto.randomBytes(8).toString("hex");
 
-  //       // Create the user
-  //       await usersService.create({
-  //         first_name,
-  //         last_name,
-  //         email,
-  //         password: defaultPassword,
-  //         role: role.data[0].id,
-  //         is_verified: true,
-  //         phone_number,
-  //         is_inhouse_invitee_default_password: true,
-  //         in_house_inviter: params.user.id,
-  //       });
+        // Create the user
+        await usersService.create({
+          first_name,
+          last_name,
+          email,
+          password: defaultPassword,
+          role: role.data[0].id,
+          is_verified: true,
+          phone_number,
+          is_inhouse_invitee_default_password: true,
+          in_house_inviter: params.user.id,
+        });
 
-  //       // Send invitation email
-  //       await sendEmail({
-  //         toEmail: email,
-  //         subject: `Invitation to join as In-House Manager`,
-  //         templateData: emailTemplates.inHouseManagerInvite(
-  //           first_name,
-  //           email,
-  //           defaultPassword
-  //         ),
-  //         receiptName: `${first_name} ${last_name}`,
-  //       });
+        // Send invitation email
+        await sendEmail({
+          toEmail: email,
+          subject: `Invitation to join as In-House Manager`,
+          templateData: emailTemplates.inHouseManagerInvite(
+            first_name,
+            email,
+            defaultPassword
+          ),
+          receiptName: `${first_name} ${last_name}`,
+        });
 
-  //       return successResponse(null, 201, "Invitation sent successfully");
-  //     } catch (error) {
-  //       console.log(error)
-  //       if (error instanceof BadRequest || error instanceof Conflict) {
-  //         throw error; // Re-throw these specific errors as they are already handled
-  //       }
-  //       console.error("Error in invite-in-house-manager service:", error);
-  //       throw new GeneralError(
-  //         "An unexpected error occurred while processing your request"
-  //       );
-  //     }
-  //   },
-  // }).hooks({
-  //   before: {
-  //     all: [authenticate("jwt")], // Custom hooks
-  //   },
-  // });
+        return successResponse(null, 201, "Invitation sent successfully");
+      } catch (error) {
+        console.log(error)
+        if (error instanceof BadRequest || error instanceof Conflict) {
+          throw error; // Re-throw these specific errors as they are already handled
+        }
+        console.error("Error in invite-in-house-manager service:", error);
+        throw new GeneralError(
+          "An unexpected error occurred while processing your request"
+        );
+      }
+    },
+  });
 };
 
 // Add this service to the service type index
