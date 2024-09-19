@@ -729,11 +729,16 @@ export const services = (app: Application) => {
   )
 
  //@ts-ignore
-  app.use("/invite/in-house-manager", {
+  app.use("/invite", {
     async create(data: any, params: any) {
       try {
         const { email, first_name, last_name, phone_number } = data;
+        const { role : queryRole } = params.query;
 
+        console.log(queryRole, )
+        if (!queryRole) {
+          throw new BadRequest('Role parameter is required');
+        }
       
 
         //@ts-ignore
