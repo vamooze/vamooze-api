@@ -15,10 +15,11 @@ import { assetType } from './asset-type/asset-type'
 import { roles } from './roles/roles'
 import { user } from './users/users'
 import axios from 'axios'
+import { jwtDecode } from "jwt-decode";
 // For more information about this file see https://dove.feathersjs.com/guides/cli/application.html#configure-functions
 import type { Application } from '../declarations'
-import { GeneralError, NotFound, Conflict } from '@feathersjs/errors'
-import { formatPhoneNumber, sendEmail, sendSms, getOtp, isVerified } from '../helpers/functions'
+import { GeneralError, NotFound, Conflict,  NotAuthenticated, BadRequest } from '@feathersjs/errors'
+import { formatPhoneNumber, sendEmail, sendSms, getOtp, isVerified, successResponse, } from '../helpers/functions'
 import { Termii } from '../helpers/termii'
 import bcrypt from 'bcryptjs'
 import Joi from 'joi'
@@ -30,8 +31,8 @@ import storage from '../helpers/firebase'
 import { logger } from '../logger'
 import { OAuthTypes, Roles, TemplateName, TemplateType } from '../interfaces/constants'
 import { constants } from '../helpers/constants'
-
 import emailTemplates from '../helpers/emailTemplates'
+import * as crypto from "crypto";
 
 const validator = createValidator({ passError: true, statusCode: 400 })
 
@@ -727,32 +728,89 @@ export const services = (app: Application) => {
     }
   )
 
-  // app.post(
-  //   '/inhouse-invite',
-  //   validator.body(schemas.in_house_manager_invite),
-  //   async (req: any, res: any, next: any) => {
-  //     try {
-  //       const user = await app.service('users').find({ query: { email: req.body.email } })
+ //@ts-ignore
+  app.use("/invite-in-house-manager", {
+    async create(data: any, params: any) {
+      try {
+        const { email, first_name, last_name, phone_number } = data;
 
-  //       if (user?.data?.length > 0) {
-  //         throw new Conflict('User with this email already exists')
-  //       }
-  //       const role = await app.service('roles').find({ query: { $limit: 1, slug: Roles.GuestUser } })
-  //       if (role?.data?.length === 0) {
-  //         throw new NotFound('Role not found')
-  //       }
-  //       req.body.role = role?.data[0]?.id
-  //       req.body.otp = getOtp()
-  //       const result = await app.service('users').create(req.body)
-  //       res.json(result)
-  //     } catch (error: any) {
-  //       return res.status(400).json({
-  //         status: 400,
-  //         message: error.message
-  //       })
-  //     }
-  //   }
-  // )
+      
 
+        //@ts-ignore
+        if (!params.authentication || !params.authentication.accessToken) {
+          throw new NotAuthenticated('Authentication required');
+        }
+        const decoded = jwtDecode(params.authentication.accessToken)
+        const userId = decoded.sub;
+
+        if (!userId) {
+          throw new NotAuthenticated('Invalid authentication token');
+        }
+
+        try {
+          await inhouseInviteValidator.validateAsync(data);
+        } catch (validationError) {
+          //@ts-ignore
+          throw new BadRequest(validationError.details[0].message);
+        }
+
+        const usersService = app.service("users");
+
+        // Check if user already exists
+        const existingUser = await usersService.find({ query: { email } });
+        if (existingUser.total > 0) {
+          throw new Conflict("User with this email already exists");
+        }
+
+        // Get the In-House Manager role
+        const rolesService = app.service("roles");
+        const role = await rolesService.find({
+          query: { slug: Roles.InHouseManager, $limit: 1 },
+        });
+        if (role.data.length === 0) {
+          throw new BadRequest("In-House Manager role not found");
+        }
+
+        // Generate a default password
+        const defaultPassword = crypto.randomBytes(8).toString("hex");
+
+        // Create the user
+        await usersService.create({
+          first_name,
+          last_name,
+          email,
+          password: defaultPassword,
+          role: role.data[0].id,
+          is_verified: true,
+          phone_number,
+          is_inhouse_invitee_default_password: true,
+          in_house_inviter: parseInt(userId),
+        });
+
+        // Send invitation email
+        await sendEmail({
+          toEmail: email,
+          subject: `Invitation to join as In-House Manager`,
+          templateData: emailTemplates.inHouseManagerInvite(
+            first_name,
+            email,
+            defaultPassword
+          ),
+          receiptName: `${first_name} ${last_name}`,
+        });
+
+        return successResponse(null, 201, "Invitation sent successfully");
+      } catch (error) {
+        console.log(error)
+        if (error instanceof BadRequest || error instanceof Conflict) {
+          throw error; // Re-throw these specific errors as they are already handled
+        }
+        console.error("Error in invite-in-house-manager service:", error);
+        throw new GeneralError(
+          "An unexpected error occurred while processing your request"
+        );
+      }
+    },
+  });
   
 }

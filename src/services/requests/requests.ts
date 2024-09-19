@@ -10,7 +10,6 @@ import {
   sendSms,
   sendPush,
 } from "../../helpers/functions";
-import { client } from "../../app";
 
 import { HookContext } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";

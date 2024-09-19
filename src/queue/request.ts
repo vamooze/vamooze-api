@@ -1,7 +1,7 @@
 import { Queue, Worker, QueueEvents } from "bullmq";
 import { queueOptions } from "./config";
 import { logger } from "../logger";
-import { app, client } from "../app";
+import { app, redisClient} from "../app";
 import { Termii } from "../helpers/termii";
 import { DispatchApprovalStatus } from "../interfaces/constants";
 
@@ -128,7 +128,7 @@ export const dispatchRequestWorker = new Worker(
       (eachRider) => eachRider?.user_id
     );
 
-    client.set(
+    redisClient.set(
       `${textConstant.requests}-dispatch-pool-${job.data.id}`,
       JSON.stringify(dispatchPoolUserIds)
     );

@@ -25,23 +25,30 @@ import { channels } from "./channels";
 import fileUpload from "express-fileupload";
 import { createClient } from "redis";
 
-const client = createClient({
+const redisClient = createClient({
   password: constants.redisConfig.password,
   socket: {
     host: constants.redisConfig.host,
     port: parseInt(constants.redisConfig.port, 10),
-
     //@ts-ignore
-    tls: constants.redisConfig.ssl ? true : undefined,
+    tls: constants.redisConfig.ssl ? {} : undefined,
+    reconnectStrategy(retries) {
+      if (retries > 10) {
+        // Stop trying after 10 retries
+        return new Error("Retry attempts exceeded");
+      }
+      // Retry after a delay
+      return Math.min(retries * 50, 2000);
+    },
   },
 });
 
-client.on("error", (err) => {
+redisClient.on("error", (err) => {
   console.log("Redis Connection Error......", err, "......Redis Connection Error")
   logger.error(err)
 });
 
-client
+redisClient
   .connect()
   .then((data) => console.log("successfully connected to redis"))
   .catch((err) => console.log(err));
@@ -115,4 +122,4 @@ app.hooks({
   teardown: [],
 });
 
-export { app, client };
+export { app, redisClient };

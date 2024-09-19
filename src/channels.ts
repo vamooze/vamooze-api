@@ -7,7 +7,7 @@ import { logger } from "./logger";
 import textConstant from "./helpers/textConstant";
 import { requestsPath } from "./services/requests/requests.shared";
 import { Roles } from "./interfaces/constants";
-import { client } from "./app";
+import { redisClient } from "./app";
 
 export const channels = (app: Application) => {
   const requests = app.service(requestsPath);
@@ -97,7 +97,7 @@ export const channels = (app: Application) => {
         },
       };
 
-      const value = await client.get(
+      const value = await redisClient.get(
         //@ts-ignore
         `${textConstant.requests}-dispatch-pool-${data?.request}`
       );
