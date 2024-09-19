@@ -729,7 +729,7 @@ export const services = (app: Application) => {
   )
 
  //@ts-ignore
-  app.use("/invite-in-house-manager", {
+  app.use("/invite/in-house-manager", {
     async create(data: any, params: any) {
       try {
         const { email, first_name, last_name, phone_number } = data;
