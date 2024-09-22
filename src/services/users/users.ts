@@ -157,14 +157,31 @@ export const user = (app: Application) => {
         return await userService.suspendUser(params);
       },
     })
-    .hooks({
-      before: {
-        patch: [
-          authenticate("jwt"),
-          checkPermission(userRoles.allAdmin)
-        ],
+    // .hooks({
+    //   before: {
+    //     patch: [
+    //       authenticate("jwt"),
+    //       checkPermission(userRoles.allAdmin)
+    //     ],
+    //   },
+    // });
+
+
+    app //@ts-ignore
+    .use(`${userPath}/invite`, {
+      create: async (data: any, params: any) => {
+        const userService = app.service(userPath);
+        return await userService.inviteUser(data, params);
       },
-    });
+    })
+    // .hooks({
+    //   before: {
+    //     patch: [
+    //       authenticate("jwt"),
+    //       checkPermission(userRoles.allAdmin) //
+    //     ],
+    //   },
+    // });
 };
 
 // Add this service to the service type index
