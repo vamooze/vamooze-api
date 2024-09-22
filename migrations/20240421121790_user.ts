@@ -16,11 +16,13 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('merchant_id').unique().defaultTo(knex.fn.uuid());
     table.boolean('is_logged_in').notNullable().defaultTo(false);
     table.boolean('is_verified').notNullable().defaultTo(false);
+    table.boolean('is_suspended').notNullable().defaultTo(false);
     table.text('address').nullable();
     table.string('state', 50).nullable();
     table.string('local_government_area', 50).nullable();
     table.integer('otp').nullable();
     table.string('one_signal_player_id', 150).nullable();
+   
     table.timestamps(false, true);
 
     return table;

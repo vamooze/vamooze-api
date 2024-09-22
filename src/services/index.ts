@@ -15,6 +15,7 @@ import { assets } from './assets/assets'
 import { assetType } from './asset-type/asset-type'
 import { roles } from './roles/roles'
 import { user } from './users/users'
+
 import axios from 'axios'
 import { jwtDecode } from "jwt-decode";
 // For more information about this file see https://dove.feathersjs.com/guides/cli/application.html#configure-functions
@@ -155,7 +156,7 @@ export const services = (app: Application) => {
   app.configure(assetType)
   app.configure(roles)
   app.configure(user)
-
+ 
   const handleOtpDispatch = async (req: any, res: any) => {
     try {
       const User = app.service('users')
@@ -819,24 +820,4 @@ export const services = (app: Application) => {
       }
     },
   });
-  
-   //@ts-ignore
-  app.use('/unverified-users', {
-    async find(params: HookContext) {
-      const { query } = params;
-      return app.service('users').find({
-        query: {
-          ...query,
-          is_verified: false
-        }
-      });
-    }
-  }).hooks({
-    before: {
-      find: [
-        authenticate("jwt"),
-        checkPermission(userRoles.allAdmin)
-      ]
-    }
-  })
 }

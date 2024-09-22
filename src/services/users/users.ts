@@ -1,6 +1,12 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 import { authenticate } from "@feathersjs/authentication";
-import { NotFound, BadRequest, Conflict, GeneralError, NotAuthenticated } from "@feathersjs/errors";
+import {
+  NotFound,
+  BadRequest,
+  Conflict,
+  GeneralError,
+  NotAuthenticated,
+} from "@feathersjs/errors";
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import {
   userDataValidator,
@@ -12,6 +18,7 @@ import {
   userPatchResolver,
   userQueryResolver,
 } from "./users.schema";
+import type { Params } from "@feathersjs/feathers";
 import { inhouseInviteValidator } from "../index";
 import { Request, Response } from "express";
 
@@ -19,13 +26,9 @@ import { Application, HookContext } from "../../declarations";
 import { UserService, getOptions } from "./users.class";
 import { userPath, userMethods } from "./users.shared";
 import { checkPermission } from "../../helpers/checkPermission";
+import userRoles from "../../helpers/permissions";
 import emailTemplates from "../../helpers/emailTemplates";
-import {
-  getOtp,
-  isVerified,
-  sendEmail,
-  successResponse,
-} from "../../helpers/functions";
+import { getOtp, isVerified, sendEmail } from "../../helpers/functions";
 import { Roles, TemplateName, TemplateType } from "../../interfaces/constants";
 
 const { protect, hashPassword } =
@@ -36,8 +39,8 @@ export * from "./users.schema";
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const user = (app: Application) => {
-  // Register our service on the Feathers application
-  app.use(userPath, new UserService(getOptions(app)), {
+  const options = getOptions(app);
+  app.use(userPath, new UserService(options, app), {
     // A list of all methods this service exposes externally
     methods: userMethods,
     // You can add additional custom events to be sent to clients here
@@ -131,7 +134,37 @@ export const user = (app: Application) => {
     },
   });
 
+  app //@ts-ignore
+    .use(`${userPath}/unverified`, {
+      find: async (params: Params) => {
+        const userService = app.service(userPath);
+        return await userService.findUnverified(params);
+      },
+    })
+    .hooks({
+      before: {
+        find: [
+          authenticate("jwt"),
+          checkPermission(userRoles.allAdmin)
+        ],
+      },
+    });
 
+  app //@ts-ignore
+    .use(`${userPath}/:id/suspend`, {
+      patch: async (id: number, data: any, params: Params) => {
+        const userService = app.service(userPath);
+        return await userService.suspendUser(params);
+      },
+    })
+    .hooks({
+      before: {
+        patch: [
+          authenticate("jwt"),
+          checkPermission(userRoles.allAdmin)
+        ],
+      },
+    });
 };
 
 // Add this service to the service type index
