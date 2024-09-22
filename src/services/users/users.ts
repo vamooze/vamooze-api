@@ -141,14 +141,14 @@ export const user = (app: Application) => {
         return await userService.findUnverified(params);
       },
     })
-    .hooks({
-      before: {
-        find: [
-          authenticate("jwt"),
-          checkPermission(userRoles.allAdmin)
-        ],
-      },
-    });
+    // .hooks({
+    //   before: {
+    //     find: [
+    //       authenticate("jwt"),
+    //       checkPermission(userRoles.allAdmin)
+    //     ],
+    //   },
+    // });
 
   app //@ts-ignore
     .use(`${userPath}/:id/suspend`, {
