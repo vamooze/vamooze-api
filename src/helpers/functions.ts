@@ -360,15 +360,22 @@ export const customErrorResponse = (status: number, messsage: string) => {
 };
 
 export const successResponseWithPagination = (
-  data: any,
+  result: { total: number; limit: number; skip: number; data: any[] },
   status: number,
-  messsage: string
+  message: string
 ) => {
+  const { total, limit, skip, data } = result;
+  
   return {
     status: status,
     success: true,
-    messsage,
-    ...data,
+    message,
+    pagination: {
+      total,
+      limit,
+      skip,
+    },
+    data: data,
   };
 };
 

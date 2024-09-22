@@ -1,3 +1,4 @@
+import { authenticate } from "@feathersjs/authentication";
 import { transactions } from './transactions/transactions'
 import { wallet } from './wallet/wallet'
 import { dispatch } from './dispatch/dispatch'
@@ -17,7 +18,7 @@ import { user } from './users/users'
 import axios from 'axios'
 import { jwtDecode } from "jwt-decode";
 // For more information about this file see https://dove.feathersjs.com/guides/cli/application.html#configure-functions
-import type { Application } from '../declarations'
+import type { Application,  HookContext } from '../declarations'
 import { GeneralError, NotFound, Conflict,  NotAuthenticated, BadRequest } from '@feathersjs/errors'
 import { formatPhoneNumber, sendEmail, sendSms, getOtp, isVerified, successResponse, } from '../helpers/functions'
 import { Termii } from '../helpers/termii'
@@ -31,6 +32,8 @@ import storage from '../helpers/firebase'
 import { logger } from '../logger'
 import { OAuthTypes, Roles, TemplateName, TemplateType } from '../interfaces/constants'
 import { constants } from '../helpers/constants'
+import { checkPermission } from "../helpers/checkPermission";
+import userRoles from "../helpers/permissions";
 import emailTemplates from '../helpers/emailTemplates'
 import * as crypto from "crypto";
 
@@ -735,7 +738,6 @@ export const services = (app: Application) => {
         const { email, first_name, last_name, phone_number } = data;
         const { role : queryRole } = params.query;
 
-        console.log(queryRole, )
         if (!queryRole) {
           throw new BadRequest('Role parameter is required');
         }
@@ -759,7 +761,7 @@ export const services = (app: Application) => {
           throw new BadRequest(validationError.details[0].message);
         }
 
-        const usersService = app.service("users");
+        const usersService = app.service('users');
 
         // Check if user already exists
         const existingUser = await usersService.find({ query: { email } });
@@ -818,4 +820,23 @@ export const services = (app: Application) => {
     },
   });
   
+   //@ts-ignore
+  app.use('/unverified-users', {
+    async find(params: HookContext) {
+      const { query } = params;
+      return app.service('users').find({
+        query: {
+          ...query,
+          is_verified: false
+        }
+      });
+    }
+  }).hooks({
+    before: {
+      find: [
+        authenticate("jwt"),
+        checkPermission(userRoles.allAdmin)
+      ]
+    }
+  })
 }

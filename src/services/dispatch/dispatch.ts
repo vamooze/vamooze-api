@@ -63,7 +63,7 @@ const addUserInfo = async (context: HookContext) => {
   const { app, method, result } = context;
 
   const addUserToDispatch = async (dispatch: any) => {
-    const user = await app.service("users").get(dispatch.user_id);
+    const user = await app.service('users').get(dispatch.user_id);
     const onboardingCompletion = calculateOnboardingCompletion(dispatch);
 
     return {
@@ -276,6 +276,7 @@ export const dispatch = (app: Application) => {
       find: [
         addUserInfo,
         async (context) => {
+          //@ts-ignore
           context.result =
           //@ts-ignore
             context?.params?.user?.roleName === Roles.SuperAdmin

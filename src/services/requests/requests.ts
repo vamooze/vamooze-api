@@ -137,7 +137,7 @@ export const requests = (app: Application) => {
       textConstant.requestAcceptedByDispatch,
       textConstant.locationUpdateDispatch,
       textConstant.locationUpdateRequester,
-      textConstant.requestCancelledByRequester
+      textConstant.requestCancelledByRequester,
     ],
   });
 
@@ -154,6 +154,7 @@ export const requests = (app: Application) => {
           const user = context.params.user; // Get authenticated user from context
 
           context.params.query = {
+            ...context.params.query,
             //@ts-ignore
             requester: user.id,
           };
@@ -198,6 +199,18 @@ export const requests = (app: Application) => {
       create: [
         async (context: HookContext) => {
           addDispatchRequestJob(context.result);
+        },
+      ],
+
+      find: [
+        async (context) => {
+          //@ts-ignore
+          context.result = successResponseWithPagination(
+             //@ts-ignore
+            context.result,
+            200,
+            "Requests retrieved successfully"
+          );
         },
       ],
     },

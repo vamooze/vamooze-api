@@ -157,7 +157,7 @@ export const wallet = (app: Application) => {
       // Ensure payment status is successful
       if (status === "success") {
         // Find the user by email
-        const userService = app.service("users");
+        const userService = app.service('users');
         const userResult = await userService.find({
           query: { phone_number: phone },
         });

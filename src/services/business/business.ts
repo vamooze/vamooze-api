@@ -107,7 +107,7 @@ export const business = (app: Application) => {
         }
         req.body.role = role?.data[0]?.id;
         req.body.otp = getOtp();
-        const result = await app.service("users").create(req.body);
+        const result = await app.service('users').create(req.body);
         res.json(result);
       } catch (error: any) {
         logger.error({
