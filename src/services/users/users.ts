@@ -166,7 +166,6 @@ export const user = (app: Application) => {
     //   },
     // });
 
-
     app //@ts-ignore
     .use(`${userPath}/invite`, {
       create: async (data: any, params: any) => {
