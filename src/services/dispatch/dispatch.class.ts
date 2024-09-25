@@ -70,7 +70,7 @@ export class DispatchService<
     if (userRole.slug === Roles.SuperAdmin) {
       this.handleAdminUpdates(data, update, user, dispatchUserDetail);
     } else {
-      this.handleDispatchUserUpdates(data, update);
+      this.handleDispatchUserUpdates(data, update, dispatchUserDetail, dispatchDetails);
     }
 
     if (Object.keys(update).length === 0) {
@@ -129,7 +129,9 @@ export class DispatchService<
 
   private handleDispatchUserUpdates(
     data: DispatchPatch,
-    update: Partial<Dispatch>
+    update: Partial<Dispatch>,
+    dispatchUserDetail: any,
+    dispatchDetails: any
   ) {
     if (data.suspended || data.approval_status) {
       throw new Forbidden("Unauthorized operation for dispatch");
@@ -137,8 +139,8 @@ export class DispatchService<
 
     if (data.isAcceptingPickUps !== undefined) {
       this.ensureBoolean(data.isAcceptingPickUps, "isAcceptingPickUps");
-      if (typeof data.isAcceptingPickUps !== "boolean") {
-        throw new BadRequest("isAcceptingPickUps must be boolean");
+      if (dispatchDetails.approval_status !== DispatchApprovalStatus.Approved) {
+        throw new Forbidden("You must be verified before changing your pickup status");
       }
       update.isAcceptingPickUps = data.isAcceptingPickUps;
     }

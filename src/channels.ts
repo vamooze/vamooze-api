@@ -132,26 +132,29 @@ export const channels = (app: Application) => {
       }
     });
 
-
-    app
+  app
     .service("requests")
-    .publish(textConstant.requestCancelledByRequester, async (data, context) => {
-      const newObjectForDispatch = {
-        //@ts-ignore
-        message: data?.message,
-        data: {
+    .publish(
+      textConstant.requestCancelledByRequester,
+      async (data, context) => {
+        const newObjectForDispatch = {
           //@ts-ignore
-          request: data.request,
-          //@ts-ignore
-          ...data?.dispatchDetails,
-        },
-      };
+          message: data?.message,
+          data: {
+            //@ts-ignore
+            request: data.request,
+            //@ts-ignore
+            ...data?.dispatchDetails,
+          },
+        };
         return [
-          //@ts-ignore
-          app.channel(`dispatch-channel/${data?.requester}`).send(newObjectForDispatch),
+         
+          app //@ts-ignore
+            .channel(`dispatch-channel/${data?.requester}`)
+            .send(newObjectForDispatch),
         ];
-      });
-    
+      }
+    );
 
   app
     .service("requests")
@@ -163,27 +166,41 @@ export const channels = (app: Application) => {
 
   app
     .service("requests")
+    .publish(textConstant.deliveryUpdate, (data, context) => {
+      const newObjectForRequester = {
+        //@ts-ignore
+        message: data?.message,
+        //@ts-ignore
+        data: data.data,
+      };
+      //@ts-ignore
+      const requesterId = data?.requester;
+      return [
+        app.channel(`userIds/${requesterId}`).send(newObjectForRequester),
+      ];
+    });
+
+  app
+    .service("requests")
     .publish(textConstant.locationUpdateDispatch, (data, context) => {
       return [
-        app  //@ts-ignore
+        app //@ts-ignore
           .channel(`dispatch-channel/${data?.dispatch_who_accepted_user_id}`)
           .send({
             message: "Update dispatch location",
-             //@ts-ignore
+            //@ts-ignore
             request: data?.request,
           }),
       ];
     });
 
-    app
+  app
     .service("requests")
     .publish(textConstant.locationUpdateRequester, (data, context) => {
-       //@ts-ignore
+      //@ts-ignore
       const requesterId = data?.data?.requester;
       return [app.channel(`userIds/${requesterId}`)];
-
     });
-    
 
   // eslint-disable-next-line no-unused-vars
   app.publish((data: any, context: HookContext) => {

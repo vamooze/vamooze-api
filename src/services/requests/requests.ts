@@ -138,6 +138,7 @@ export const requests = (app: Application) => {
       textConstant.locationUpdateDispatch,
       textConstant.locationUpdateRequester,
       textConstant.requestCancelledByRequester,
+      textConstant.deliveryUpdate
     ],
   });
 

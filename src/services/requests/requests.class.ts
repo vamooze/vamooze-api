@@ -156,14 +156,10 @@ export class RequestsService<
 
       const request = await this.getAndValidateRequest(id);
 
-      if (
-        [RequestStatus.Delivered, RequestStatus.Expired].includes(
-          //@ts-ignore
-          request?.status
-        )
-      ) {
-        throw new Conflict("This request cannot be updated.");
+      if(request?.status === RequestStatus.CompleteDropOff){
+        throw new Conflict("This request cannot be updated, trip has been completed");
       }
+     
 
       const updatedRequest = await this.updateRequestStatus(
         request.id,
@@ -171,6 +167,14 @@ export class RequestsService<
       );
 
       // Emit event or perform other actions based on new status (optional)
+       //@ts-ignore
+       this.emit(textConstant.deliveryUpdate, {
+        request: updatedRequest.id,
+        requester: updatedRequest?.requester,
+        data: updatedRequest,
+        message: "Delivery Update",
+      });
+
 
       return successResponse(
         updatedRequest,
