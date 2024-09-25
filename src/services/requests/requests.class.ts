@@ -9,6 +9,7 @@ import {
 } from "../../interfaces/constants";
 import { addLocationUpdateJob } from "../../queue/request";
 import textConstant from "../../helpers/textConstant";
+import { Termii } from "../../helpers/termii";
 import type { Application } from "../../declarations";
 import type {
   Requests,
@@ -39,6 +40,9 @@ export class RequestsService<
 
   //@ts-ignore
   async patch(id: Id, data: any, params: Params) {
+    const termii = new Termii();
+    //@ts-ignore
+    const knex = this.app.get("postgresqlClient");
     const { user } = params;
 
     if (data.dispatchDecision) {
@@ -95,8 +99,7 @@ export class RequestsService<
       }
 
       // Use transaction for atomic updates
-      //@ts-ignore
-      const knex = this.app.get("postgresqlClient");
+
       try {
         const updatedRequest = await knex.transaction(async (trx: any) => {
           // Update the request with the dispatch assignment
@@ -127,6 +130,18 @@ export class RequestsService<
           message: "Request accepted by dispatch",
         });
 
+        const requesterUserDetail = await knex("users")
+          .select()
+          .where({ id: request?.requester })
+          .first();
+
+        if (requesterUserDetail) {
+          await termii.sendSMS(
+            requesterUserDetail.phone_number,
+            `You delivery request has been accepted by ${dispatch.first_name} ${dispatch.last_name}`
+          );
+        }
+
         // register a job to have the mobile frequently update the redis cache with current location
         await addLocationUpdateJob({
           dispatch_who_accepted_user_id: dispatch.user_id,
@@ -156,10 +171,11 @@ export class RequestsService<
 
       const request = await this.getAndValidateRequest(id);
 
-      if(request?.status === RequestStatus.CompleteDropOff){
-        throw new Conflict("This request cannot be updated, trip has been completed");
+      if (request?.status === RequestStatus.CompleteDropOff) {
+        throw new Conflict(
+          "This request cannot be updated, trip has been completed"
+        );
       }
-     
 
       const updatedRequest = await this.updateRequestStatus(
         request.id,
@@ -167,14 +183,39 @@ export class RequestsService<
       );
 
       // Emit event or perform other actions based on new status (optional)
-       //@ts-ignore
-       this.emit(textConstant.deliveryUpdate, {
+      //@ts-ignore
+      this.emit(textConstant.deliveryUpdate, {
         request: updatedRequest.id,
         requester: updatedRequest?.requester,
         data: updatedRequest,
         message: "Delivery Update",
       });
 
+      if (
+        newStatus === RequestStatus.CompleteDropOff ||
+        newStatus === RequestStatus.CompletePickUp
+      ) {
+        const requesterUserDetail = await knex("users")
+          .select()
+          .where({ id: updatedRequest?.requester })
+          .first();
+
+        let message = ''
+        if(newStatus === RequestStatus.CompleteDropOff){
+          message = 'Your delivery has been completed'
+        }
+
+        if(newStatus === RequestStatus.CompletePickUp){
+          message = 'Your delivery item has been picked an enroute for delivery'
+        }
+
+        if (requesterUserDetail) {
+          await termii.sendSMS(
+            requesterUserDetail.phone_number,
+            message
+          );
+        }
+      }
 
       return successResponse(
         updatedRequest,
@@ -249,7 +290,6 @@ export class RequestsService<
               .where({ id: updatedRequest.dispatch })
               .update({ onTrip: false })
               .returning("*");
-           
 
             return { updatedRequest, updatedDispatch };
           }

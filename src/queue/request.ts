@@ -1,7 +1,7 @@
 import { Queue, Worker, QueueEvents } from "bullmq";
 import { queueOptions } from "./config";
 import { logger } from "../logger";
-import { app, redisClient} from "../app";
+import { app, redisClient } from "../app";
 import { Termii } from "../helpers/termii";
 import { DispatchApprovalStatus } from "../interfaces/constants";
 
@@ -101,27 +101,24 @@ export const dispatchRequestWorker = new Worker(
       riders: suitableRidersData.map((rider) => rider.user_id),
     });
 
-    const smsMessageDetails = {
-      name: "xoxox", // user.first_name, //quey the user who is making the request from job.data.requester
-      pickup_address: job.data.pickup_address,
-      delivery_address: job.data.delivery_address,
-      hour_time: moment(job.data.createdAt).format("h:mm:ss a"),
-      month_time: moment(job.data.createdAt).format("MMMM Do YYYY"),
-    };
-
-    const messageToRiders =
-      textConstant.english.messageToRiders(smsMessageDetails);
-
     //**********send sms */
-    // const suitableRidersPhoneNumbers = suitableRidersData.map(
-    //   //@ts-ignore
-    //   (eachRider) => eachRider?.phone_number
-    // );
-    // const termii = new Termii();
-    // await termii.sendBatchSMS(
-    //   suitableRidersPhoneNumbers,
-    //   messageToRiders
-    // );
+    const termii = new Termii();
+
+    for (const rider of suitableRidersData) {
+      const smsMessageDetails = {
+        name: rider.first_name,
+        pickup_address: job.data.pickup_address,
+        delivery_address: job.data.delivery_address,
+        hour_time: moment(job.data.createdAt).format("h:mm:ss a"),
+        month_time: moment(job.data.createdAt).format("MMMM Do YYYY"),
+      };
+
+      const messageToRider =
+        textConstant.english.messageToRiders(smsMessageDetails);
+
+      await termii.sendSMS(rider.phone_number, messageToRider);
+    }
+
     //**********send sms */
 
     const dispatchPoolUserIds = suitableRidersData.map(
