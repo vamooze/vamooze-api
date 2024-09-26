@@ -73,6 +73,7 @@ export class RequestsService<
         status: RequestStatus.Accepted,
         dispatch: dispatch.id,
         initial_dispatch_location,
+        dispatch_accept_time: new Date().toISOString(),
       };
 
       const pickupEstimate = await checkDistanceAndTimeUsingLongLat(
@@ -175,6 +176,17 @@ export class RequestsService<
         throw new Conflict(
           "This request cannot be updated, trip has been completed"
         );
+      }
+
+      //complete_pick_up and complete_drop_off    "dispatch_pickup_time",
+
+
+      if(data.status === RequestStatus.CompletePickUp ){
+        newStatus.dispatch_to_drop_off_time =  new Date().toISOString()
+      }
+
+      if(data.status === RequestStatus.CompleteDropOff ){
+        newStatus.dispatch_drop_off_time  =  new Date().toISOString()
       }
 
       const updatedRequest = await this.updateRequestStatus(
