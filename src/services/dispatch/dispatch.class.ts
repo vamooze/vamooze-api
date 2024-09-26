@@ -46,22 +46,43 @@ export class DispatchService<
     //@ts-ignore
     const { one_signal_player_id, one_signal_alias } = data;
 
-    const dispatchDetails = await knex("dispatch")
-      .select()
-      .where({ user_id: id })
-      .first();
+    let dispatchDetails;
+    let dispatchUserDetail;
+    if (userRole.slug === Roles.SuperAdmin) {
+      dispatchDetails = await knex("dispatch")
+        .select()
+        .where({ user_id: id })
+        .first();
 
-    const dispatchUserDetail = await knex("users")
-      .select()
-      .where({ id })
-      .first();
+      dispatchUserDetail = await knex("users").select().where({ id }).first();
 
-    if (!dispatchDetails) {
-      throw new NotFound("Dispatch not found with user id provided");
+      if (!dispatchDetails) {
+        throw new NotFound("Dispatch not found with user id provided");
+      }
+
+      if (!dispatchUserDetail) {
+        throw new NotFound("User not found with id provided");
+      }
     }
 
-    if (!dispatchUserDetail) {
-      throw new NotFound("User not found with id provided");
+    if (userRole.slug === Roles.Dispatch) {
+      dispatchDetails = await knex("dispatch")
+        .select()
+        .where({ user_id: user.id })
+        .first();
+
+      if (!dispatchDetails) {
+        throw new NotFound("Dispatch not found with id provided");
+      }
+
+      dispatchUserDetail = await knex("users")
+        .select()
+        .where({ id: user.id || dispatchDetails.user_id })
+        .first();
+
+      if (!dispatchUserDetail) {
+        throw new NotFound("User not found with id provided");
+      }
     }
 
     const dispatchId = dispatchDetails.id;
@@ -70,7 +91,12 @@ export class DispatchService<
     if (userRole.slug === Roles.SuperAdmin) {
       this.handleAdminUpdates(data, update, user, dispatchUserDetail);
     } else {
-      this.handleDispatchUserUpdates(data, update, dispatchUserDetail, dispatchDetails);
+      this.handleDispatchUserUpdates(
+        data,
+        update,
+        dispatchUserDetail,
+        dispatchDetails
+      );
     }
 
     if (Object.keys(update).length === 0) {
@@ -140,7 +166,9 @@ export class DispatchService<
     if (data.isAcceptingPickUps !== undefined) {
       this.ensureBoolean(data.isAcceptingPickUps, "isAcceptingPickUps");
       if (dispatchDetails.approval_status !== DispatchApprovalStatus.Approved) {
-        throw new Forbidden("You must be verified before changing your pickup status");
+        throw new Forbidden(
+          "You must be verified before changing your pickup status"
+        );
       }
       update.isAcceptingPickUps = data.isAcceptingPickUps;
     }
