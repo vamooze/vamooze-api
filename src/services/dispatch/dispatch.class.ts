@@ -46,69 +46,37 @@ export class DispatchService<
     //@ts-ignore
     const { one_signal_player_id, one_signal_alias } = data;
 
-    let dispatchDetails;
-    let dispatchUserDetail;
+    let dispatchDetails, dispatchUserDetail;
+
     if (userRole.slug === Roles.SuperAdmin) {
-      dispatchDetails = await knex("dispatch")
-        .select()
-        .where({ user_id: id })
-        .first();
-
-      dispatchUserDetail = await knex("users").select().where({ id }).first();
-
-      if (!dispatchDetails) {
-        throw new NotFound("Dispatch not found with user id provided");
-      }
-
-      if (!dispatchUserDetail) {
-        throw new NotFound("User not found with id provided");
-      }
-    }
-
-    if (userRole.slug === Roles.Dispatch) {
-      dispatchDetails = await knex("dispatch")
-        .select()
-        .where({ user_id: user.id })
-        .first();
-
-      if (!dispatchDetails) {
-        throw new NotFound("Dispatch not found with id provided");
-      }
-
-      dispatchUserDetail = await knex("users")
-        .select()
-        .where({ id: user.id || dispatchDetails.user_id })
-        .first();
-
-      if (!dispatchUserDetail) {
-        throw new NotFound("User not found with id provided");
-      }
+      [dispatchDetails, dispatchUserDetail] =
+        await this.getDispatchAndUserDetails(knex, id);
+    } else if (userRole.slug === Roles.Dispatch) {
+      [dispatchDetails, dispatchUserDetail] = //@ts-ignore
+        await this.getDispatchAndUserDetails(knex, user.id);
     }
 
     const dispatchId = dispatchDetails.id;
     const update: Partial<Dispatch> = {};
+    const actions: string[] = [];
 
     if (userRole.slug === Roles.SuperAdmin) {
-      this.handleAdminUpdates(data, update, user, dispatchUserDetail);
+      this.handleAdminUpdates(data, update, user, dispatchUserDetail, actions);
     } else {
-      this.handleDispatchUserUpdates(
-        data,
-        update,
-        dispatchUserDetail,
-        dispatchDetails
-      );
+      this.handleDispatchUserUpdates(data, update, dispatchDetails, actions);
     }
 
     if (Object.keys(update).length === 0) {
-      if (!one_signal_player_id && !one_signal_alias) {
+      if (one_signal_player_id || one_signal_alias) {
+        await this.handleOneSignalUpdate(
+          id,
+          one_signal_player_id,
+          one_signal_alias
+        );
+        actions.push("One Signal details updated");
+      } else {
         throw new BadRequest("No valid fields to update");
       }
-
-      return this.handleOneSignalUpdate(
-        id,
-        one_signal_player_id,
-        one_signal_alias
-      );
     }
 
     const updatedDispatch = await this.updateDispatchAndUser(
@@ -117,18 +85,41 @@ export class DispatchService<
       id,
       update
     );
-    return successResponse(
-      updatedDispatch,
-      200,
-      "Dispatch updated successfully"
-    );
+
+    const responseMessage = this.constructResponseMessage(actions);
+
+    return successResponse(updatedDispatch, 200, responseMessage);
+  }
+
+  private constructResponseMessage(actions: string[]): string {
+    if (actions.length === 0) {
+      return "No changes were made";
+    } else if (actions.length === 1) {
+      return `Dispatch updated: ${actions[0]}`;
+    } else {
+      const lastAction = actions.pop();
+      return `Dispatch updated: ${actions.join(", ")}, and ${lastAction}`;
+    }
+  }
+
+  private async getDispatchAndUserDetails(knex: any, id: string) {
+    const dispatchDetails = await knex("dispatch")
+      .select()
+      .where({ user_id: id })
+      .first();
+    const dispatchUserDetail = await knex("users")
+      .select()
+      .where({ id })
+      .first();
+    return [dispatchDetails, dispatchUserDetail];
   }
 
   private handleAdminUpdates(
     data: DispatchPatch,
     update: Partial<Dispatch>,
     adminUser: any,
-    dispatchUserDetail: any
+    dispatchUserDetail: any,
+    actions: string[]
   ) {
     if (data.suspended !== undefined) {
       this.ensureBoolean(data.suspended, "suspended");
@@ -136,6 +127,9 @@ export class DispatchService<
       //@ts-ignore
       update.suspended_at = new Date().toISOString();
       update.suspended_by = adminUser.id;
+      actions.push(
+        data.suspended ? "Dispatch suspended" : "Dispatch unsuspended"
+      );
     }
 
     if (data.approval_status !== undefined) {
@@ -143,6 +137,7 @@ export class DispatchService<
       update.approval_status = data.approval_status;
       update.approved_by = adminUser.id;
       update.approval_date = new Date().toISOString();
+      actions.push(`Approval status changed to ${data.approval_status}`);
 
       if (
         data.approval_status === DispatchApprovalStatus.Approved &&
@@ -156,8 +151,8 @@ export class DispatchService<
   private handleDispatchUserUpdates(
     data: DispatchPatch,
     update: Partial<Dispatch>,
-    dispatchUserDetail: any,
-    dispatchDetails: any
+    dispatchDetails: any,
+    actions: string[]
   ) {
     if (data.suspended || data.approval_status) {
       throw new Forbidden("Unauthorized operation for dispatch");
@@ -171,6 +166,11 @@ export class DispatchService<
         );
       }
       update.isAcceptingPickUps = data.isAcceptingPickUps;
+      actions.push(
+        data.isAcceptingPickUps
+          ? "Now accepting pickups"
+          : "No longer accepting pickups"
+      );
     }
   }
 
