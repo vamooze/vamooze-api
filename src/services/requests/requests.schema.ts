@@ -120,7 +120,9 @@ export const requestsSchema = Type.Object(
         latitude: Type.Number({ minimum: -90 }),
       })
     ),
+    dispatch_accept_time: Type.Optional(Type.String({ format: "date-time" })),
     dispatch_pickup_time: Type.Optional(Type.String({ format: "date-time" })),
+    dispatch_to_drop_off_time: Type.Optional(Type.String({ format: "date-time" })),
     dispatch_drop_off_time: Type.Optional(Type.String({ format: "date-time" })),
     estimated_time_for_dispatch_delivery: Type.Optional(
       Type.Number({ minimum: 0 })
@@ -179,6 +181,8 @@ export const requestsDataSchema = Type.Pick(
     "initial_dispatch_location",
     "dispatch_pickup_time",
     "dispatch_drop_off_time",
+    "dispatch_accept_time",
+    "dispatch_to_drop_off_time",
     "estimated_time_for_dispatch_delivery",
     "estimated_time_for_dispatch_pickup"
   ],
@@ -243,6 +247,8 @@ export const requestsQueryProperties = Type.Pick(requestsSchema, [
   "pickup_recipient_phone_number",
   "initial_dispatch_location",
   "dispatch_pickup_time",
+  "dispatch_accept_time",
+  "dispatch_to_drop_off_time",
   "dispatch_drop_off_time",
   "estimated_time_for_dispatch_delivery",
   "estimated_time_for_dispatch_pickup"

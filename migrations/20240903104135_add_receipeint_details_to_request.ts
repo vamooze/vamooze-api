@@ -15,6 +15,8 @@ export async function up(knex: Knex): Promise<void> {
     table.jsonb('initial_dispatch_location').nullable();
     table.timestamp('dispatch_pickup_time').nullable();
     table.timestamp('dispatch_drop_off_time').nullable();
+    table.timestamp('dispatch_to_drop_off_time').nullable();
+    table.timestamp('dispatch_accept_time').nullable();
     table.decimal('estimated_time_for_dispatch_delivery', 10, 2).nullable();
     table.decimal('estimated_time_for_dispatch_pickup', 10, 2).nullable();
   });
@@ -32,6 +34,8 @@ export async function down(knex: Knex): Promise<void> {
     table.dropColumn('initial_dispatch_location');
     table.dropColumn('dispatch_pickup_time');
     table.dropColumn('dispatch_drop_off_time');
+    table.timestamp('dispatch_to_drop_off_time')
+    table.timestamp('dispatch_accept_time').nullable();
     table.dropColumn('estimated_time_for_dispatch_delivery');
     table.dropColumn('estimated_time_for_dispatch_pickup');
   });

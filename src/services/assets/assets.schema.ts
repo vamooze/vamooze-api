@@ -19,6 +19,7 @@ export const assetsSchema = Type.Object(
       model: Type.String(),
       eco_friendly_status: Type.Optional(Type.String()),
       location: Type.String(),
+      plate_number: Type.Optional(Type.String()),
       asset_image: Type.Array(Type.String({format: 'uri'})),
       asset_id: Type.Optional(Type.String({ format: 'uuid' })),
       status: Type.Optional(Type.Enum(AssetStatus)),
@@ -52,6 +53,7 @@ export const assetsDataSchema = Type.Pick(assetsSchema, [
     'proof_of_ownership',
     'id_card',
     'insurance_document',
+    "plate_number",
     'user'
 ], {
   $id: 'AssetsData'
@@ -84,6 +86,7 @@ export const assetsQueryProperties = Type.Pick(assetsSchema, [
     'proof_of_ownership',
     'id_card',
     'insurance_document',
+    "plate_number",
     'user'
 ])
 export const assetsQuerySchema = Type.Intersect(

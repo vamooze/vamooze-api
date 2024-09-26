@@ -12,6 +12,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('brand', 150).notNullable()
     table.string('model', 150).notNullable()
     table.string('eco_friendly_status').nullable()
+    table.string('plate_number').nullable()
     table.string('location', 50).notNullable()
      table.json('asset_image').notNullable()
     table.uuid('asset_id').unique().defaultTo(knex.fn.uuid());
