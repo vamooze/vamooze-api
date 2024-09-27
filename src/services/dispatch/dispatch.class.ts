@@ -77,21 +77,22 @@ export class DispatchService<
           one_signal_alias,
           knex
         );
+        return successResponse(null, 200, 'One signal update successfully');
       } else {
         throw new BadRequest("No valid fields to update");
       }
+    } else {
+      const updatedDispatch = await this.updateDispatchAndUser(
+        knex,
+        dispatchId,
+        id,
+        update
+      );
+
+      const responseMessage = this.constructResponseMessage(actions);
+
+      return successResponse(updatedDispatch, 200, responseMessage);
     }
-
-    const updatedDispatch = await this.updateDispatchAndUser(
-      knex,
-      dispatchId,
-      id,
-      update
-    );
-
-    const responseMessage = this.constructResponseMessage(actions);
-
-    return successResponse(updatedDispatch, 200, responseMessage);
   }
 
   private constructResponseMessage(actions: string[]): string {
@@ -187,15 +188,9 @@ export class DispatchService<
       throw new BadRequest("One signal id must be string");
     }
 
-       await knex("users")
-      .where({ id: userId })
-      .update({
-        one_signal_player_id: playerId,
-        one_signal_alias: alias,
-      })
-      .returning(["one_signal_player_id", "one_signal_alias"]);
-
-    return successResponse(null, 200, "One signal ID saved successfully");
+    await knex("users")
+      .where("id", userId)
+      .update({ one_signal_player_id: playerId, one_signal_alias: alias });
   }
 
   private async updateDispatchAndUser(
