@@ -49,6 +49,8 @@ export class DispatchService<
     let dispatchDetails, dispatchUserDetail;
 
     if (userRole.slug === Roles.SuperAdmin) {
+      if (!id) throw new BadRequest("User id of dispatch not provided");
+
       [dispatchDetails, dispatchUserDetail] =
         await this.getDispatchAndUserDetails(knex, id);
     } else if (userRole.slug === Roles.Dispatch) {
@@ -69,11 +71,12 @@ export class DispatchService<
     if (Object.keys(update).length === 0) {
       if (one_signal_player_id || one_signal_alias) {
         await this.handleOneSignalUpdate(
-          id,
+          //@ts-ignore
+          user.id,
           one_signal_player_id,
-          one_signal_alias
+          one_signal_alias,
+          knex
         );
-        actions.push("One Signal details updated");
       } else {
         throw new BadRequest("No valid fields to update");
       }
@@ -176,18 +179,22 @@ export class DispatchService<
 
   private async handleOneSignalUpdate(
     userId: string,
-    playerId?: string,
-    alias?: string
+    playerId: string,
+    alias: string,
+    knex: any
   ) {
     if (playerId && typeof playerId !== "string") {
       throw new BadRequest("One signal id must be string");
     }
 
-    //@ts-ignore
-    await this.app.service("users").patch(userId, {
-      one_signal_player_id: playerId,
-      one_signal_alias: alias,
-    });
+       await knex("users")
+      .where({ id: userId })
+      .update({
+        one_signal_player_id: playerId,
+        one_signal_alias: alias,
+      })
+      .returning(["one_signal_player_id", "one_signal_alias"]);
+
     return successResponse(null, 200, "One signal ID saved successfully");
   }
 
