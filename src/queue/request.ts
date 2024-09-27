@@ -116,7 +116,7 @@ export const dispatchRequestWorker = new Worker(
       const messageToRider =
         textConstant.english.messageToRiders(smsMessageDetails);
 
-      await termii.sendSMS(rider.phone_number, messageToRider);
+      // await termii.sendSMS(rider.phone_number, messageToRider);
     }
 
     //**********send sms */
