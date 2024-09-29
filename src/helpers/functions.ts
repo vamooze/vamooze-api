@@ -341,12 +341,12 @@ export const getStateFromLatLngWithGoogle = async (data: {
 export const successResponse = (
   data: any,
   status: number,
-  messsage: string
+  message: string
 ) => {
   return {
     status: status,
     success: true,
-    messsage,
+    message,
     data,
   };
 };
