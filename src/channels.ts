@@ -87,6 +87,7 @@ export const channels = (app: Application) => {
   app
     .service("requests")
     .publish(textConstant.requestAcceptedByDispatch, async (data, context) => {
+
       const newObjectForRequester = {
         message: "Dispatch found",
         data: {
@@ -96,6 +97,11 @@ export const channels = (app: Application) => {
           ...data?.dispatchDetails,
         },
       };
+
+      logger.info({
+        message: textConstant.requestAcceptedByDispatch,
+        data: newObjectForRequester,
+      });
 
       const value = await redisClient.get(
         //@ts-ignore
