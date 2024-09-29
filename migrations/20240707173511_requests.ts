@@ -24,6 +24,7 @@ export async function up(knex: Knex): Promise<void> {
       .notNullable();
     table.json("delivery_gps_location").nullable();
     table.boolean("scheduled").notNullable().defaultTo(false);
+    table.timestamp('scheduled_time').nullable();
     table
       .string(
         "delivery_instructions",

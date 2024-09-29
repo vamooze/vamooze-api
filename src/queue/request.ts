@@ -11,11 +11,16 @@ import { sendPush } from "../helpers/functions";
 
 const DISPATCH_REQUEST_QUEUE = "dispatch-request-queue";
 const LOCATION_UPDATE_QUEUE = "location-update-queue";
+const SCHEDULED_DELIVERY_QUEUE = 'scheduled-delivery-queue';
+
 
 export const dispatchRequestQueue = new Queue(
   DISPATCH_REQUEST_QUEUE,
   queueOptions
 );
+
+export const scheduledDeliveryQueue = new Queue(SCHEDULED_DELIVERY_QUEUE, queueOptions);
+
 
 export const locationUpdateQueue = new Queue(
   LOCATION_UPDATE_QUEUE,
@@ -33,6 +38,20 @@ export const addDispatchRequestJob = async (data: any) => {
     }
   );
   logger.info(`Added job ${job.id} to queue ${DISPATCH_REQUEST_QUEUE}`);
+  return job;
+};
+
+export const addScheduledDeliveryJob = async (data: any) => {
+  const delay = new Date(data.scheduled_time).getTime() - Date.now();
+  const job = await scheduledDeliveryQueue.add(
+    `scheduled-delivery-${data.id}`,
+    data,
+    {
+      delay,
+      removeOnComplete: true,
+      removeOnFail: false,
+    }
+  );
   return job;
 };
 
@@ -81,7 +100,7 @@ export const dispatchRequestWorker = new Worker(
       )
       .where({
         isAcceptingPickUps: true, // Add necessary conditions here
-        onTrip: false,
+        // onTrip: false,
         approval_status: DispatchApprovalStatus.Approved,
       })
       .orderBy("id", "asc")
@@ -116,7 +135,7 @@ export const dispatchRequestWorker = new Worker(
       const messageToRider =
         textConstant.english.messageToRiders(smsMessageDetails);
 
-      // await termii.sendSMS(rider.phone_number, messageToRider);
+      await termii.sendSMS(rider.phone_number, messageToRider);
     }
 
     //**********send sms */
@@ -153,6 +172,16 @@ export const dispatchRequestWorker = new Worker(
       suitableRidersOneSingalAlias,
       dataForPushNotification
     );
+  },
+  queueOptions
+);
+
+
+export const scheduledDeliveryWorker = new Worker(
+  SCHEDULED_DELIVERY_QUEUE,
+  async (job) => {
+    // When it's time to process the scheduled delivery, add it to the dispatch request queue
+    await addDispatchRequestJob(job.data);
   },
   queueOptions
 );

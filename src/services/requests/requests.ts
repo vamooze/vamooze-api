@@ -10,6 +10,8 @@ import {
   sendSms,
   sendPush,
 } from "../../helpers/functions";
+import moment from 'moment';
+
 
 import { HookContext } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
@@ -33,7 +35,7 @@ import {
 import { Queue, Worker } from "bullmq";
 
 import { app } from "../../app";
-import { addDispatchRequestJob } from "../../queue/request";
+import { addDispatchRequestJob, addScheduledDeliveryJob } from "../../queue/request";
 import { logger } from "../../logger";
 import type { Application } from "../../declarations";
 import {
@@ -47,7 +49,7 @@ import { GeneralError } from "@feathersjs/errors";
 export * from "./requests.class";
 export * from "./requests.schema";
 
-const { BadRequest } = require("@feathersjs/errors");
+const { BadRequest, Forbidden } = require("@feathersjs/errors");
 
 const estimatesRide = "estimates/ride";
 
@@ -127,6 +129,40 @@ export const tripEstimates = (app: Application) => {
   });
 };
 
+const validateScheduledDelivery = async (context: HookContext) => {
+  const { scheduled, scheduled_time } = context.data;
+  const userId = context.params.user.id;
+
+  if (scheduled) {
+    if (!scheduled_time) {
+      throw new BadRequest('Scheduled time is required for scheduled deliveries');
+    }
+
+    const scheduledMoment = moment(scheduled_time);
+    const currentMoment = moment();
+
+    if (scheduledMoment.isBefore(currentMoment.add(30, 'minutes'))) {
+      throw new BadRequest('Scheduled time must be at least 30 minutes from now');
+    }
+
+    const knex = context.app.get("postgresqlClient");
+    const existingScheduledDeliveries = await knex('requests')
+      .where({
+        requester: userId,
+        scheduled: true
+      })
+      .whereIn('status', [RequestStatus.Pending, RequestStatus.Accepted])
+      .count('id as count')
+      .first();
+
+    if (existingScheduledDeliveries.count > 0) {
+      throw new Forbidden('You can only have one scheduled delivery at a time');
+    }
+  }
+
+  return context;
+}
+
 // A configure function that registers the service and its hooks via `app.configure`
 export const requests = (app: Application) => {
   const options = getOptions(app);
@@ -165,6 +201,7 @@ export const requests = (app: Application) => {
       get: [],
       create: [
         isVerified(),
+        validateScheduledDelivery,
         async (context) => {
           const tripLocationDetails = {
             //@ts-ignore
@@ -199,7 +236,13 @@ export const requests = (app: Application) => {
     after: {
       create: [
         async (context: HookContext) => {
-          addDispatchRequestJob(context.result);
+
+          if (context.result.scheduled) {
+            await addScheduledDeliveryJob(context.result);
+          }else{
+            addDispatchRequestJob(context.result);
+          }
+         
         },
       ],
 

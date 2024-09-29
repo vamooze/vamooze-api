@@ -79,6 +79,7 @@ export const requestsSchema = Type.Object(
       })
     ),
     scheduled: Type.Optional(Type.Boolean({ default: false })),
+    scheduled_time: Type.Optional(Type.String({ format: "date-time" })),
     dispatch: Type.Integer({ minimum: 1 }),
     // business: Type.Integer({ minimum: 1 }),
     delivery_instructions: Type.Optional(
@@ -164,6 +165,7 @@ export const requestsDataSchema = Type.Pick(
     "pickup_address",
     "pickup_gps_location",
     "scheduled",
+    "scheduled_time",
     // "dispatch",
     // "business",
     "delivery_instructions",
@@ -231,6 +233,7 @@ export const requestsQueryProperties = Type.Pick(requestsSchema, [
   "pickup_address",
   "pickup_gps_location",
   "scheduled",
+  "scheduled_time",
   "dispatch",
   // "business",
   "delivery_instructions",
