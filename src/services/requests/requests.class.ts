@@ -146,7 +146,7 @@ export class RequestsService<
         // register a job to have the mobile frequently update the redis cache with current location
         await addLocationUpdateJob({
           dispatch_who_accepted_user_id: dispatch.user_id,
-          frequency: 30000,
+          frequency: 300000,
           request: Number(id),
         });
 
@@ -167,6 +167,8 @@ export class RequestsService<
       await this.validateDispatchUser(user);
 
       const newStatus = data.status;
+
+      const updateObject = { status: data.status }; // Ensure it's an object
 
       this.validateRequestStatus(newStatus); // Add validation for new status
 
