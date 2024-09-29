@@ -103,10 +103,16 @@ export const channels = (app: Application) => {
         data: newObjectForRequester,
       });
 
+
       const value = await redisClient.get(
         //@ts-ignore
         `${textConstant.requests}-dispatch-pool-${data?.request}`
       );
+
+      logger.info({
+        message: '******************2***************',
+        data: value,
+      });
 
       if (value) {
         const dispatchPoolUserIds = JSON.parse(value);

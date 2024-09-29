@@ -168,9 +168,7 @@ export class RequestsService<
 
       const newStatus = data.status;
 
-      const updateObject = { status: data.status }; // Ensure it's an object
-
-      this.validateRequestStatus(newStatus); // Add validation for new status
+      this.validateRequestStatus(data.status); // Add validation for new status
 
       const request = await this.getAndValidateRequest(id);
 
@@ -182,18 +180,17 @@ export class RequestsService<
 
       //complete_pick_up and complete_drop_off    "dispatch_pickup_time",
 
-
       if(data.status === RequestStatus.CompletePickUp ){
-        newStatus.dispatch_to_drop_off_time =  new Date().toISOString()
+        data.dispatch_to_drop_off_time =  new Date().toISOString()
       }
 
       if(data.status === RequestStatus.CompleteDropOff ){
-        newStatus.dispatch_drop_off_time  =  new Date().toISOString()
+        data.dispatch_drop_off_time  =  new Date().toISOString()
       }
 
       const updatedRequest = await this.updateRequestStatus(
         request.id,
-        newStatus
+        data
       );
 
       // Emit event or perform other actions based on new status (optional)
