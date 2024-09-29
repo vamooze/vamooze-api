@@ -110,7 +110,7 @@ export const channels = (app: Application) => {
       );
 
       logger.info({
-        message: '******************2***************',
+        message: '******************dispatched pooled from the request***************',
         data: value,
       });
 
