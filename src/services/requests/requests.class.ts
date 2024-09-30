@@ -53,15 +53,11 @@ export class RequestsService<
       //@ts-ignore
       const { dispatchDecision, requestId, initial_dispatch_location } = data;
 
-      logger.info(`processing dispatch acceptance 1: validating data sent` )
+      logger.info(`processing dispatch acceptance 1: validating data sent`);
 
       this.validateDispatchDecision(dispatchDecision);
 
-      logger.info(`processing dispatch acceptance 2: validating dispatch location sent` );
-
       this.validateLongLat(initial_dispatch_location);
-
-      logger.info(`processing dispatch acceptance 3: validating request id: ${id}` );
 
       const request = await this.getAndValidateRequest(id);
 
@@ -73,13 +69,9 @@ export class RequestsService<
         throw new Conflict("This request already has a dispatch assigned");
       }
 
-      logger.info(`getting dispatch data 4` );
-
+   
       //@ts-ignore
       const dispatch = await this.getDispatchData(user?.id);
-
-
-   
 
       const update = {
         status: RequestStatus.Accepted,
@@ -88,7 +80,6 @@ export class RequestsService<
         dispatch_accept_time: new Date().toISOString(),
       };
 
-      logger.info(`getting pickupEstimate  and delivery estimate: 5` );
 
       const pickupEstimate = await checkDistanceAndTimeUsingLongLat(
         initial_dispatch_location,
@@ -113,11 +104,6 @@ export class RequestsService<
         );
       }
 
-      logger.info(`retrieved pickupEstimate  and delivery estimate: 6` );
-
-
-      // Use transaction for atomic updates
-
       try {
         const updatedRequest = await knex.transaction(async (trx: any) => {
           // Update the request with the dispatch assignment
@@ -137,10 +123,29 @@ export class RequestsService<
           return updatedRequest;
         });
 
+     
+        const requesterUserDetail = await knex("users")
+          .select()
+          .where({ id: request?.requester })
+          .first();
+
+        if (requesterUserDetail) {
+          await termii.sendSMS(
+            requesterUserDetail.phone_number,
+            `You delivery request has been accepted by ${dispatch.first_name} ${dispatch.last_name}`
+          );
+        }
+
+        // register a job to have the mobile frequently update the redis cache with current location
+        await addLocationUpdateJob({
+          dispatch_who_accepted_user_id: dispatch.user_id,
+          frequency: 300000,
+          request: Number(id),
+        });
+
+        logger.info(`emitting event to requester and other dispatch riders: 7`);
+
         delete dispatch.id;
-
-
-        logger.info(`emitting event to requester and other dispatch riders: 7` );
 
         //@ts-ignore
         this.emit(textConstant.requestAcceptedByDispatch, {
@@ -151,30 +156,7 @@ export class RequestsService<
           message: "Request accepted by dispatch",
         });
 
-        const requesterUserDetail = await knex("users")
-          .select()
-          .where({ id: request?.requester })
-          .first();
-
-         logger.info(`sending sms to requester: 8` );
-
-        if (requesterUserDetail) {
-          await termii.sendSMS(
-            requesterUserDetail.phone_number,
-            `You delivery request has been accepted by ${dispatch.first_name} ${dispatch.last_name}`
-          );
-        }
-
-        logger.info(`setting up dispatch tracking: 9` );
-
-        // register a job to have the mobile frequently update the redis cache with current location
-        await addLocationUpdateJob({
-          dispatch_who_accepted_user_id: dispatch.user_id,
-          frequency: 300000,
-          request: Number(id),
-        });
-
-        logger.info(`done returning a response: 10` );
+        logger.info(`done returning a response: 10`);
 
         // Return success response
         return successResponse(
@@ -206,18 +188,15 @@ export class RequestsService<
 
       //complete_pick_up and complete_drop_off    "dispatch_pickup_time",
 
-      if(data.status === RequestStatus.CompletePickUp ){
-        data.dispatch_to_drop_off_time =  new Date().toISOString()
+      if (data.status === RequestStatus.CompletePickUp) {
+        data.dispatch_to_drop_off_time = new Date().toISOString();
       }
 
-      if(data.status === RequestStatus.CompleteDropOff ){
-        data.dispatch_drop_off_time  =  new Date().toISOString()
+      if (data.status === RequestStatus.CompleteDropOff) {
+        data.dispatch_drop_off_time = new Date().toISOString();
       }
 
-      const updatedRequest = await this.updateRequestStatus(
-        request.id,
-        data
-      );
+      const updatedRequest = await this.updateRequestStatus(request.id, data);
 
       // Emit event or perform other actions based on new status (optional)
       //@ts-ignore
@@ -237,20 +216,18 @@ export class RequestsService<
           .where({ id: updatedRequest?.requester })
           .first();
 
-        let message = ''
-        if(newStatus === RequestStatus.CompleteDropOff){
-          message = 'Your delivery has been completed'
+        let message = "";
+        if (newStatus === RequestStatus.CompleteDropOff) {
+          message = "Your delivery has been completed";
         }
 
-        if(newStatus === RequestStatus.CompletePickUp){
-          message = 'Your delivery item has been picked an enroute for delivery'
+        if (newStatus === RequestStatus.CompletePickUp) {
+          message =
+            "Your delivery item has been picked an enroute for delivery";
         }
 
         if (requesterUserDetail) {
-          await termii.sendSMS(
-            requesterUserDetail.phone_number,
-            message
-          );
+          await termii.sendSMS(requesterUserDetail.phone_number, message);
         }
       }
 

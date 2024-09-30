@@ -87,7 +87,6 @@ export const channels = (app: Application) => {
   app
     .service("requests")
     .publish(textConstant.requestAcceptedByDispatch, async (data, context) => {
-
       const newObjectForRequester = {
         message: "Dispatch found",
         data: {
@@ -103,14 +102,19 @@ export const channels = (app: Application) => {
         data: newObjectForRequester,
       });
 
-
-      const value = await redisClient.get(
-        //@ts-ignore
-        `${textConstant.requests}-dispatch-pool-${data?.request}`
-      );
+      let value;
+      try {
+        value = await redisClient.get(
+          //@ts-ignore
+          `${textConstant.requests}-dispatch-pool-${data?.request}`
+        );
+      } catch (error) {
+        logger.info('failed to connect to redis to get dispatch pool')
+      }
 
       logger.info({
-        message: '******************dispatched pooled from the request***************',
+        message:
+          "******************dispatched pooled from the request***************",
         data: value,
       });
 
@@ -160,7 +164,6 @@ export const channels = (app: Application) => {
           },
         };
         return [
-         
           app //@ts-ignore
             .channel(`dispatch-channel/${data?.requester}`)
             .send(newObjectForDispatch),
