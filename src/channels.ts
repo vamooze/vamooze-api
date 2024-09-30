@@ -1,3 +1,4 @@
+import { dispatch } from './services/dispatch/dispatch';
 // For more information about this file see https://dove.feathersjs.com/guides/cli/channels.html
 import type { RealTimeConnection, Params } from "@feathersjs/feathers";
 import type { AuthenticationResult } from "@feathersjs/authentication";
@@ -96,10 +97,17 @@ export const channels = (app: Application) => {
           ...data?.dispatchDetails,
         },
       };
+      //@ts-ignore
+      const dispatch_pool = data.dispatch_pool
 
       logger.info({
         message: textConstant.requestAcceptedByDispatch,
         data: newObjectForRequester,
+      });
+
+      logger.info({
+        message: 'dispatch_pool',
+        data: dispatch_pool,
       });
 
       let value;
@@ -109,13 +117,20 @@ export const channels = (app: Application) => {
           `${textConstant.requests}-dispatch-pool-${data?.request}`
         );
       } catch (error) {
-        logger.info('failed to connect to redis to get dispatch pool')
+        logger.error('failed to connect to redis to get dispatch pool')
       }
 
       logger.info({
         message:
-          "******************dispatched pooled from the request***************",
-        data: value,
+          "**************all channels in  redis*************",
+        data: app.channels,
+      });
+
+      logger.info({
+        message:
+          "**************requester*************",
+           //@ts-ignore
+        data: data.requester,
       });
 
       if (value) {

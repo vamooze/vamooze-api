@@ -121,6 +121,7 @@ export const requestsSchema = Type.Object(
         latitude: Type.Number({ minimum: -90 }),
       })
     ),
+    dispatch_pool:  Type.Optional(Type.String()),
     dispatch_accept_time: Type.Optional(Type.String({ format: "date-time" })),
     dispatch_pickup_time: Type.Optional(Type.String({ format: "date-time" })),
     dispatch_to_drop_off_time: Type.Optional(Type.String({ format: "date-time" })),
@@ -186,7 +187,8 @@ export const requestsDataSchema = Type.Pick(
     "dispatch_accept_time",
     "dispatch_to_drop_off_time",
     "estimated_time_for_dispatch_delivery",
-    "estimated_time_for_dispatch_pickup"
+    "estimated_time_for_dispatch_pickup",
+    "dispatch_pool"
   ],
   {
     $id: "RequestsData",
@@ -254,7 +256,8 @@ export const requestsQueryProperties = Type.Pick(requestsSchema, [
   "dispatch_to_drop_off_time",
   "dispatch_drop_off_time",
   "estimated_time_for_dispatch_delivery",
-  "estimated_time_for_dispatch_pickup"
+  "estimated_time_for_dispatch_pickup",
+  "dispatch_pool"
 ]);
 export const requestsQuerySchema = Type.Intersect(
   [

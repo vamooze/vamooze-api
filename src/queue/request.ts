@@ -11,16 +11,17 @@ import { sendPush } from "../helpers/functions";
 
 const DISPATCH_REQUEST_QUEUE = "dispatch-request-queue";
 const LOCATION_UPDATE_QUEUE = "location-update-queue";
-const SCHEDULED_DELIVERY_QUEUE = 'scheduled-delivery-queue';
-
+const SCHEDULED_DELIVERY_QUEUE = "scheduled-delivery-queue";
 
 export const dispatchRequestQueue = new Queue(
   DISPATCH_REQUEST_QUEUE,
   queueOptions
 );
 
-export const scheduledDeliveryQueue = new Queue(SCHEDULED_DELIVERY_QUEUE, queueOptions);
-
+export const scheduledDeliveryQueue = new Queue(
+  SCHEDULED_DELIVERY_QUEUE,
+  queueOptions
+);
 
 export const locationUpdateQueue = new Queue(
   LOCATION_UPDATE_QUEUE,
@@ -149,6 +150,12 @@ export const dispatchRequestWorker = new Worker(
       JSON.stringify(dispatchPoolUserIds)
     );
 
+    await knex("requests")
+      .where({ id: job.data.id })
+      .update({
+        dispatch_pool: JSON.stringify(dispatchPoolUserIds),
+      });
+
     //**********send onse signal */
     const suitableRidersOneSingalAlias = suitableRidersData
       //@ts-ignore
@@ -175,7 +182,6 @@ export const dispatchRequestWorker = new Worker(
   },
   queueOptions
 );
-
 
 export const scheduledDeliveryWorker = new Worker(
   SCHEDULED_DELIVERY_QUEUE,

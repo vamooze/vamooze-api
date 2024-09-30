@@ -68,7 +68,6 @@ export class RequestsService<
       if (request.dispatch) {
         throw new Conflict("This request already has a dispatch assigned");
       }
-
    
       //@ts-ignore
       const dispatch = await this.getDispatchData(user?.id);
@@ -123,20 +122,7 @@ export class RequestsService<
           return updatedRequest;
         });
 
-     
-        const requesterUserDetail = await knex("users")
-          .select()
-          .where({ id: request?.requester })
-          .first();
-
-        if (requesterUserDetail) {
-          await termii.sendSMS(
-            requesterUserDetail.phone_number,
-            `You delivery request has been accepted by ${dispatch.first_name} ${dispatch.last_name}`
-          );
-        }
-
-        // register a job to have the mobile frequently update the redis cache with current location
+             // register a job to have the mobile frequently update the redis cache with current location
         await addLocationUpdateJob({
           dispatch_who_accepted_user_id: dispatch.user_id,
           frequency: 300000,
@@ -153,6 +139,7 @@ export class RequestsService<
           requester: request?.requester,
           dispatchDetails: dispatch,
           dispatch_who_accepted_user_id: dispatch.user_id,
+          dispatch_pool: request.dispatch_pool,
           message: "Request accepted by dispatch",
         });
 
@@ -216,7 +203,15 @@ export class RequestsService<
           .where({ id: updatedRequest?.requester })
           .first();
 
+          
+
         let message = "";
+
+       
+        if (newStatus === RequestStatus.EnrouteToPickUp) {
+          message = "Dispatch on way to pickup";
+        }
+
         if (newStatus === RequestStatus.CompleteDropOff) {
           message = "Your delivery has been completed";
         }

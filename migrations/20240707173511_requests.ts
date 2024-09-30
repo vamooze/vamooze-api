@@ -24,16 +24,17 @@ export async function up(knex: Knex): Promise<void> {
       .notNullable();
     table.json("delivery_gps_location").nullable();
     table.boolean("scheduled").notNullable().defaultTo(false);
-    table.timestamp('scheduled_time').nullable();
+    table.timestamp("scheduled_time").nullable();
     table
       .string(
         "delivery_instructions",
         dispatchRequestValidators.delivery_instructions_length
       )
       .nullable();
-    table
-      .integer("delivery_method")
-      .notNullable()
+
+    table.jsonb("dispatch_pool").nullable();
+
+    table.integer("delivery_method").notNullable();
     table.decimal("estimated_distance", 10, 2).nullable();
     table.json("package_details").notNullable();
     table
@@ -49,16 +50,16 @@ export async function up(knex: Knex): Promise<void> {
       .onDelete("CASCADE");
     table.json("delivery_price_details").notNullable();
 
-
-     // New fields for cancellation
-     table.integer("cancelled_by")
-     .unsigned()
-     .nullable()
-     .references("id")
-     .inTable("users")
-     .onDelete("SET NULL");
-   table.text("cancellation_reason").nullable();
-   table.timestamp("cancelled_at").nullable();
+    // New fields for cancellation
+    table
+      .integer("cancelled_by")
+      .unsigned()
+      .nullable()
+      .references("id")
+      .inTable("users")
+      .onDelete("SET NULL");
+    table.text("cancellation_reason").nullable();
+    table.timestamp("cancelled_at").nullable();
     // Commented out as 'package' is not in the JSON
     // table.json('package').notNullable()
 
