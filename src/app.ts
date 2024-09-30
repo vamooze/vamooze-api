@@ -51,7 +51,7 @@ redisClient.on("error", (err) => {
 redisClient
   .connect()
   .then((data) => console.log("successfully connected to redis"))
-  .catch((err) => console.log(err));
+  .catch((err) => console.log("Redis Connection Error2......", err, "......Redis Connection Error2"))
 
 const app: Application = express(feathers());
 
