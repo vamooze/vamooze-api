@@ -11,6 +11,7 @@ import { addLocationUpdateJob } from "../../queue/request";
 import textConstant from "../../helpers/textConstant";
 import { Termii } from "../../helpers/termii";
 import type { Application } from "../../declarations";
+import { logger } from "../../logger";
 import type {
   Requests,
   RequestsData,
@@ -52,9 +53,15 @@ export class RequestsService<
       //@ts-ignore
       const { dispatchDecision, requestId, initial_dispatch_location } = data;
 
+      logger.info(`processing dispatch acceptance 1: validating data sent` )
+
       this.validateDispatchDecision(dispatchDecision);
 
+      logger.info(`processing dispatch acceptance 2: validating dispatch location sent` );
+
       this.validateLongLat(initial_dispatch_location);
+
+      logger.info(`processing dispatch acceptance 3: validating request id: ${id}` );
 
       const request = await this.getAndValidateRequest(id);
 
@@ -66,8 +73,13 @@ export class RequestsService<
         throw new Conflict("This request already has a dispatch assigned");
       }
 
+      logger.info(`getting dispatch data 4` );
+
       //@ts-ignore
       const dispatch = await this.getDispatchData(user?.id);
+
+
+   
 
       const update = {
         status: RequestStatus.Accepted,
@@ -75,6 +87,8 @@ export class RequestsService<
         initial_dispatch_location,
         dispatch_accept_time: new Date().toISOString(),
       };
+
+      logger.info(`getting pickupEstimate  and delivery estimate: 5` );
 
       const pickupEstimate = await checkDistanceAndTimeUsingLongLat(
         initial_dispatch_location,
@@ -99,6 +113,9 @@ export class RequestsService<
         );
       }
 
+      logger.info(`retrieved pickupEstimate  and delivery estimate: 6` );
+
+
       // Use transaction for atomic updates
 
       try {
@@ -122,6 +139,9 @@ export class RequestsService<
 
         delete dispatch.id;
 
+
+        logger.info(`emitting event to requester and other dispatch riders: 7` );
+
         //@ts-ignore
         this.emit(textConstant.requestAcceptedByDispatch, {
           request: id,
@@ -136,6 +156,8 @@ export class RequestsService<
           .where({ id: request?.requester })
           .first();
 
+         logger.info(`sending sms to requester: 8` );
+
         if (requesterUserDetail) {
           await termii.sendSMS(
             requesterUserDetail.phone_number,
@@ -143,12 +165,16 @@ export class RequestsService<
           );
         }
 
+        logger.info(`setting up dispatch tracking: 9` );
+
         // register a job to have the mobile frequently update the redis cache with current location
         await addLocationUpdateJob({
           dispatch_who_accepted_user_id: dispatch.user_id,
           frequency: 300000,
           request: Number(id),
         });
+
+        logger.info(`done returning a response: 10` );
 
         // Return success response
         return successResponse(

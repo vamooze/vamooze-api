@@ -277,6 +277,7 @@ export const checkDistanceAndTimeUsingLongLat = async (
     );
     return response.data;
   } catch (error) {
+    logger.error("Error in getting distance and time :", error);
     throw error;
   }
 };
@@ -338,11 +339,7 @@ export const getStateFromLatLngWithGoogle = async (data: {
   return "default";
 };
 
-export const successResponse = (
-  data: any,
-  status: number,
-  message: string
-) => {
+export const successResponse = (data: any, status: number, message: string) => {
   return {
     status: status,
     success: true,
@@ -365,7 +362,7 @@ export const successResponseWithPagination = (
   message: string
 ) => {
   const { total, limit, skip, data } = result;
-  
+
   return {
     status: status,
     success: true,
@@ -389,7 +386,6 @@ export const validateLatLongObject = (location: any): boolean => {
 };
 
 export const initializeTransaction = async (user: any, amount: number) => {
-
   try {
     const payload: any = {
       amount: amount * 100, // Paystack expects amount in kobo
