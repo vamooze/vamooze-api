@@ -56,11 +56,7 @@ redisClient
 const app: Application = express(feathers());
 
 const testRedis = async () => {
-  const keys = await client.keys('*');
-  console.log('before deleting redis ', keys)
-  await redisClient.flushDb();  // Clears the current database only
-  const key = await client.keys('*');
-  console.log('Stored keys:', key);
+  await redisClient.flushAll()
 };
 
 testRedis()
