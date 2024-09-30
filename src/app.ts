@@ -40,6 +40,7 @@ const redisClient = createClient({
       // Retry after a delay
       return Math.min(retries * 50, 2000);
     },
+    connectTimeout: 10000,
   },
 });
 
@@ -56,7 +57,7 @@ redisClient
 const app: Application = express(feathers());
 
 const testRedis = async () => {
-  await redisClient.flushAll()
+  // await redisClient.flushAll()
 };
 
 testRedis()
