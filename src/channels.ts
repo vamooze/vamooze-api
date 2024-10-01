@@ -105,36 +105,16 @@ export const channels = (app: Application) => {
         data: newObjectForRequester,
       });
 
-      logger.info({
-        message: 'dispatch_pool',
-        data: dispatch_pool,
-      });
-
-      let value;
-      try {
-        value = await redisClient.get(
-          //@ts-ignore
-          `${textConstant.requests}-dispatch-pool-${data?.request}`
-        );
-      } catch (error) {
-        logger.error('failed to connect to redis to get dispatch pool')
-      }
+      const value  =  JSON.parse(dispatch_pool);
 
       logger.info({
-        message:
-          "**************all channels in  redis*************",
-        data: app.channels,
+        message: '**************dispatch_pool**************',
+        data: value,
       });
 
-      logger.info({
-        message:
-          "**************requester*************",
-           //@ts-ignore
-        data: data.requester,
-      });
 
-      if (value) {
-        const dispatchPoolUserIds = JSON.parse(value);
+      if (value && value.length) {
+        const dispatchPoolUserIds = value
         //@ts-ignore
         const dispatchWhoAccepted = data?.dispatch_who_accepted_user_id;
         const dispatchesWhoDidNotAccept = dispatchPoolUserIds.filter(
@@ -147,6 +127,19 @@ export const channels = (app: Application) => {
           (id) => `dispatch-channel/${id}`
         );
 
+        logger.info({
+          message:
+            "**************dispatchesWhoDidNotAcceptChannels*************",
+          data: dispatchesWhoDidNotAcceptChannels,
+        });
+
+        logger.info({
+          message:
+            "**************requester1*************",
+             //@ts-ignore
+          data: data?.requester,
+        });
+
         return [
           //@ts-ignore
           app.channel(`userIds/${data?.requester}`).send(newObjectForRequester),
@@ -156,6 +149,12 @@ export const channels = (app: Application) => {
             .send({ message: "Dispatch Matched", request: data?.request }),
         ];
       } else {
+        logger.info({
+          message:
+            "**************requester2*************",
+             //@ts-ignore
+          data: data?.requester,
+        });
         return [
           //@ts-ignore
           app.channel(`userIds/${data?.requester}`).send(newObjectForRequester),

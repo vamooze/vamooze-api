@@ -150,6 +150,9 @@ export const dispatchRequestWorker = new Worker(
       JSON.stringify(dispatchPoolUserIds)
     );
 
+    // Unhandled Rejection ClientClosedError: The client is closed
+    //   at Commander._RedisClient_sendCommand 
+
     await knex("requests")
       .where({ id: job.data.id })
       .update({
