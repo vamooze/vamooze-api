@@ -1,4 +1,4 @@
-import { dispatch } from './services/dispatch/dispatch';
+import { dispatch } from "./services/dispatch/dispatch";
 // For more information about this file see https://dove.feathersjs.com/guides/cli/channels.html
 import type { RealTimeConnection, Params } from "@feathersjs/feathers";
 import type { AuthenticationResult } from "@feathersjs/authentication";
@@ -98,23 +98,16 @@ export const channels = (app: Application) => {
         },
       };
       //@ts-ignore
-      const dispatch_pool = data.dispatch_pool
+      const dispatch_pool = data.dispatch_pool;
 
       logger.info({
-        message: textConstant.requestAcceptedByDispatch,
-        data: newObjectForRequester,
+        //@ts-ignore
+        message: `************** About to emit to other dispatch and requester for request ${data.request}**************`,
+        data: dispatch_pool,
       });
 
-      const value  =  JSON.parse(dispatch_pool);
-
-      logger.info({
-        message: '**************dispatch_pool**************',
-        data: value,
-      });
-
-
-      if (value && value.length) {
-        const dispatchPoolUserIds = value
+      if (dispatch_pool && dispatch_pool.length) {
+        const dispatchPoolUserIds = dispatch_pool;
         //@ts-ignore
         const dispatchWhoAccepted = data?.dispatch_who_accepted_user_id;
         const dispatchesWhoDidNotAccept = dispatchPoolUserIds.filter(
@@ -128,16 +121,22 @@ export const channels = (app: Application) => {
         );
 
         logger.info({
-          message:
-            "**************dispatchesWhoDidNotAcceptChannels*************",
+          //@ts-ignore
+          message: `**************   dispatches who should remove push from their screens  for  request ${data.request}**************`,
           data: dispatchesWhoDidNotAcceptChannels,
         });
 
         logger.info({
-          message:
-            "**************requester1*************",
-             //@ts-ignore
-          data: data?.requester,
+          //@ts-ignore
+          message: `**************   informing the requester that dispatch has accepted for  request ${data.request}**************`,
+
+          data: [
+            "channel for requester>>>>>>>>>",
+            //@ts-ignore
+            `userIds/${data?.requester}`,
+            ">>>>>>>> app channels",
+            app.channels,
+          ],
         });
 
         return [
@@ -149,12 +148,6 @@ export const channels = (app: Application) => {
             .send({ message: "Dispatch Matched", request: data?.request }),
         ];
       } else {
-        logger.info({
-          message:
-            "**************requester2*************",
-             //@ts-ignore
-          data: data?.requester,
-        });
         return [
           //@ts-ignore
           app.channel(`userIds/${data?.requester}`).send(newObjectForRequester),

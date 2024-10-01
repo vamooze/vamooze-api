@@ -145,10 +145,10 @@ export const dispatchRequestWorker = new Worker(
       (eachRider) => eachRider?.user_id
     );
 
-    redisClient.set(
-      `${textConstant.requests}-dispatch-pool-${job.data.id}`,
-      JSON.stringify(dispatchPoolUserIds)
-    );
+    // redisClient.set(
+    //   `${textConstant.requests}-dispatch-pool-${job.data.id}`,
+    //   JSON.stringify(dispatchPoolUserIds)
+    // );
 
     // Unhandled Rejection ClientClosedError: The client is closed
     //   at Commander._RedisClient_sendCommand 
