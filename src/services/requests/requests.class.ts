@@ -183,6 +183,8 @@ export class RequestsService<
         data.dispatch_drop_off_time = new Date().toISOString();
       }
 
+      delete data.requestId // have efe remove requestId from hadnler
+
       const updatedRequest = await this.updateRequestStatus(request.id, data);
 
       // Emit event or perform other actions based on new status (optional)
