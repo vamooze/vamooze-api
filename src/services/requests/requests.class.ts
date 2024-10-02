@@ -368,7 +368,7 @@ export class RequestsService<
 
     const [updatedRequest] = await knex("requests")
       .where({ id })
-      .update({ status })
+      .update( status )
       .returning("*");
 
     return updatedRequest;
