@@ -7,7 +7,7 @@ import {
   RequestStatus,
   DispatchDecisionDTO,
 } from "../../interfaces/constants";
-import { addLocationUpdateJob } from "../../queue/request";
+import { addLocationUpdateJob, locationUpdateQueue } from "../../queue/request";
 import textConstant from "../../helpers/textConstant";
 import { Termii } from "../../helpers/termii";
 import type { Application } from "../../declarations";
@@ -21,7 +21,9 @@ import type {
 import {
   successResponse,
   checkDistanceAndTimeUsingLongLat,
+  successResponseWithPagination,
 } from "../../helpers/functions";
+
 import type { Params, Id, NullableId } from "@feathersjs/feathers";
 import { NotFound, Forbidden, BadRequest, Conflict } from "@feathersjs/errors";
 
@@ -40,6 +42,42 @@ export class RequestsService<
   }
 
   //@ts-ignore
+  async find(params: ServiceParams) {
+    //@ts-ignore
+    const knex = this.app.get("postgresqlClient");
+
+    const limit = params?.query?.$limit ?? 10;
+    const skip = params?.query?.$skip ?? 0;
+    const requester  = params?.user?.id  ?? 0
+
+    const requests = await knex("requests")
+      .leftJoin("dispatch", "requests.dispatch", "dispatch.id")
+      .leftJoin("users", "dispatch.user_id", "users.id")
+      .select(
+        "requests.*",
+        "users.first_name AS dispatch_first_name",
+        "users.last_name AS dispatch_last_name",
+        "users.phone_number AS dispatch_phone_number"
+      )
+      .where("requests.requester", requester)
+      .orderBy("requests.created_at", "DESC") // Sort by creation date
+      .limit(limit) // Handle pagination
+      .offset(skip);
+
+    const total = await knex("requests")
+    .where("requester", requester)
+    .count("* as count").first();
+
+    const result = { total: total.count, limit, skip, data: requests };
+
+    return successResponseWithPagination(
+      result,
+      200,
+      "Requests retrieved successfully"
+    );
+  }
+
+  //@ts-ignore
   async patch(id: Id, data: any, params: Params) {
     const termii = new Termii();
     //@ts-ignore
@@ -51,9 +89,9 @@ export class RequestsService<
       await this.validateDispatchUser(user);
 
       //@ts-ignore
-      const { dispatchDecision, requestId, initial_dispatch_location } = data;
+      const { dispatchDecision, initial_dispatch_location } = data;
 
-      logger.info(`processing dispatch acceptance 1: validating data sent`);
+      logger.info(`processing dispatch acceptance....`);
 
       this.validateDispatchDecision(dispatchDecision);
 
@@ -68,7 +106,7 @@ export class RequestsService<
       if (request.dispatch) {
         throw new Conflict("This request already has a dispatch assigned");
       }
-   
+
       //@ts-ignore
       const dispatch = await this.getDispatchData(user?.id);
 
@@ -78,7 +116,6 @@ export class RequestsService<
         initial_dispatch_location,
         dispatch_accept_time: new Date().toISOString(),
       };
-
 
       const pickupEstimate = await checkDistanceAndTimeUsingLongLat(
         initial_dispatch_location,
@@ -122,14 +159,13 @@ export class RequestsService<
           return updatedRequest;
         });
 
-             // register a job to have the mobile frequently update the redis cache with current location
+        // register a job to have the mobile frequently update the redis cache with current location
         await addLocationUpdateJob({
           dispatch_who_accepted_user_id: dispatch.user_id,
-          frequency: 300000,
           request: Number(id),
         });
 
-        logger.info(`emitting event to requester and other dispatch riders: 7`);
+        logger.info(`emitting event to requester and other dispatch riders`);
 
         delete dispatch.id;
 
@@ -181,9 +217,14 @@ export class RequestsService<
 
       if (data.status === RequestStatus.CompleteDropOff) {
         data.dispatch_drop_off_time = new Date().toISOString();
+
+        // await locationUpdateQueue.removeRepeatable(
+        //   `location-update-${id}`,
+        //   { every: 10000 }   // repeat const repeat = { pattern: '*/1 * * * * *' };
+        // )
       }
 
-      delete data.requestId // have efe remove requestId from hadnler
+      delete data.requestId; // have efe remove requestId from handler
 
       const updatedRequest = await this.updateRequestStatus(request.id, data);
 
@@ -205,11 +246,8 @@ export class RequestsService<
           .where({ id: updatedRequest?.requester })
           .first();
 
-          
-
         let message = "";
 
-       
         if (newStatus === RequestStatus.EnrouteToPickUp) {
           message = "Dispatch on way to pickup";
         }
@@ -370,7 +408,7 @@ export class RequestsService<
 
     const [updatedRequest] = await knex("requests")
       .where({ id })
-      .update( status )
+      .update(status)
       .returning("*");
 
     return updatedRequest;

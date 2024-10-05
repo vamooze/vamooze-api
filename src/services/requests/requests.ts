@@ -247,15 +247,6 @@ export const requests = (app: Application) => {
       ],
 
       find: [
-        async (context) => {
-          //@ts-ignore
-          context.result = successResponseWithPagination(
-             //@ts-ignore
-            context.result,
-            200,
-            "Requests retrieved successfully"
-          );
-        },
       ],
     },
     error: {

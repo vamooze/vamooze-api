@@ -59,14 +59,13 @@ export const addScheduledDeliveryJob = async (data: any) => {
 export const addLocationUpdateJob = async (data: {
   request: number;
   dispatch_who_accepted_user_id: number;
-  frequency: number;
 }) => {
   const job = await locationUpdateQueue.add(
     `location-update-${data.request}`,
     data,
     {
       repeat: {
-        every: data.frequency,
+        pattern: '*/10 * * * * *'
       },
       removeOnComplete: true,
       removeOnFail: false,
