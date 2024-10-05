@@ -10,6 +10,7 @@ import {
   DeliveryMethod,
   PaymentMethod,
   RequestStatus,
+  RequestPaymentMethod,
   dispatchRequestValidators,
 } from "../../interfaces/constants";
 
@@ -121,6 +122,8 @@ export const requestsSchema = Type.Object(
         latitude: Type.Number({ minimum: -90 }),
       })
     ),
+    tracking_id: Type.String(),
+    payment_method: Type.Enum(RequestPaymentMethod, { default: RequestPaymentMethod.cash }),
     dispatch_pool:  Type.Optional(Type.String()),
     dispatch_accept_time: Type.Optional(Type.String({ format: "date-time" })),
     dispatch_pickup_time: Type.Optional(Type.String({ format: "date-time" })),
@@ -188,7 +191,9 @@ export const requestsDataSchema = Type.Pick(
     "dispatch_to_drop_off_time",
     "estimated_time_for_dispatch_delivery",
     "estimated_time_for_dispatch_pickup",
-    "dispatch_pool"
+    "dispatch_pool",
+    "tracking_id",
+    "payment_method",
   ],
   {
     $id: "RequestsData",
@@ -257,7 +262,9 @@ export const requestsQueryProperties = Type.Pick(requestsSchema, [
   "dispatch_drop_off_time",
   "estimated_time_for_dispatch_delivery",
   "estimated_time_for_dispatch_pickup",
-  "dispatch_pool"
+  "dispatch_pool",
+  "tracking_id",
+  "payment_method",
 ]);
 export const requestsQuerySchema = Type.Intersect(
   [

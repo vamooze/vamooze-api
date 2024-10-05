@@ -119,7 +119,10 @@ export enum RequestStatus {
   Cancelled = 'cancelled'
 }
 
-
+export enum RequestPaymentMethod {
+  wallet = 'wallet',
+  cash = 'cash'
+}
 
 
  interface DispatchRequestDTO {

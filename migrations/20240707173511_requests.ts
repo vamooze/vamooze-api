@@ -2,6 +2,7 @@ import type { Knex } from "knex";
 import {
   DeliveryMethod,
   PaymentMethod,
+  RequestPaymentMethod,
   RequestStatus,
   dispatchRequestValidators,
 } from "../src/interfaces/constants";
@@ -37,6 +38,14 @@ export async function up(knex: Knex): Promise<void> {
     table.integer("delivery_method").notNullable();
     table.decimal("estimated_distance", 10, 2).nullable();
     table.json("package_details").notNullable();
+
+    table.string("tracking_id").notNullable();
+
+    table
+      .enum("payment_method", Object.values(RequestPaymentMethod))
+      .notNullable()
+      .defaultTo(RequestPaymentMethod.cash);
+
     table
       .enum("status", Object.values(RequestStatus))
       .notNullable()

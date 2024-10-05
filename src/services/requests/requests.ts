@@ -11,6 +11,7 @@ import {
   sendPush,
 } from "../../helpers/functions";
 import moment from 'moment';
+import { nanoid } from 'nanoid';
 
 
 import { HookContext } from "@feathersjs/feathers";
@@ -213,6 +214,8 @@ export const requests = (app: Application) => {
             .service(estimatesRide)
             .create(tripLocationDetails);
 
+            const trackingId = nanoid(10);  // Generates a 10-character long ID
+
           context.data = {
             ...context.data,
             //@ts-ignore
@@ -220,6 +223,8 @@ export const requests = (app: Application) => {
             status: RequestStatus.Pending,
             delivery_price_details: result.data.priceDetails,
             estimated_distance: result.data.distance,
+           tracking_id: trackingId,  
+
           };
           return context;
         },
