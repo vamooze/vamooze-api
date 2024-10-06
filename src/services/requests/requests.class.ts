@@ -3,9 +3,11 @@ import { KnexService } from "@feathersjs/knex";
 import type { KnexAdapterParams, KnexAdapterOptions } from "@feathersjs/knex";
 import {
   Roles,
-  DispatchApprovalStatus,
+  RequestPaymentMethod,
   RequestStatus,
   DispatchDecisionDTO,
+  TransactionType,
+  TransactionStatus,
 } from "../../interfaces/constants";
 import { addLocationUpdateJob, locationUpdateQueue } from "../../queue/request";
 import textConstant from "../../helpers/textConstant";
@@ -204,74 +206,132 @@ export class RequestsService<
 
       const request = await this.getAndValidateRequest(id);
 
-      if (request?.status === RequestStatus.CompleteDropOff) {
-        throw new Conflict(
-          "This request cannot be updated, trip has been completed"
-        );
-      }
-
-      //complete_pick_up and complete_drop_off    "dispatch_pickup_time",
+      // if (request?.status === RequestStatus.CompleteDropOff) {
+      //   throw new Conflict(
+      //     "This request cannot be updated, trip has been completed"
+      //   );
+      // }
 
       if (data.status === RequestStatus.CompletePickUp) {
         data.dispatch_to_drop_off_time = new Date().toISOString();
       }
 
-      if (data.status === RequestStatus.CompleteDropOff) {
-        data.dispatch_drop_off_time = new Date().toISOString();
-
-        // await locationUpdateQueue.removeRepeatable(
-        //   `location-update-${id}`,
-        //   { every: 10000 }   // repeat const repeat = { pattern: '*/1 * * * * *' };
-        // )
-      }
-
       delete data.requestId; // have efe remove requestId from handler
 
-      const updatedRequest = await this.updateRequestStatus(request.id, data);
+      if (data.status === RequestStatus.CompleteDropOff) {
+        try {
+          await knex.transaction(async (trx: any) => {
+            const [completedRequest] = await knex("requests")
+              .where({ id })
+              .update({
+                status: RequestStatus.CompleteDropOff,
+                dispatch_to_drop_off_time: new Date().toISOString(),
+              })
+              .returning("*");
 
-      // Emit event or perform other actions based on new status (optional)
-      //@ts-ignore
-      this.emit(textConstant.deliveryUpdate, {
-        request: updatedRequest.id,
-        requester: updatedRequest?.requester,
-        data: updatedRequest,
-        message: "Delivery Update",
-      });
+            const requesterUserDetail = await knex("users")
+              .select()
+              .where({ id: completedRequest?.requester })
+              .first();
 
-      if (
-        newStatus === RequestStatus.CompleteDropOff ||
-        newStatus === RequestStatus.CompletePickUp
-      ) {
-        const requesterUserDetail = await knex("users")
-          .select()
-          .where({ id: updatedRequest?.requester })
-          .first();
+           let message = "Your delivery has been completed"
+            if (
+              completedRequest.payment_method === RequestPaymentMethod.wallet
+            ) {
 
-        let message = "";
+              message = `Your delivery has been completed and ${completedRequest.delivery_price_details.totalPrice} has been deducted from your wallet`
+              const debitedWallet = await knex("wallet")
+                .where({
+                  user_id: completedRequest?.requester,
+                })
+                .decrement(
+                  "balance",
+                  completedRequest.delivery_price_details.totalPrice
+                );
 
-        if (newStatus === RequestStatus.EnrouteToPickUp) {
-          message = "Dispatch on way to pickup";
+              //@ts-ignore
+              const transactionService = this.app.service("transactions");
+              const transactionData = {
+                wallet_id: debitedWallet.id,
+                type: TransactionType.Withdrawal,
+                amount: completedRequest.delivery_price_details.totalPrice,
+                status: TransactionStatus.Completed,
+                reference: "vazoome",
+                metadata: {
+                  initiatedBy: "vazoome",
+                  paymentMethod: "wallet",
+                },
+              };
+
+              //@ts-ignore
+              await transactionService.create(transactionData);
+            }
+
+            //@ts-ignore
+            this.emit(textConstant.deliveryUpdate, {
+              request: completedRequest.id,
+              requester: completedRequest?.requester,
+              data: completedRequest,
+              message,
+            });
+
+            if (requesterUserDetail) {
+              await termii.sendSMS(
+                requesterUserDetail.phone_number,
+                message
+              );
+            }
+          });
+
+          logger.info(`Trip completed`);
+        } catch (error) {
+          logger.error(
+            `Failed to updated trip details  when completed:`,
+            error
+          );
+        }
+      } else {
+        const updatedRequest = await this.updateRequestStatus(request.id, data);
+
+        //@ts-ignore
+        this.emit(textConstant.deliveryUpdate, {
+          request: updatedRequest.id,
+          requester: updatedRequest?.requester,
+          data: updatedRequest,
+          message: "Delivery Update",
+        });
+
+        if (
+          newStatus === RequestStatus.CompleteDropOff ||
+          newStatus === RequestStatus.CompletePickUp
+        ) {
+          const requesterUserDetail = await knex("users")
+            .select()
+            .where({ id: updatedRequest?.requester })
+            .first();
+
+          let message = "";
+
+          if (newStatus === RequestStatus.EnrouteToPickUp) {
+            message = "Dispatch on way to pickup";
+          }
+
+          if (newStatus === RequestStatus.CompletePickUp) {
+            message =
+              "Your delivery item has been picked an enroute for delivery";
+          }
+
+          if (requesterUserDetail) {
+            await termii.sendSMS(requesterUserDetail.phone_number, message);
+          }
         }
 
-        if (newStatus === RequestStatus.CompleteDropOff) {
-          message = "Your delivery has been completed";
-        }
-
-        if (newStatus === RequestStatus.CompletePickUp) {
-          message =
-            "Your delivery item has been picked an enroute for delivery";
-        }
-
-        if (requesterUserDetail) {
-          await termii.sendSMS(requesterUserDetail.phone_number, message);
-        }
+        return successResponse(
+          updatedRequest,
+          200,
+          "Successfully updated request status"
+        );
       }
-
-      return successResponse(
-        updatedRequest,
-        200,
-        "Successfully updated request status"
-      );
     }
 
     if (data.current_dispatch_location) {

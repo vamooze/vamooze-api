@@ -216,6 +216,16 @@ export const requests = (app: Application) => {
           //@ts-ignore
           const user_id = context?.params?.user.id;
 
+          const tripLocationDetails = {
+            //@ts-ignore
+            origin: context.data.pickup_gps_location,
+            //@ts-ignore
+            destination: context.data.delivery_gps_location,
+          };
+          const result = await app
+            .service(estimatesRide)
+            .create(tripLocationDetails);
+
           //@ts-ignore
           const payment_method = context?.data?.payment_method;
           if (!payment_method) {
@@ -244,26 +254,35 @@ export const requests = (app: Application) => {
               wallet = walletResult.data[0];
             }
 
-            console.log(wallet);
 
-            // {
-            //   id: 4,
-            //   user_id: 216,
-            //   balance: '0.00',
-            //   created_at: 2024-10-05T15:20:59.990Z,
-            //   updated_at: 2024-10-05T15:20:59.990Z
-            // }
+            const knex = context.app.get("postgresqlClient");
+            const pendingRequests = await knex("requests")
+              .where({
+                requester: user_id,
+                payment_method: RequestPaymentMethod.wallet,
+              })
+              .whereIn("status", [
+                RequestStatus.Accepted,
+                RequestStatus.EnrouteToPickUp,
+                RequestStatus.EnrouteToDropOff,
+              ]);
+
+            // Calculate total cost of pending requests
+            const totalPendingCost = pendingRequests.reduce(
+              (sum, request) => sum + request.delivery_price_details.totalPrice,
+              0
+            );
+
+            // Check if wallet has enough funds for all pending requests plus this new request
+            if (
+              wallet.balance <
+              totalPendingCost + result.data.priceDetails.totalPrice
+            ) {
+              throw new BadRequest(
+                "Insufficient funds in wallet, fund your wallet to get requests"
+              );
+            }
           }
-
-          const tripLocationDetails = {
-            //@ts-ignore
-            origin: context.data.pickup_gps_location,
-            //@ts-ignore
-            destination: context.data.delivery_gps_location,
-          };
-          const result = await app
-            .service(estimatesRide)
-            .create(tripLocationDetails);
 
           //@ts-ignore
           context.data = {
