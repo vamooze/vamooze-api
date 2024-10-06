@@ -157,7 +157,7 @@ export const wallet = (app: Application) => {
       // Ensure payment status is successful
       if (status === "success") {
         // Find the user by email
-        const userService = app.service('users');
+        const userService = app.service("users");
         const userResult = await userService.find({
           query: { phone_number: phone },
         });
@@ -200,13 +200,9 @@ export const wallet = (app: Application) => {
               { trx }
             );
 
-            // Update the user's wallet balance (assuming amount is in kobo)
-            const walletService = app.service("wallet");
-            await walletService.patch(
-              transaction.wallet_id,
-              { $inc: { balance: amount / 100 } }, // Convert kobo to Naira
-              { trx }
-            );
+            await knex("wallet")
+              .where({ id: transaction.wallet_id })
+              .increment("balance", amount / 100);
           });
 
           logger.info(
@@ -275,7 +271,6 @@ export const wallet = (app: Application) => {
 
         // Handle successful response
         if (response.data.status === true) {
-      
           return response.data;
         } else {
           throw new BadRequest(
