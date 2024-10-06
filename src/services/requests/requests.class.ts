@@ -48,7 +48,7 @@ export class RequestsService<
 
     const limit = params?.query?.$limit ?? 10;
     const skip = params?.query?.$skip ?? 0;
-    const requester  = params?.user?.id  ?? 0
+    const requester = params?.user?.id ?? 0;
 
     const requests = await knex("requests")
       .leftJoin("dispatch", "requests.dispatch", "dispatch.id")
@@ -65,8 +65,9 @@ export class RequestsService<
       .offset(skip);
 
     const total = await knex("requests")
-    .where("requester", requester)
-    .count("* as count").first();
+      .where("requester", requester)
+      .count("* as count")
+      .first();
 
     const result = { total: total.count, limit, skip, data: requests };
 
@@ -374,6 +375,41 @@ export class RequestsService<
         throw new Error("Failed to cancel the request");
       }
     }
+  }
+
+  async getByTrackingId(trackingId: string) {
+    //@ts-ignore
+    const knex = this.app.get("postgresqlClient");
+
+    const request = await knex("requests")
+      .leftJoin("dispatch", "requests.dispatch", "dispatch.id")
+      .leftJoin(
+        "users AS dispatch_user",
+        "dispatch.user_id",
+        "dispatch_user.id"
+      )
+      .leftJoin(
+        "users AS requester_user",
+        "requests.requester",
+        "requester_user.id"
+      )
+      .select(
+        "requests.*",
+        "dispatch_user.first_name AS dispatch_first_name",
+        "dispatch_user.last_name AS dispatch_last_name",
+        "dispatch_user.phone_number AS dispatch_phone_number",
+        "requester_user.first_name AS requester_first_name",
+        "requester_user.last_name AS requester_last_name",
+        "requester_user.phone_number AS requester_phone_number"
+      )
+      .where("requests.tracking_id", trackingId)
+      .first();
+
+    if (!request) {
+      throw new NotFound(`No request found with tracking ID: ${trackingId}`);
+    }
+
+    return successResponse(request, 200, "Request data retrieved successfully");
   }
 
   private async validateDispatchUser(user: any) {

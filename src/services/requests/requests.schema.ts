@@ -19,6 +19,8 @@ export const requestsSchema = Type.Object(
   {
     id: Type.Number(),
     requester: Type.Number(),
+    tracking_id: Type.String(),
+    payment_method: Type.Enum(RequestPaymentMethod, { default: RequestPaymentMethod.cash }),
     receipient_name: Type.Optional(
       Type.String({
         maxLength: dispatchRequestValidators.receiver_name_length,
@@ -122,8 +124,6 @@ export const requestsSchema = Type.Object(
         latitude: Type.Number({ minimum: -90 }),
       })
     ),
-    tracking_id: Type.String(),
-    payment_method: Type.Enum(RequestPaymentMethod, { default: RequestPaymentMethod.cash }),
     dispatch_pool:  Type.Optional(Type.String()),
     dispatch_accept_time: Type.Optional(Type.String({ format: "date-time" })),
     dispatch_pickup_time: Type.Optional(Type.String({ format: "date-time" })),

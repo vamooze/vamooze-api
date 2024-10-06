@@ -10,11 +10,9 @@ import {
   sendSms,
   sendPush,
 } from "../../helpers/functions";
-import moment from 'moment';
-import { nanoid } from 'nanoid';
-
-
-import { HookContext } from "@feathersjs/feathers";
+import moment from "moment";
+import * as crypto from "crypto";
+import { HookContext, Params } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import { Request, Response } from "express";
 import { constants } from "../../helpers/constants";
@@ -32,11 +30,15 @@ import {
 import {
   RequestStatus,
   DispatchApprovalStatus,
+  RequestPaymentMethod,
 } from "../../interfaces/constants";
 import { Queue, Worker } from "bullmq";
 
 import { app } from "../../app";
-import { addDispatchRequestJob, addScheduledDeliveryJob } from "../../queue/request";
+import {
+  addDispatchRequestJob,
+  addScheduledDeliveryJob,
+} from "../../queue/request";
 import { logger } from "../../logger";
 import type { Application } from "../../declarations";
 import {
@@ -46,6 +48,8 @@ import {
 } from "./requests.class";
 import { requestsPath, requestsMethods } from "./requests.shared";
 import { GeneralError } from "@feathersjs/errors";
+
+import { Wallet } from "../wallet/wallet.schema";
 
 export * from "./requests.class";
 export * from "./requests.schema";
@@ -136,33 +140,37 @@ const validateScheduledDelivery = async (context: HookContext) => {
 
   if (scheduled) {
     if (!scheduled_time) {
-      throw new BadRequest('Scheduled time is required for scheduled deliveries');
+      throw new BadRequest(
+        "Scheduled time is required for scheduled deliveries"
+      );
     }
 
     const scheduledMoment = moment(scheduled_time);
     const currentMoment = moment();
 
-    if (scheduledMoment.isBefore(currentMoment.add(30, 'minutes'))) {
-      throw new BadRequest('Scheduled time must be at least 30 minutes from now');
+    if (scheduledMoment.isBefore(currentMoment.add(30, "minutes"))) {
+      throw new BadRequest(
+        "Scheduled time must be at least 30 minutes from now"
+      );
     }
 
     const knex = context.app.get("postgresqlClient");
-    const existingScheduledDeliveries = await knex('requests')
+    const existingScheduledDeliveries = await knex("requests")
       .where({
         requester: userId,
-        scheduled: true
+        scheduled: true,
       })
-      .whereIn('status', [RequestStatus.Pending, RequestStatus.Accepted])
-      .count('id as count')
+      .whereIn("status", [RequestStatus.Pending, RequestStatus.Accepted])
+      .count("id as count")
       .first();
 
     if (existingScheduledDeliveries.count > 0) {
-      throw new Forbidden('You can only have one scheduled delivery at a time');
+      throw new Forbidden("You can only have one scheduled delivery at a time");
     }
   }
 
   return context;
-}
+};
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const requests = (app: Application) => {
@@ -175,7 +183,7 @@ export const requests = (app: Application) => {
       textConstant.locationUpdateDispatch,
       textConstant.locationUpdateRequester,
       textConstant.requestCancelledByRequester,
-      textConstant.deliveryUpdate
+      textConstant.deliveryUpdate,
     ],
   });
 
@@ -190,7 +198,7 @@ export const requests = (app: Application) => {
       find: [
         async (context) => {
           const user = context.params.user; // Get authenticated user from context
-
+          //@ts-ignore
           context.params.query = {
             ...context.params.query,
             //@ts-ignore
@@ -203,7 +211,50 @@ export const requests = (app: Application) => {
       create: [
         isVerified(),
         validateScheduledDelivery,
+        // generateTrackingId,
         async (context) => {
+          //@ts-ignore
+          const user_id = context?.params?.user.id;
+
+          //@ts-ignore
+          const payment_method = context?.data?.payment_method;
+          if (!payment_method) {
+            //@ts-ignore
+            context.data.payment_method = RequestPaymentMethod.cash;
+          }
+
+          if (payment_method === RequestPaymentMethod.wallet) {
+            const walletService = context.app.service("wallet");
+
+            let walletResult = await walletService.find({
+              //@ts-ignore
+              query: { user_id },
+            });
+
+            let wallet: Wallet | null = null;
+
+            if (walletResult.data.length === 0) {
+              // If no wallet exists, create a new one
+              wallet = await walletService.create({
+                user_id,
+                balance: 0.0, // New wallet starts with a balance of 0
+              });
+            } else {
+              // Use the existing wallet
+              wallet = walletResult.data[0];
+            }
+
+            console.log(wallet);
+
+            // {
+            //   id: 4,
+            //   user_id: 216,
+            //   balance: '0.00',
+            //   created_at: 2024-10-05T15:20:59.990Z,
+            //   updated_at: 2024-10-05T15:20:59.990Z
+            // }
+          }
+
           const tripLocationDetails = {
             //@ts-ignore
             origin: context.data.pickup_gps_location,
@@ -214,18 +265,16 @@ export const requests = (app: Application) => {
             .service(estimatesRide)
             .create(tripLocationDetails);
 
-            const trackingId = nanoid(10);  // Generates a 10-character long ID
-
+          //@ts-ignore
           context.data = {
             ...context.data,
-            //@ts-ignore
-            requester: context?.params?.user?.id,
+            requester: user_id,
             status: RequestStatus.Pending,
             delivery_price_details: result.data.priceDetails,
             estimated_distance: result.data.distance,
-           tracking_id: trackingId,  
-
+            tracking_id: crypto.randomBytes(8).toString("hex"),
           };
+
           return context;
         },
 
@@ -241,21 +290,28 @@ export const requests = (app: Application) => {
     after: {
       create: [
         async (context: HookContext) => {
-
           if (context.result.scheduled) {
             await addScheduledDeliveryJob(context.result);
-          }else{
+          } else {
             addDispatchRequestJob(context.result);
           }
-         
         },
       ],
 
-      find: [
-      ],
+      find: [],
     },
     error: {
       all: [],
+    },
+  });
+
+  //@ts-ignore
+  app.use(`${requestsPath}/tracking/:trackingId`, {
+    async find(params: Params) {
+      const trackingId = params?.route?.trackingId;
+      const requestService = app.service("requests");
+      //@ts-ignore
+      return await requestService.getByTrackingId(trackingId);
     },
   });
 };
