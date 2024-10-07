@@ -1,6 +1,6 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 import { authenticate } from "@feathersjs/authentication";
-import { NotFound, Forbidden, Conflict } from "@feathersjs/errors";
+import {  Conflict, BadRequest } from "@feathersjs/errors";
 import { HookContext, Params } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import { Roles, DispatchApprovalStatus } from "../../interfaces/constants";
@@ -63,7 +63,7 @@ const addUserInfo = async (context: HookContext) => {
   const { app, method, result } = context;
 
   const addUserToDispatch = async (dispatch: any) => {
-    const user = await app.service('users').get(dispatch.user_id);
+    const user = await app.service("users").get(dispatch.user_id);
     const onboardingCompletion = calculateOnboardingCompletion(dispatch);
 
     return {
@@ -196,6 +196,56 @@ export const dispatch = (app: Application) => {
   });
 
   //@ts-ignore
+  app.use(`${dispatchPath}/:dispatchId/suspend`, {
+    async patch(id: string, data: { suspended: boolean }, params: any) {
+      const dispatchService = app.service("dispatch") as DispatchService;
+      const dispatchId = params.route.dispatchId;
+      return await dispatchService.suspendDispatch(dispatchId, data, params);
+    },
+  });
+
+  //@ts-ignore
+  app.use(`${dispatchPath}/:dispatchId/approval`, {
+    async patch(id: string,  data: { approval_status: DispatchApprovalStatus }, params: any) {
+      const dispatchService = app.service('dispatch') as DispatchService;
+      const dispatchId = params.route.dispatchId;
+      return await dispatchService.updateApprovalStatus(dispatchId, data, params);
+    }
+  })
+
+  //@ts-ignore
+  app.service(`${dispatchPath}/:dispatchId/suspend`).hooks({
+    before: {
+      all: [
+      authenticate("jwt"),
+      checkPermission(userRoles.superAdmin)
+    ], 
+    },
+  });
+
+
+    //@ts-ignore
+    app.service(`${dispatchPath}/:dispatchId/approval`).hooks({
+      before: {
+        patch: [
+          authenticate('jwt'),
+          checkPermission(Roles.SuperAdmin),
+          async (context: HookContext) => {
+            // Ensure dispatchId is present in the route params
+            if (!context.params.route?.dispatchId) {
+              throw new BadRequest('Dispatch userID is required');
+            }
+            // Validate the input
+            if (!Object.values(DispatchApprovalStatus).includes(context.data.approval_status)) {
+              throw new BadRequest('Invalid approval status');
+            }
+            return context;
+          }
+        ], 
+      },
+    });
+
+  //@ts-ignore
   app.service("dispatch/assigned-requests").hooks({
     before: {
       all: [authenticate("jwt")], // Custom hooks
@@ -244,7 +294,6 @@ export const dispatch = (app: Application) => {
             },
           });
 
-  
           if (existingDispatch.data.length) {
             throw new Conflict("User already has a dispatch record.");
           }
@@ -278,7 +327,7 @@ export const dispatch = (app: Application) => {
         async (context) => {
           //@ts-ignore
           context.result =
-          //@ts-ignore
+            //@ts-ignore
             context?.params?.user?.roleName === Roles.SuperAdmin
               ? successResponseWithPagination(
                   //@ts-ignore

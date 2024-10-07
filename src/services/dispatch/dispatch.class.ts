@@ -31,6 +31,98 @@ export class DispatchService<
     this.app = app;
   }
 
+  async suspendDispatch(
+    id: string,
+    data: { suspended: boolean },
+    params: DispatchParams
+  ) {
+    const { user } = params;
+
+    //@ts-ignore
+    const knex = this.app.get("postgresqlClient");
+
+    if (!id) {
+      throw new BadRequest("Dispatch user id not provided");
+    }
+
+    const [dispatchDetails, dispatchUserDetail] =
+      await this.getDispatchAndUserDetails(knex, id);
+
+    if (!dispatchDetails) {
+      throw new NotFound("Dispatch not found");
+    }
+
+    this.ensureBoolean(data.suspended, "suspended");
+ 
+    const { suspended } = data;
+    
+    const update: Partial<Dispatch> = {
+      suspended,
+      suspended_at: new Date().toISOString(),
+      suspended_by: user?.id,
+    };
+
+    const [updatedDispatch] = await knex("dispatch")
+      .where("id", id)
+      .update(update)
+      .returning("*");
+
+    const action = suspended ? "Dispatch suspended" : "Dispatch unsuspended";
+
+    return successResponse(updatedDispatch, 200, action);
+  }
+
+
+  async updateApprovalStatus(
+    id: string,
+    data: { approval_status: DispatchApprovalStatus },
+    params: DispatchParams
+  ) {
+    const { user } = params;
+
+    //@ts-ignore
+    const knex = this.app.get("postgresqlClient");
+
+    if (!id) {
+      throw new BadRequest("Dispatch user id not provided");
+    }
+
+    const [dispatchDetails, dispatchUserDetail] =
+      await this.getDispatchAndUserDetails(knex, id);
+
+    if (!dispatchDetails) {
+      throw new NotFound("Dispatch not found");
+    }
+
+    const { approval_status } = data;
+
+    this.validateApprovalStatus(approval_status);
+
+    const update: Partial<Dispatch> = {
+      approval_status,
+      approved_by: user?.id,
+      approval_date: new Date().toISOString(),
+    };
+
+    const [updatedDispatch] = await knex("dispatch")
+      .where("id", dispatchDetails.id)
+      .update(update)
+      .returning("*");
+
+    if (approval_status === DispatchApprovalStatus.Approved) {
+      await knex("users").where("id", id).update({ is_verified: true });
+
+      if (dispatchUserDetail.one_signal_alias) {
+        this.sendApprovalPushNotification(dispatchUserDetail);
+      }
+    }
+
+    const action = `Approval status updated to ${approval_status}`;
+
+    return successResponse(updatedDispatch, 200, action);
+  }
+
+
   //@ts-ignore
   async patch(id: string, data: DispatchPatch, params: DispatchParams) {
     const { user } = params;
@@ -48,12 +140,7 @@ export class DispatchService<
 
     let dispatchDetails, dispatchUserDetail;
 
-    if (userRole.slug === Roles.SuperAdmin) {
-      if (!id) throw new BadRequest("User id of dispatch not provided");
-
-      [dispatchDetails, dispatchUserDetail] =
-        await this.getDispatchAndUserDetails(knex, id);
-    } else if (userRole.slug === Roles.Dispatch) {
+    if (userRole.slug === Roles.Dispatch) {
       [dispatchDetails, dispatchUserDetail] = //@ts-ignore
         await this.getDispatchAndUserDetails(knex, user.id);
     }
@@ -62,11 +149,7 @@ export class DispatchService<
     const update: Partial<Dispatch> = {};
     const actions: string[] = [];
 
-    if (userRole.slug === Roles.SuperAdmin) {
-      this.handleAdminUpdates(data, update, user, dispatchUserDetail, actions);
-    } else {
-      this.handleDispatchUserUpdates(data, update, dispatchDetails, actions);
-    }
+    this.handleDispatchUserUpdates(data, update, dispatchDetails, actions);
 
     if (Object.keys(update).length === 0) {
       if (one_signal_player_id || one_signal_alias) {
@@ -77,7 +160,7 @@ export class DispatchService<
           one_signal_alias,
           knex
         );
-        return successResponse(null, 200, 'One signal update successfully');
+        return successResponse(null, 200, "One signal update successfully");
       } else {
         throw new BadRequest("No valid fields to update");
       }
@@ -116,40 +199,6 @@ export class DispatchService<
       .where({ id })
       .first();
     return [dispatchDetails, dispatchUserDetail];
-  }
-
-  private handleAdminUpdates(
-    data: DispatchPatch,
-    update: Partial<Dispatch>,
-    adminUser: any,
-    dispatchUserDetail: any,
-    actions: string[]
-  ) {
-    if (data.suspended !== undefined) {
-      this.ensureBoolean(data.suspended, "suspended");
-      update.suspended = data.suspended;
-      //@ts-ignore
-      update.suspended_at = new Date().toISOString();
-      update.suspended_by = adminUser.id;
-      actions.push(
-        data.suspended ? "Dispatch suspended" : "Dispatch unsuspended"
-      );
-    }
-
-    if (data.approval_status !== undefined) {
-      this.validateApprovalStatus(data.approval_status);
-      update.approval_status = data.approval_status;
-      update.approved_by = adminUser.id;
-      update.approval_date = new Date().toISOString();
-      actions.push(`Approval status changed to ${data.approval_status}`);
-
-      if (
-        data.approval_status === DispatchApprovalStatus.Approved &&
-        dispatchUserDetail.one_signal_alias
-      ) {
-        this.sendApprovalPushNotification(dispatchUserDetail);
-      }
-    }
   }
 
   private handleDispatchUserUpdates(
