@@ -3,8 +3,8 @@ import { queueOptions } from "./config";
 import { logger } from "../logger";
 import { app, redisClient } from "../app";
 import { Termii } from "../helpers/termii";
-import { DispatchApprovalStatus } from "../interfaces/constants";
-
+import { DispatchApprovalStatus, RequestStatus } from "../interfaces/constants";
+import type { Knex } from "knex";
 import textConstant from "../helpers/textConstant";
 const moment = require("moment");
 import { sendPush } from "../helpers/functions";
@@ -65,7 +65,7 @@ export const addLocationUpdateJob = async (data: {
     data,
     {
       repeat: {
-        pattern: '*/10 * * * * *'
+        pattern: "*/10 * * * * *",
       },
       removeOnComplete: true,
       removeOnFail: false,
@@ -74,37 +74,84 @@ export const addLocationUpdateJob = async (data: {
   return job;
 };
 
+async function findAvailableDispatchers(knex: Knex, onTrip = false) {
+  let query = !onTrip
+    ? knex("dispatch")
+        .join("users", "dispatch.user_id", "users.id")
+        .select(
+          "users.phone_number",
+          "users.first_name",
+          "users.last_name",
+          "users.one_signal_player_id",
+          "users.one_signal_alias",
+          "dispatch.address",
+          "dispatch.city",
+          "dispatch.state",
+          "dispatch.lga",
+          "dispatch.country",
+          "dispatch.available_days",
+          "dispatch.available_time_frames",
+          "dispatch.id",
+          "dispatch.onTrip",
+          "dispatch.isAcceptingPickUps",
+          "dispatch.user_id"
+        )
+        .where({
+          isAcceptingPickUps: true,
+          onTrip: false,
+          approval_status: DispatchApprovalStatus.Approved,
+        })
+        .orderBy("id", "asc")
+        .limit(50)
+    : knex("dispatch")
+        .join("users", "dispatch.user_id", "users.id")
+        .select(
+          "users.phone_number",
+          "users.first_name",
+          "users.last_name",
+          "users.one_signal_player_id",
+          "users.one_signal_alias",
+          "dispatch.address",
+          "dispatch.city",
+          "dispatch.state",
+          "dispatch.lga",
+          "dispatch.country",
+          "dispatch.available_days",
+          "dispatch.available_time_frames",
+          "dispatch.id",
+          "dispatch.onTrip",
+          "dispatch.isAcceptingPickUps",
+          "dispatch.user_id"
+        )
+        .where({
+          isAcceptingPickUps: true,
+          onTrip: true,
+          approval_status: DispatchApprovalStatus.Approved,
+        })
+        .whereExists(function () {
+          this.select("*")
+            .from("requests")
+            .whereRaw("requests.dispatch = dispatch.id")
+            .whereIn("requests.status", [
+              RequestStatus.EnrouteToDropOff,
+              RequestStatus.CompletePickUp,
+            ]);
+        })
+        .orderBy("id", "asc")
+        .limit(50);
+
+  return await query;
+}
+
 export const dispatchRequestWorker = new Worker(
   DISPATCH_REQUEST_QUEUE,
   async (job) => {
     const knex = app.get("postgresqlClient");
-    const suitableRidersData = await knex("dispatch")
-      .join("users", "dispatch.user_id", "users.id")
-      .select(
-        "users.phone_number",
-        "users.first_name",
-        "users.last_name",
-        "users.one_signal_player_id",
-        "users.one_signal_alias",
-        "dispatch.address",
-        "dispatch.city",
-        "dispatch.state",
-        "dispatch.lga",
-        "dispatch.country",
-        "dispatch.available_days",
-        "dispatch.available_time_frames",
-        "dispatch.id",
-        "dispatch.onTrip",
-        "dispatch.isAcceptingPickUps",
-        "dispatch.user_id"
-      )
-      .where({
-        isAcceptingPickUps: true, // Add necessary conditions here
-        // onTrip: false,
-        approval_status: DispatchApprovalStatus.Approved,
-      })
-      .orderBy("id", "asc")
-      .limit(50);
+    let suitableRidersData = await findAvailableDispatchers(knex, false);
+
+    if (!suitableRidersData.length) {
+      suitableRidersData = await findAvailableDispatchers(knex, true);
+    }
 
     if (!suitableRidersData || !suitableRidersData.length) {
       app.service("requests").emit(textConstant.noDispatchAvailable, {
@@ -120,43 +167,17 @@ export const dispatchRequestWorker = new Worker(
       riders: suitableRidersData.map((rider) => rider.user_id),
     });
 
-    //**********send sms */
-    const termii = new Termii();
-
-    for (const rider of suitableRidersData) {
-      const smsMessageDetails = {
-        name: rider.first_name,
-        pickup_address: job.data.pickup_address,
-        delivery_address: job.data.delivery_address,
-        hour_time: moment(job.data.createdAt).format("h:mm:ss a"),
-        month_time: moment(job.data.createdAt).format("MMMM Do YYYY"),
-      };
-
-      const messageToRider =
-        textConstant.english.messageToRiders(smsMessageDetails);
-
-      // await termii.sendSMS(rider.phone_number, messageToRider);
-    }
-
-    //**********send sms */
 
     const dispatchPoolUserIds = suitableRidersData.map(
       (eachRider) => eachRider?.user_id
     );
 
-    // redisClient.set(
-    //   `${textConstant.requests}-dispatch-pool-${job.data.id}`,
-    //   JSON.stringify(dispatchPoolUserIds)
-    // );
-
-    // Unhandled Rejection ClientClosedError: The client is closed
-    //   at Commander._RedisClient_sendCommand 
-
     await knex("requests")
-      .where({ id: job.data.id })
-      .update({
-        dispatch_pool: JSON.stringify(dispatchPoolUserIds),
-      });
+    .where({ id: job.data.id })
+    .update({
+      dispatch_pool: JSON.stringify(dispatchPoolUserIds),
+    });
+
 
     //**********send onse signal */
     const suitableRidersOneSingalAlias = suitableRidersData

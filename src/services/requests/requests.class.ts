@@ -229,6 +229,10 @@ export class RequestsService<
               })
               .returning("*");
 
+               await trx("dispatch")
+        .where({ id: completedRequest.dispatch })
+        .update({ onTrip: false });
+
             const requesterUserDetail = await knex("users")
               .select()
               .where({ id: completedRequest?.requester })

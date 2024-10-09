@@ -71,6 +71,9 @@ app.use(urlencoded({ extended: true }));
 // Host the public folder
 app.use("/", serveStatic(app.get("public")));
 
+app.use("/healthcheck", (req, res) => {
+  res.status(200).send("ok")
+})
 // Configure services and real-time functionality
 app.configure(rest());
 app.configure(
