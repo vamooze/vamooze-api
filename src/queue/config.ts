@@ -1,7 +1,6 @@
 import { ConnectionOptions, QueueOptions } from 'bullmq'
 import { constants } from "../helpers/constants";
 
-
 // Connection options
 const connectionOptions: ConnectionOptions = {
   host: constants.redisConfig.host,
