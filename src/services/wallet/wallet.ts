@@ -134,12 +134,125 @@ export const wallet = (app: Application) => {
     },
   });
 
-  //@ts-ignore
-  app.service("/initiate-payment").hooks({
-    before: {
-      all: [authenticate("jwt")], // Custom hooks
+  //@ts-ignore for mobile use
+  app.use("/transactions/initiate", {
+    async create(data: any, param: any) {
+      if (typeof data.amount !== "number" || data.amount < 2000) {
+        throw new BadRequest("Amount must be a number and at least 2000.");
+      }
+
+      param.user.email = "payment@vamooze.com";
+
+      if (!param.user.email && !param.user.phone_number) {
+        throw new BadRequest(
+          "Ensure either an email or phone number is passed"
+        );
+      }
+
+      const walletService = app.service("wallet");
+      let walletResult = (await walletService.find({
+        query: { user_id: param.user.id },
+      })) as Paginated<Wallet>;
+
+      let wallet: Wallet | null = null;
+
+      if (walletResult.data.length === 0) {
+        // If no wallet exists, create a new one
+        wallet = await walletService.create({
+          user_id: param.user.id,
+          balance: 0.0, // New wallet starts with a balance of 0
+        });
+      } else {
+        // Use the existing wallet
+        wallet = walletResult.data[0];
+      }
+
+      // const response = await initializeTransaction(param.user, data.amount);
+
+      // Use the reference from Paystack's response
+      // const { reference, access_code } = response.data;
+
+      const transactionService = app.service("transactions");
+      const transactionData: Omit<TransactionsData, "id"> = {
+        wallet_id: wallet.id,
+        type: TransactionType.Deposit,
+        amount: data.amount,
+        status: TransactionStatus.Pending,
+        reference: crypto.randomUUID(),
+        metadata: {
+          initiatedBy: param.user.id,
+          paymentMethod: "Paystack",
+        },
+      };
+
+      //@ts-ignore
+      const transaction = await transactionService.create(transactionData);
+
+      return {
+        transaction,
+        paymentInfo: {
+          amount: data.amount,
+          email: param.user.email,
+          reference: transaction.reference,
+        },
+      };
     },
   });
+
+
+
+
+  const services = ["/initiate-payment", "/transactions/initiate"];
+  services.forEach((path) => {
+    //@ts-ignore
+    app.service(path).hooks({
+      before: {
+        all: [authenticate("jwt")],
+      },
+    });
+  });
+
+// app.use("/verify-transaction", {
+//   async get(id: string, params: any) {
+//     const transactionService = app.service("transactions");
+//     const transaction = await transactionService.get(id);
+
+//     if (!transaction) {
+//       throw new NotFound("Transaction not found");
+//     }
+
+//     // If the transaction is still pending, we can optionally check with Paystack
+//     if (transaction.status === TransactionStatus.Pending) {
+//       try {
+//         const paystackResponse = await axios.get(
+//           `https://api.paystack.co/transaction/verify/${transaction.reference}`,
+//           {
+//             headers: {
+//               Authorization: `Bearer ${constants.paystack.secretKey}`,
+//             },
+//           }
+//         );
+
+//         if (paystackResponse.data.data.status === "success") {
+//           // Update transaction status
+//           await transactionService.patch(id, { status: TransactionStatus.Completed });
+//           transaction.status = TransactionStatus.Completed;
+
+//           // Update wallet balance
+//           const walletService = app.service("wallet");
+//           await walletService.patch(transaction.wallet_id, {
+//             $inc: { balance: transaction.amount },
+//           });
+//         }
+//       } catch (error) {
+//         logger.error("Error verifying transaction with Paystack:", error);
+//       }
+//     }
+
+//     return transaction;
+//   },
+// });
+
 
   async function processPaystackEvent(app: any, event: any) {
     // Extract necessary data from the Paystack event
