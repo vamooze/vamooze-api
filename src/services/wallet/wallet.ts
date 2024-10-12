@@ -4,7 +4,7 @@ import { HookContext, Params } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import crypto from "crypto";
 import { Response, Request } from "express";
-import { BadRequest } from "@feathersjs/errors";
+import { BadRequest, NotFound } from "@feathersjs/errors";
 import { Paginated } from "@feathersjs/feathers";
 import axios from "axios";
 import {
@@ -18,13 +18,16 @@ import {
   walletQueryResolver,
 } from "./wallet.schema";
 import { constants } from "../../helpers/constants";
-import { initializeTransaction, sendEmail } from "../../helpers/functions";
+import { initializeTransaction, sendEmail,   successResponse } from "../../helpers/functions";
 import { TransactionStatus, TransactionType } from "../../interfaces/constants";
 import { logger } from "../../logger";
 import type { Application } from "../../declarations";
 import { WalletService, getOptions } from "./wallet.class";
 import { walletPath, walletMethods } from "./wallet.shared";
 import { TransactionsData } from "../transactions/transactions.schema";
+
+
+
 
 export * from "./wallet.class";
 export * from "./wallet.schema";
@@ -42,13 +45,6 @@ export const wallet = (app: Application) => {
   });
 
   app.service(walletPath).hooks({
-    // around: {
-    //   all: [
-    //     authenticate('jwt'),
-    //     schemaHooks.resolveExternal(walletExternalResolver),
-    //     schemaHooks.resolveResult(walletResolver)
-    //   ]
-    // },
     before: {
       all: [
         authenticate("jwt"),
@@ -199,8 +195,75 @@ export const wallet = (app: Application) => {
     },
   });
 
+  //@ts-ignore for mobile use
+  app.use("/verify-transaction/:reference", {
+    async find(params: any) {
+      const reference = params.route.reference
+      console.log(reference, '..reference...')
+      const knex = app.get("postgresqlClient");
+      const transactionService = app.service("transactions");
+    
+      try {
+        const result = await knex.transaction(async (trx: any) => {
+          // Check if the transaction exists
+          const transaction = await trx("transactions")
+            .where({ reference })
+            .first();
 
+          if (!transaction) {
+            throw new NotFound("Transaction not found");
+          }
 
+          if (transaction.status === TransactionStatus.Completed) {
+            return  successResponse(null,  200, "Transaction has been successful and wallet credited")
+          }
+
+          if (transaction.status === TransactionStatus.Pending) {
+            // Verify transaction status with Paystack
+            const paystackResponse = await axios.get(
+              `https://api.paystack.co/transaction/verify/${reference}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${constants.paystack.key}`,
+                },
+              }
+            );
+
+            if (paystackResponse.data.data.status === "success") {
+              // Update transaction status
+              await transactionService.patch(
+                transaction.id,
+                { status: TransactionStatus.Completed },
+                { transaction: trx }
+              );
+
+              await knex("wallet")
+                .where({ id: transaction.wallet_id })
+                .increment("balance", transaction.amount);
+
+              return {
+                message: "Transaction verified and completed successfully",
+              };
+            } else {
+              return { message: "Transaction is still pending on Paystack" };
+            }
+          }
+
+          return {
+            message: "Transaction status is neither pending nor completed",
+          };
+        });
+
+        return result;
+      } catch (error) {
+        logger.error("Error processing transaction:", error);
+        if (error instanceof NotFound) {
+          throw error;
+        }
+        throw new BadRequest("Error processing transaction");
+      }
+    },
+  });
 
   const services = ["/initiate-payment", "/transactions/initiate"];
   services.forEach((path) => {
@@ -212,47 +275,46 @@ export const wallet = (app: Application) => {
     });
   });
 
-// app.use("/verify-transaction", {
-//   async get(id: string, params: any) {
-//     const transactionService = app.service("transactions");
-//     const transaction = await transactionService.get(id);
+  // app.use("/verify-transaction", {
+  //   async get(id: string, params: any) {
+  //     const transactionService = app.service("transactions");
+  //     const transaction = await transactionService.get(id);
 
-//     if (!transaction) {
-//       throw new NotFound("Transaction not found");
-//     }
+  //     if (!transaction) {
+  //       throw new NotFound("Transaction not found");
+  //     }
 
-//     // If the transaction is still pending, we can optionally check with Paystack
-//     if (transaction.status === TransactionStatus.Pending) {
-//       try {
-//         const paystackResponse = await axios.get(
-//           `https://api.paystack.co/transaction/verify/${transaction.reference}`,
-//           {
-//             headers: {
-//               Authorization: `Bearer ${constants.paystack.secretKey}`,
-//             },
-//           }
-//         );
+  //     // If the transaction is still pending, we can optionally check with Paystack
+  //     if (transaction.status === TransactionStatus.Pending) {
+  //       try {
+  //         const paystackResponse = await axios.get(
+  //           `https://api.paystack.co/transaction/verify/${transaction.reference}`,
+  //           {
+  //             headers: {
+  //               Authorization: `Bearer ${constants.paystack.secretKey}`,
+  //             },
+  //           }
+  //         );
 
-//         if (paystackResponse.data.data.status === "success") {
-//           // Update transaction status
-//           await transactionService.patch(id, { status: TransactionStatus.Completed });
-//           transaction.status = TransactionStatus.Completed;
+  //         if (paystackResponse.data.data.status === "success") {
+  //           // Update transaction status
+  //           await transactionService.patch(id, { status: TransactionStatus.Completed });
+  //           transaction.status = TransactionStatus.Completed;
 
-//           // Update wallet balance
-//           const walletService = app.service("wallet");
-//           await walletService.patch(transaction.wallet_id, {
-//             $inc: { balance: transaction.amount },
-//           });
-//         }
-//       } catch (error) {
-//         logger.error("Error verifying transaction with Paystack:", error);
-//       }
-//     }
+  //           // Update wallet balance
+  //           const walletService = app.service("wallet");
+  //           await walletService.patch(transaction.wallet_id, {
+  //             $inc: { balance: transaction.amount },
+  //           });
+  //         }
+  //       } catch (error) {
+  //         logger.error("Error verifying transaction with Paystack:", error);
+  //       }
+  //     }
 
-//     return transaction;
-//   },
-// });
-
+  //     return transaction;
+  //   },
+  // });
 
   async function processPaystackEvent(app: any, event: any) {
     // Extract necessary data from the Paystack event
@@ -279,8 +341,6 @@ export const wallet = (app: Application) => {
           logger.warn(`User with phone number: ${phone} not found.`);
           return;
         }
-
-        const userId = userResult.data[0].id;
 
         // Find the existing transaction using the Paystack reference
         const transactionService = app.service("transactions");

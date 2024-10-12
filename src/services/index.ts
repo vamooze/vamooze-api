@@ -676,7 +676,6 @@ export const services = (app: Application) => {
 
         // Update user status
         await User.patch(user.data[0].id, {
-          is_verified: true,
           is_logged_in: true,
           otp: 0
         })
