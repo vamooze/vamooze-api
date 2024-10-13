@@ -18,16 +18,17 @@ import {
   walletQueryResolver,
 } from "./wallet.schema";
 import { constants } from "../../helpers/constants";
-import { initializeTransaction, sendEmail,   successResponse } from "../../helpers/functions";
+import {
+  initializeTransaction,
+  sendEmail,
+  successResponse,
+} from "../../helpers/functions";
 import { TransactionStatus, TransactionType } from "../../interfaces/constants";
 import { logger } from "../../logger";
 import type { Application } from "../../declarations";
 import { WalletService, getOptions } from "./wallet.class";
 import { walletPath, walletMethods } from "./wallet.shared";
 import { TransactionsData } from "../transactions/transactions.schema";
-
-
-
 
 export * from "./wallet.class";
 export * from "./wallet.schema";
@@ -51,7 +52,18 @@ export const wallet = (app: Application) => {
         schemaHooks.validateQuery(walletQueryValidator),
         schemaHooks.resolveQuery(walletQueryResolver),
       ],
-      find: [],
+      find: [
+        async (context) => {
+          const user = context.params.user;
+          //@ts-ignore
+          context.params.query = {
+            ...context.params.query,
+            //@ts-ignore
+            user_id: user?.id
+          };
+          return context;
+        },
+      ],
       get: [],
       create: [
         schemaHooks.validateData(walletDataValidator),
@@ -65,6 +77,17 @@ export const wallet = (app: Application) => {
     },
     after: {
       all: [],
+      find: [
+        async (context) => {
+          //@ts-ignore
+          context.result = successResponse(
+            //@ts-ignore
+            context.result.data,
+            200,
+            "Wallet retrieved successfully"
+          );
+        },
+      ],
     },
     error: {
       all: [],
@@ -163,11 +186,6 @@ export const wallet = (app: Application) => {
         wallet = walletResult.data[0];
       }
 
-      // const response = await initializeTransaction(param.user, data.amount);
-
-      // Use the reference from Paystack's response
-      // const { reference, access_code } = response.data;
-
       const transactionService = app.service("transactions");
       const transactionData: Omit<TransactionsData, "id"> = {
         wallet_id: wallet.id,
@@ -198,11 +216,11 @@ export const wallet = (app: Application) => {
   //@ts-ignore for mobile use
   app.use("/verify-transaction/:reference", {
     async find(params: any) {
-      const reference = params.route.reference
-      console.log(reference, '..reference...')
+      const reference = params.route.reference;
+      console.log(reference, "..reference...");
       const knex = app.get("postgresqlClient");
       const transactionService = app.service("transactions");
-    
+
       try {
         const result = await knex.transaction(async (trx: any) => {
           // Check if the transaction exists
@@ -215,7 +233,11 @@ export const wallet = (app: Application) => {
           }
 
           if (transaction.status === TransactionStatus.Completed) {
-            return  successResponse(null,  200, "Transaction has been successful and wallet credited")
+            return successResponse(
+              null,
+              200,
+              "Transaction has been successful and wallet credited"
+            );
           }
 
           if (transaction.status === TransactionStatus.Pending) {
@@ -274,47 +296,6 @@ export const wallet = (app: Application) => {
       },
     });
   });
-
-  // app.use("/verify-transaction", {
-  //   async get(id: string, params: any) {
-  //     const transactionService = app.service("transactions");
-  //     const transaction = await transactionService.get(id);
-
-  //     if (!transaction) {
-  //       throw new NotFound("Transaction not found");
-  //     }
-
-  //     // If the transaction is still pending, we can optionally check with Paystack
-  //     if (transaction.status === TransactionStatus.Pending) {
-  //       try {
-  //         const paystackResponse = await axios.get(
-  //           `https://api.paystack.co/transaction/verify/${transaction.reference}`,
-  //           {
-  //             headers: {
-  //               Authorization: `Bearer ${constants.paystack.secretKey}`,
-  //             },
-  //           }
-  //         );
-
-  //         if (paystackResponse.data.data.status === "success") {
-  //           // Update transaction status
-  //           await transactionService.patch(id, { status: TransactionStatus.Completed });
-  //           transaction.status = TransactionStatus.Completed;
-
-  //           // Update wallet balance
-  //           const walletService = app.service("wallet");
-  //           await walletService.patch(transaction.wallet_id, {
-  //             $inc: { balance: transaction.amount },
-  //           });
-  //         }
-  //       } catch (error) {
-  //         logger.error("Error verifying transaction with Paystack:", error);
-  //       }
-  //     }
-
-  //     return transaction;
-  //   },
-  // });
 
   async function processPaystackEvent(app: any, event: any) {
     // Extract necessary data from the Paystack event

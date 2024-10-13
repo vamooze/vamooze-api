@@ -146,6 +146,8 @@ export const assets = (app: Application) => {
       all: [],
     },
   });
+
+
 };
 
 // Add this service to the service type index

@@ -1,6 +1,6 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 import { authenticate } from "@feathersjs/authentication";
-import {  Conflict, BadRequest } from "@feathersjs/errors";
+import { Conflict, BadRequest } from "@feathersjs/errors";
 import { HookContext, Params } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import { Roles, DispatchApprovalStatus } from "../../interfaces/constants";
@@ -206,44 +206,52 @@ export const dispatch = (app: Application) => {
 
   //@ts-ignore
   app.use(`${dispatchPath}/:dispatchId/approval`, {
-    async patch(id: string,  data: { approval_status: DispatchApprovalStatus }, params: any) {
-      const dispatchService = app.service('dispatch') as DispatchService;
+    async patch(
+      id: string,
+      data: { approval_status: DispatchApprovalStatus },
+      params: any
+    ) {
+      const dispatchService = app.service("dispatch") as DispatchService;
       const dispatchId = params.route.dispatchId;
-      return await dispatchService.updateApprovalStatus(dispatchId, data, params);
-    }
-  })
+      return await dispatchService.updateApprovalStatus(
+        dispatchId,
+        data,
+        params
+      );
+    },
+  });
 
   //@ts-ignore
   app.service(`${dispatchPath}/:dispatchId/suspend`).hooks({
     before: {
-      all: [
-      authenticate("jwt"),
-      checkPermission(userRoles.superAdmin)
-    ], 
+      all: [authenticate("jwt"), checkPermission(userRoles.superAdmin)],
     },
   });
 
-
-    //@ts-ignore
-    app.service(`${dispatchPath}/:dispatchId/approval`).hooks({
-      before: {
-        patch: [
-          authenticate('jwt'),
-          checkPermission(Roles.SuperAdmin),
-          async (context: HookContext) => {
-            // Ensure dispatchId is present in the route params
-            if (!context.params.route?.dispatchId) {
-              throw new BadRequest('Dispatch userID is required');
-            }
-            // Validate the input
-            if (!Object.values(DispatchApprovalStatus).includes(context.data.approval_status)) {
-              throw new BadRequest('Invalid approval status');
-            }
-            return context;
+  //@ts-ignore
+  app.service(`${dispatchPath}/:dispatchId/approval`).hooks({
+    before: {
+      patch: [
+        authenticate("jwt"),
+        checkPermission(Roles.SuperAdmin),
+        async (context: HookContext) => {
+          // Ensure dispatchId is present in the route params
+          if (!context.params.route?.dispatchId) {
+            throw new BadRequest("Dispatch userID is required");
           }
-        ], 
-      },
-    });
+          // Validate the input
+          if (
+            !Object.values(DispatchApprovalStatus).includes(
+              context.data.approval_status
+            )
+          ) {
+            throw new BadRequest("Invalid approval status");
+          }
+          return context;
+        },
+      ],
+    },
+  });
 
   //@ts-ignore
   app.service("dispatch/assigned-requests").hooks({
@@ -382,6 +390,30 @@ export const dispatch = (app: Application) => {
         success: true,
         message: "Quiz data retrieved successfully",
         data: quizData,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // @ts-ignore
+  app.get("/asset-earning/:asset", async (req, res) => {
+    try {
+      const assetId = req.params.assetId;
+
+      function generateRandomEarnings() {
+        // Generate a random number between 100 and 10000
+        return Math.floor(Math.random() * (10000 - 100 + 1) + 100);
+      }
+
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        message: "Asset earnings retrieved successfully",
+        data: {
+          assetId: assetId,
+          earnings: "0.00"
+        },
       });
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
