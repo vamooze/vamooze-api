@@ -71,7 +71,7 @@ export const assets = (app: Application) => {
         }
         req.body.role = role?.data[0]?.id;
         req.body.otp = getOtp();
-        const result = await app.service('users').create(req.body);
+        const result = await app.service("users").create(req.body);
         res.json(result);
       } catch (error: any) {
         logger.error({
@@ -124,14 +124,23 @@ export const assets = (app: Application) => {
 
       get: [],
       create: [
+        async (context: HookContext) => {
+          context.data = {
+            ...context.data,
+            //@ts-ignore
+            user: context.params.user.id,
+          };
+          return context;
+        },
         schemaHooks.validateData(assetsDataValidator),
-        schemaHooks.resolveData(assetsDataResolver),
         async (context: HookContext) => {
           context.data = {
             ...context.data,
             asset_image: JSON.stringify(context.data.asset_image),
           };
+          return context;
         },
+        schemaHooks.resolveData(assetsDataResolver),
       ],
       patch: [
         schemaHooks.validateData(assetsPatchValidator),
@@ -146,8 +155,6 @@ export const assets = (app: Application) => {
       all: [],
     },
   });
-
-
 };
 
 // Add this service to the service type index
