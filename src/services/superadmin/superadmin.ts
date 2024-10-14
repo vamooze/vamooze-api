@@ -51,8 +51,8 @@ export const superadmin = (app: Application) => {
   .hooks({
     before: {
       find: [
-        authenticate("jwt"),
-        checkPermission(userRoles.allAdmin)
+        // authenticate("jwt"),
+        // checkPermission(userRoles.allAdmin)
       ],
     },
   });
@@ -67,8 +67,8 @@ export const superadmin = (app: Application) => {
   .hooks({
     before: {
       patch: [
-        authenticate("jwt"),
-        checkPermission(userRoles.allAdmin)
+        // authenticate("jwt"),
+        // checkPermission(userRoles.allAdmin)
       ],
     },
   });
@@ -83,8 +83,8 @@ export const superadmin = (app: Application) => {
   .hooks({
     before: {
       patch: [
-        authenticate("jwt"),
-        checkPermission(userRoles.allAdmin) //
+        // authenticate("jwt"),
+        // checkPermission(userRoles.allAdmin) //
       ],
     },
   });
