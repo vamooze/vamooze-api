@@ -1,4 +1,5 @@
-import { authenticate } from "@feathersjs/authentication";
+import { superadmin } from './superadmin/superadmin'
+import { authenticate } from '@feathersjs/authentication'
 import { transactions } from './transactions/transactions'
 import { wallet } from './wallet/wallet'
 import { dispatch } from './dispatch/dispatch'
@@ -17,11 +18,18 @@ import { roles } from './roles/roles'
 import { user } from './users/users'
 
 import axios from 'axios'
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from 'jwt-decode'
 // For more information about this file see https://dove.feathersjs.com/guides/cli/application.html#configure-functions
-import type { Application,  HookContext } from '../declarations'
-import { GeneralError, NotFound, Conflict,  NotAuthenticated, BadRequest } from '@feathersjs/errors'
-import { formatPhoneNumber, sendEmail, sendSms, getOtp, isVerified, successResponse, } from '../helpers/functions'
+import type { Application, HookContext } from '../declarations'
+import { GeneralError, NotFound, Conflict, NotAuthenticated, BadRequest } from '@feathersjs/errors'
+import {
+  formatPhoneNumber,
+  sendEmail,
+  sendSms,
+  getOtp,
+  isVerified,
+  successResponse
+} from '../helpers/functions'
 import { Termii } from '../helpers/termii'
 import bcrypt from 'bcryptjs'
 import Joi from 'joi'
@@ -33,15 +41,12 @@ import storage from '../helpers/firebase'
 import { logger } from '../logger'
 import { OAuthTypes, Roles, TemplateName, TemplateType } from '../interfaces/constants'
 import { constants } from '../helpers/constants'
-import { checkPermission } from "../helpers/checkPermission";
-import userRoles from "../helpers/permissions";
+import { checkPermission } from '../helpers/checkPermission'
+import userRoles from '../helpers/permissions'
 import emailTemplates from '../helpers/emailTemplates'
-import * as crypto from "crypto";
+import * as crypto from 'crypto'
 
 const validator = createValidator({ passError: true, statusCode: 400 })
-
-
-
 
 const phoneRegex = /^\+\d{7,15}$/
 
@@ -99,7 +104,7 @@ const schemas = {
     role: Joi.string()
       .required()
       .valid(...Object.values(Roles)),
-    phone_number: joi_phone_number_validator,
+    phone_number: joi_phone_number_validator
   }),
 
   google_signin: Joi.object().keys({
@@ -132,12 +137,13 @@ export const inhouseInviteValidator = Joi.object().keys({
   // role: Joi.string()
   //   .required()
   //   .valid(...Object.values(Roles)),
-  phone_number: joi_phone_number_validator, // Assuming this is defined elsewhere
-});
+  phone_number: joi_phone_number_validator // Assuming this is defined elsewhere
+})
 
 import { Response, Request } from 'express'
 
 export const services = (app: Application) => {
+  app.configure(superadmin)
   app.configure(transactions)
   app.configure(wallet)
   app.configure(tripEstimates)
@@ -156,7 +162,7 @@ export const services = (app: Application) => {
   app.configure(assetType)
   app.configure(roles)
   app.configure(user)
- 
+
   const handleOtpDispatch = async (req: any, res: any) => {
     try {
       const User = app.service('users')
@@ -731,55 +737,54 @@ export const services = (app: Application) => {
     }
   )
 
- //@ts-ignore
-  app.use("/invite", {
+  //@ts-ignore
+  app.use('/invite', {
     async create(data: any, params: any) {
       try {
-        const { email, first_name, last_name, phone_number } = data;
-        const { role : queryRole } = params.query;
+        const { email, first_name, last_name, phone_number } = data
+        const { role: queryRole } = params.query
 
         if (!queryRole) {
-          throw new BadRequest('Role parameter is required');
+          throw new BadRequest('Role parameter is required')
         }
-      
 
         //@ts-ignore
         if (!params.authentication || !params.authentication.accessToken) {
-          throw new NotAuthenticated('Authentication required');
+          throw new NotAuthenticated('Authentication required')
         }
         const decoded = jwtDecode(params.authentication.accessToken)
-        const userId = decoded.sub;
+        const userId = decoded.sub
 
         if (!userId) {
-          throw new NotAuthenticated('Invalid authentication token');
+          throw new NotAuthenticated('Invalid authentication token')
         }
 
         try {
-          await inhouseInviteValidator.validateAsync(data);
+          await inhouseInviteValidator.validateAsync(data)
         } catch (validationError) {
           //@ts-ignore
-          throw new BadRequest(validationError.details[0].message);
+          throw new BadRequest(validationError.details[0].message)
         }
 
-        const usersService = app.service('users');
+        const usersService = app.service('users')
 
         // Check if user already exists
-        const existingUser = await usersService.find({ query: { email } });
+        const existingUser = await usersService.find({ query: { email } })
         if (existingUser.total > 0) {
-          throw new Conflict("User with this email already exists");
+          throw new Conflict('User with this email already exists')
         }
 
         // Get the In-House Manager role
-        const rolesService = app.service("roles");
+        const rolesService = app.service('roles')
         const role = await rolesService.find({
-          query: { slug: Roles.InHouseManager, $limit: 1 },
-        });
+          query: { slug: Roles.InHouseManager, $limit: 1 }
+        })
         if (role.data.length === 0) {
-          throw new BadRequest("In-House Manager role not found");
+          throw new BadRequest('In-House Manager role not found')
         }
 
         // Generate a default password
-        const defaultPassword = crypto.randomBytes(8).toString("hex");
+        const defaultPassword = crypto.randomBytes(8).toString('hex')
 
         // Create the user
         await usersService.create({
@@ -791,32 +796,26 @@ export const services = (app: Application) => {
           is_verified: true,
           phone_number,
           is_inhouse_invitee_default_password: true,
-          in_house_inviter: parseInt(userId),
-        });
+          in_house_inviter: parseInt(userId)
+        })
 
         // Send invitation email
         await sendEmail({
           toEmail: email,
           subject: `Invitation to join as In-House Manager`,
-          templateData: emailTemplates.inHouseManagerInvite(
-            first_name,
-            email,
-            defaultPassword
-          ),
-          receiptName: `${first_name} ${last_name}`,
-        });
+          templateData: emailTemplates.inHouseManagerInvite(first_name, email, defaultPassword),
+          receiptName: `${first_name} ${last_name}`
+        })
 
-        return successResponse(null, 201, "Invitation sent successfully");
+        return successResponse(null, 201, 'Invitation sent successfully')
       } catch (error) {
         console.log(error)
         if (error instanceof BadRequest || error instanceof Conflict) {
-          throw error; // Re-throw these specific errors as they are already handled
+          throw error // Re-throw these specific errors as they are already handled
         }
-        console.error("Error in invite-in-house-manager service:", error);
-        throw new GeneralError(
-          "An unexpected error occurred while processing your request"
-        );
+        console.error('Error in invite-in-house-manager service:', error)
+        throw new GeneralError('An unexpected error occurred while processing your request')
       }
-    },
-  });
+    }
+  })
 }

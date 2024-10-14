@@ -218,13 +218,13 @@ export class RequestsService<
 
       delete data.requestId; // have efe remove requestId from handler
 
-      if (data.status === RequestStatus.CompleteDropOff) {
+      if (data.status === RequestStatus.Delivered) {
         try {
           await knex.transaction(async (trx: any) => {
             const [completedRequest] = await knex("requests")
               .where({ id })
               .update({
-                status: RequestStatus.CompleteDropOff,
+                status: RequestStatus.Delivered,
                 dispatch_to_drop_off_time: new Date().toISOString(),
               })
               .returning("*");

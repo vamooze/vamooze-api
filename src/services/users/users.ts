@@ -133,54 +133,6 @@ export const user = (app: Application) => {
       ],
     },
   });
-
-  app //@ts-ignore
-    .use(`${userPath}/unverified`, {
-      find: async (params: Params) => {
-        const userService = app.service(userPath);
-        return await userService.findUnverified(params);
-      },
-    })
-    // .hooks({
-    //   before: {
-    //     find: [
-    //       authenticate("jwt"),
-    //       checkPermission(userRoles.allAdmin)
-    //     ],
-    //   },
-    // });
-
-  app //@ts-ignore
-    .use(`${userPath}/:id/suspend`, {
-      patch: async (id: number, data: any, params: Params) => {
-        const userService = app.service(userPath);
-        return await userService.suspendUser(params);
-      },
-    })
-    // .hooks({
-    //   before: {
-    //     patch: [
-    //       authenticate("jwt"),
-    //       checkPermission(userRoles.allAdmin)
-    //     ],
-    //   },
-    // });
-
-    app //@ts-ignore
-    .use(`${userPath}/invite`, {
-      create: async (data: any, params: any) => {
-        const userService = app.service(userPath);
-        return await userService.inviteUser(data, params);
-      },
-    })
-    // .hooks({
-    //   before: {
-    //     patch: [
-    //       authenticate("jwt"),
-    //       checkPermission(userRoles.allAdmin) //
-    //     ],
-    //   },
-    // });
 };
 
 // Add this service to the service type index
