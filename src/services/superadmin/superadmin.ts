@@ -42,7 +42,7 @@ export const superadmin = (app: Application) => {
 
 
   app //@ts-ignore
-  .use(`users/unverified`, {
+  .use(`admin/users/unverified`, {
     find: async (params: Params) => {
       const userService = app.service("users");
       return await userService.findUnverified(params);
@@ -51,14 +51,14 @@ export const superadmin = (app: Application) => {
   .hooks({
     before: {
       find: [
-        // authenticate("jwt"),
-        // checkPermission(userRoles.allAdmin)
+        authenticate("jwt"),
+        checkPermission(userRoles.allAdmin)
       ],
     },
   });
 
   app //@ts-ignore
-  .use(`${userPath}/:id/suspend`, {
+  .use(`admin/${userPath}/:id/suspend`, {
     patch: async (id: number, data: any, params: Params) => {
       const userService = app.service(userPath);
       return await userService.suspendUser(params);
@@ -67,14 +67,14 @@ export const superadmin = (app: Application) => {
   .hooks({
     before: {
       patch: [
-        // authenticate("jwt"),
-        // checkPermission(userRoles.allAdmin)
+        authenticate("jwt"),
+        checkPermission(userRoles.allAdmin)
       ],
     },
   });
 
   app //@ts-ignore
-  .use(`${userPath}/invite`, {
+  .use(`admin/${userPath}/invite`, {
     create: async (data: any, params: any) => {
       const userService = app.service(userPath);
       return await userService.inviteUser(data, params);
@@ -83,8 +83,8 @@ export const superadmin = (app: Application) => {
   .hooks({
     before: {
       patch: [
-        // authenticate("jwt"),
-        // checkPermission(userRoles.allAdmin) //
+        authenticate("jwt"),
+        checkPermission(userRoles.allAdmin) //
       ],
     },
   });
