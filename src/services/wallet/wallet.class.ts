@@ -1,67 +1,90 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.class.html#database-services
-import type { Params } from '@feathersjs/feathers'
-import { KnexService } from '@feathersjs/knex'
-import type { KnexAdapterParams, KnexAdapterOptions } from '@feathersjs/knex'
-import { initializeTransaction } from '../../helpers/functions'
-import type { Application } from '../../declarations'
-import type { Wallet, WalletData, WalletPatch, WalletQuery } from './wallet.schema'
+import type { Params } from "@feathersjs/feathers";
+import { KnexService } from "@feathersjs/knex";
+import type { KnexAdapterParams, KnexAdapterOptions } from "@feathersjs/knex";
+import {
+  successResponse,
+} from "../../helpers/functions";
+import crypto from "crypto";
+import type { Application } from "../../declarations";
+import type {
+  Wallet,
+  WalletData,
+  WalletPatch,
+  WalletQuery,
+} from "./wallet.schema";
+import { BadRequest,  } from "@feathersjs/errors";
 
-export type { Wallet, WalletData, WalletPatch, WalletQuery }
+export type { Wallet, WalletData, WalletPatch, WalletQuery };
 
 export interface WalletParams extends KnexAdapterParams<WalletQuery> {}
 
-
 // By default calls the standard Knex adapter service methods but can be customized with your own functionality.
-export class WalletService<ServiceParams extends Params = WalletParams> extends KnexService<
-  Wallet,
-  WalletData,
-  WalletParams,
-  WalletPatch
-> {
-
+export class WalletService<
+  ServiceParams extends Params = WalletParams,
+> extends KnexService<Wallet, WalletData, WalletParams, WalletPatch> {
   constructor(options: KnexAdapterOptions, app: Application) {
     super(options);
     //@ts-ignore
     this.app = app;
   }
 
-  async fundWallet(userId: number, amount: number, params: Params) {
+  async initializeTransaction(userId: number, amount: number) {
+    if (typeof amount !== "number" || amount < 2000) {
+      throw new BadRequest("Amount must be a number and at least 2000.");
+    }
+
     //@ts-ignore
-    const knex = this.app.get('knexClient');
-  
+    const knex = this.app.get("postgresqlClient");
+
     return knex.transaction(async (trx: any) => {
-      // Get user's wallet
-      const [wallet] = await trx('wallets').where({ user_id: userId });
-      // if (!wallet) throw new Error('Wallet not found');
+      let wallet;
+      try {
+        // Try to find existing wallet
+        wallet = await knex("wallet").where({ user_id: userId }).first();
 
-      // Get user's email
-      const user = await trx('users').where({ id: userId }).first();
-      if (!user) throw new Error('User not found');
-
-      // Initialize Paystack transaction
-      const paystackResponse = await initializeTransaction(user.email, amount);
+        if (!wallet) {
+          // If no wallet exists, create a new one
+          [wallet] = await knex("wallet")
+            .insert({ user_id: userId, balance: 0 })
+            .returning("*");
+        }
+      } catch (error: any) {
+        throw new BadRequest(
+          `Failed to retrieve or create wallet: ${error.message}`
+        );
+      }
 
       // Create a pending transaction
-      await trx('transactions').insert({
+      const [transaction] = await trx("transactions").insert({
         wallet_id: wallet.id,
-        type: 'deposit',
+        type: "deposit",
         amount,
-        status: 'pending',
-        reference: paystackResponse.data.reference,
-        metadata: JSON.stringify(paystackResponse.data)
-      });
+        status: "pending",
+        reference: crypto.randomUUID(),
+        metadata: {
+          initiatedBy: userId,
+          paymentMethod: "Paystack",
+        },
+      }).returning("*");
 
-      // Return the authorization URL
-      return paystackResponse.data.authorization_url;
+      const data = {
+        transaction,
+        paymentInfo: {
+          amount: amount,
+          email: "payment@vamooze.com",
+          reference: transaction.reference,
+        },
+      };
+      return successResponse(data, 200, 'Successfully initated transaction') 
     });
   }
-
 }
 
 export const getOptions = (app: Application): KnexAdapterOptions => {
   return {
-    paginate: app.get('paginate'),
-    Model: app.get('postgresqlClient'),
-    name: 'wallet'
-  }
-}
+    paginate: app.get("paginate"),
+    Model: app.get("postgresqlClient"),
+    name: "wallet",
+  };
+};

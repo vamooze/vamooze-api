@@ -4,7 +4,7 @@ import { HookContext, Params } from "@feathersjs/feathers";
 import { hooks as schemaHooks } from "@feathersjs/schema";
 import crypto from "crypto";
 import { Response, Request } from "express";
-import { BadRequest, NotFound } from "@feathersjs/errors";
+import { BadRequest, NotFound, NotAuthenticated } from "@feathersjs/errors";
 import { Paginated } from "@feathersjs/feathers";
 import axios from "axios";
 import {
@@ -19,7 +19,6 @@ import {
 } from "./wallet.schema";
 import { constants } from "../../helpers/constants";
 import {
-  initializeTransaction,
   sendEmail,
   successResponse,
 } from "../../helpers/functions";
@@ -95,122 +94,73 @@ export const wallet = (app: Application) => {
   });
 
   //@ts-ignore
-  app.use("/initiate-payment", {
-    async create(data: any, param: any) {
-      if (typeof data.amount !== "number" || data.amount < 2000) {
-        throw new BadRequest("Amount must be a number and at least 2000.");
-      }
+  // app.use("/initiate-payment", {
+  //   async create(data: any, param: any) {
+  //     if (typeof data.amount !== "number" || data.amount < 2000) {
+  //       throw new BadRequest("Amount must be a number and at least 2000.");
+  //     }
 
-      param.user.email = "payment@vamooze.com";
+  //     param.user.email = "payment@vamooze.com";
 
-      if (!param.user.email && !param.user.phone_number) {
-        throw new BadRequest(
-          "Ensure either an email or phone number is passed"
-        );
-      }
+  //     if (!param.user.email && !param.user.phone_number) {
+  //       throw new BadRequest(
+  //         "Ensure either an email or phone number is passed"
+  //       );
+  //     }
 
-      const walletService = app.service("wallet");
-      let walletResult = (await walletService.find({
-        query: { user_id: param.user.id },
-      })) as Paginated<Wallet>;
+  //     const walletService = app.service("wallet");
+  //     let walletResult = (await walletService.find({
+  //       query: { user_id: param.user.id },
+  //     })) as Paginated<Wallet>;
 
-      let wallet: Wallet | null = null;
+  //     let wallet: Wallet | null = null;
 
-      if (walletResult.data.length === 0) {
-        // If no wallet exists, create a new one
-        wallet = await walletService.create({
-          user_id: param.user.id,
-          balance: 0.0, // New wallet starts with a balance of 0
-        });
-      } else {
-        // Use the existing wallet
-        wallet = walletResult.data[0];
-      }
+  //     if (walletResult.data.length === 0) {
+  //       // If no wallet exists, create a new one
+  //       wallet = await walletService.create({
+  //         user_id: param.user.id,
+  //         balance: 0.0, // New wallet starts with a balance of 0
+  //       });
+  //     } else {
+  //       // Use the existing wallet
+  //       wallet = walletResult.data[0];
+  //     }
 
-      const response = await initializeTransaction(param.user, data.amount);
+  //     const response = await initializeTransaction(param.user, data.amount);
 
-      // Use the reference from Paystack's response
-      const { reference, access_code } = response.data;
+  //     // Use the reference from Paystack's response
+  //     const { reference, access_code } = response.data;
 
-      const transactionService = app.service("transactions");
-      const transactionData: Omit<TransactionsData, "id"> = {
-        wallet_id: wallet.id,
-        type: TransactionType.Deposit,
-        amount: data.amount,
-        status: TransactionStatus.Pending,
-        reference: reference,
-        metadata: {
-          initiatedBy: param.user.id,
-          paymentMethod: "Paystack",
-          access_code,
-        },
-      };
+  //     const transactionService = app.service("transactions");
+  //     const transactionData: Omit<TransactionsData, "id"> = {
+  //       wallet_id: wallet.id,
+  //       type: TransactionType.Deposit,
+  //       amount: data.amount,
+  //       status: TransactionStatus.Pending,
+  //       reference: reference,
+  //       metadata: {
+  //         initiatedBy: param.user.id,
+  //         paymentMethod: "Paystack",
+  //         access_code,
+  //       },
+  //     };
 
-      //@ts-ignore
-      const transaction = await transactionService.create(transactionData);
+  //     //@ts-ignore
+  //     const transaction = await transactionService.create(transactionData);
 
-      return { transaction, paymentResponse: response };
-    },
-  });
+  //     return { transaction, paymentResponse: response };
+  //   },
+  // });
 
   //@ts-ignore for mobile use
   app.use("/transactions/initiate", {
     async create(data: any, param: any) {
-      if (typeof data.amount !== "number" || data.amount < 2000) {
-        throw new BadRequest("Amount must be a number and at least 2000.");
-      }
 
-      param.user.email = "payment@vamooze.com";
-
-      if (!param.user.email && !param.user.phone_number) {
-        throw new BadRequest(
-          "Ensure either an email or phone number is passed"
-        );
-      }
-
+      console.log(data.amount, param.user.id)
       const walletService = app.service("wallet");
-      let walletResult = (await walletService.find({
-        query: { user_id: param.user.id },
-      })) as Paginated<Wallet>;
-
-      let wallet: Wallet | null = null;
-
-      if (walletResult.data.length === 0) {
-        // If no wallet exists, create a new one
-        wallet = await walletService.create({
-          user_id: param.user.id,
-          balance: 0.0, // New wallet starts with a balance of 0
-        });
-      } else {
-        // Use the existing wallet
-        wallet = walletResult.data[0];
-      }
-
-      const transactionService = app.service("transactions");
-      const transactionData: Omit<TransactionsData, "id"> = {
-        wallet_id: wallet.id,
-        type: TransactionType.Deposit,
-        amount: data.amount,
-        status: TransactionStatus.Pending,
-        reference: crypto.randomUUID(),
-        metadata: {
-          initiatedBy: param.user.id,
-          paymentMethod: "Paystack",
-        },
-      };
-
       //@ts-ignore
-      const transaction = await transactionService.create(transactionData);
-
-      return {
-        transaction,
-        paymentInfo: {
-          amount: data.amount,
-          email: param.user.email,
-          reference: transaction.reference,
-        },
-      };
-    },
+      return await walletService.initializeTransaction(param.user.id ,data.amount);
+    }
   });
 
   //@ts-ignore for mobile use
@@ -287,7 +237,7 @@ export const wallet = (app: Application) => {
     },
   });
 
-  const services = ["/initiate-payment", "/transactions/initiate"];
+  const services = ["/transactions/initiate"];
   services.forEach((path) => {
     //@ts-ignore
     app.service(path).hooks({
