@@ -53,15 +53,15 @@ export class UserService<
     const knex = this.app.get("postgresqlClient");
 
     // Set default values for pagination
-    const $limit =
-      typeof query.$limit !== "undefined"
-        ? parseInt(query.$limit as string)
+    const $limit = query.limit
+      typeof query.limit !== "undefined"
+        ? parseInt(query.limit as string)
         : 10;
     const $skip =
-      typeof query.$skip !== "undefined" ? parseInt(query.$skip as string) : 0;
+      typeof query.$skip !== "undefined" ? parseInt(query.skip as string) : 0;
 
     // Set default sort order
-    const $sort = query.$sort || { id: 1 };
+    const $sort = query.sort || { id: 1 };
 
     // Build the base query
     let baseQuery = knex<User>("users").where({ is_verified: false });
@@ -85,7 +85,7 @@ export class UserService<
 
     const unverifiedUsers = {
       total: parseInt((total as any).count),
-      limit: $limit,
+      limit: parseInt($limit),
       skip: $skip,
       data,
     };
