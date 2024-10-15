@@ -209,9 +209,9 @@ export class RequestsService<
       const request = await this.getAndValidateRequest(id);
 
       if (request?.status === RequestStatus.Delivered) {
-        throw new Conflict(
-          "This request cannot be updated, trip has been completed"
-        );
+        // throw new Conflict(
+        //   "This request cannot be updated, trip has been completed"
+        // );
       }
 
       if (data.status === RequestStatus.CompletePickUp) {
@@ -281,12 +281,20 @@ export class RequestsService<
               message,
             });
 
+            
+
             if (requesterUserDetail) {
               await termii.sendSMS(
                 requesterUserDetail.phone_number,
                 message
               );
             }
+
+            return successResponse(
+              completedRequest,
+              200,
+              "Successfully completed trip"
+            );
           });
 
           logger.info(`Trip completed`);
