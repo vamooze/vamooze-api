@@ -168,6 +168,8 @@ export class RequestsService<
           request: Number(id),
         });
 
+        
+
         logger.info(`emitting event to requester and other dispatch riders`);
 
         delete dispatch.id;
