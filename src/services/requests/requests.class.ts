@@ -48,9 +48,9 @@ export class RequestsService<
     //@ts-ignore
     const knex = this.app.get("postgresqlClient");
 
-    const limit = params?.query?.$limit ?? 10;
-    const skip = params?.query?.$skip ?? 0;
-    const requester = params?.user?.id ?? 0;
+    const limit = params?.query?.limit ?? 10;
+    const skip = params?.query?.skip ?? 0;
+    const requester = params?.query?.requester ?? 0;
 
     const requests = await knex("requests")
       .leftJoin("dispatch", "requests.dispatch", "dispatch.id")
@@ -71,7 +71,7 @@ export class RequestsService<
       .count("* as count")
       .first();
 
-    const result = { total: total.count, limit, skip, data: requests };
+    const result = { total: Number(total.count), limit: Number(limit) , skip: Number(skip), data: requests };
 
     return successResponseWithPagination(
       result,
