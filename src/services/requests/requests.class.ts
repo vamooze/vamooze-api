@@ -71,7 +71,12 @@ export class RequestsService<
       .count("* as count")
       .first();
 
-    const result = { total: Number(total.count), limit: Number(limit) , skip: Number(skip), data: requests };
+    const result = {
+      total: Number(total.count),
+      limit: Number(limit),
+      skip: Number(skip),
+      data: requests,
+    };
 
     return successResponseWithPagination(
       result,
@@ -168,8 +173,6 @@ export class RequestsService<
           request: Number(id),
         });
 
-        
-
         logger.info(`emitting event to requester and other dispatch riders`);
 
         delete dispatch.id;
@@ -222,7 +225,7 @@ export class RequestsService<
 
       if (data.status === RequestStatus.Delivered) {
         try {
-          await knex.transaction(async (trx: any) => {
+          const completedRequest = await knex.transaction(async (trx: any) => {
             const [completedRequest] = await knex("requests")
               .where({ id })
               .update({
@@ -231,21 +234,24 @@ export class RequestsService<
               })
               .returning("*");
 
-               await trx("dispatch")
-        .where({ id: completedRequest.dispatch })
-        .update({ onTrip: false });
+            await locationUpdateQueue.remove(
+              `location-update-${completedRequest.id}`
+            );
+
+            await trx("dispatch")
+              .where({ id: completedRequest.dispatch })
+              .update({ onTrip: false });
 
             const requesterUserDetail = await knex("users")
               .select()
               .where({ id: completedRequest?.requester })
               .first();
 
-           let message = "Your delivery has been completed"
+            let message = "Your delivery has been completed";
             if (
               completedRequest.payment_method === RequestPaymentMethod.wallet
             ) {
-
-              message = `Your delivery has been completed and ${completedRequest.delivery_price_details.totalPrice} has been deducted from your wallet`
+              message = `Your delivery has been completed and ${completedRequest.delivery_price_details.totalPrice} has been deducted from your wallet`;
               const debitedWallet = await knex("wallet")
                 .where({
                   user_id: completedRequest?.requester,
@@ -281,23 +287,23 @@ export class RequestsService<
               message,
             });
 
-            
+            // if (requesterUserDetail) {
+            //   await termii.sendSMS(
+            //     requesterUserDetail.phone_number,
+            //     message
+            //   );
+            // }
 
-            if (requesterUserDetail) {
-              await termii.sendSMS(
-                requesterUserDetail.phone_number,
-                message
-              );
-            }
-
-            return successResponse(
-              completedRequest,
-              200,
-              "Successfully completed trip"
-            );
+            console.log(completedRequest);
+            return completedRequest;
           });
 
           logger.info(`Trip completed`);
+          return successResponse(
+            completedRequest,
+            200,
+            "Successfully completed trip"
+          );
         } catch (error) {
           logger.error(
             `Failed to updated trip details  when completed:`,
