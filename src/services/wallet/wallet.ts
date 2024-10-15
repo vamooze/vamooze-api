@@ -54,6 +54,16 @@ export const wallet = (app: Application) => {
       find: [
         async (context) => {
           const user = context.params.user;
+          const knex = context.app.get("postgresqlClient");
+
+          let wallet = await knex("wallet").where({ user_id: user?.id }).first();
+
+          if (!wallet) {
+            [wallet] = await knex("wallet")
+              .insert({ user_id: user?.id, balance: 0.00 })
+              .returning("*");
+          }
+
           //@ts-ignore
           context.params.query = {
             ...context.params.query,
