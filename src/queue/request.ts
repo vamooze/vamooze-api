@@ -219,7 +219,7 @@ export const locationUpdateWorker = new Worker(
   LOCATION_UPDATE_QUEUE,
   async (job) => {
     const { request, dispatch_who_accepted_user_id } = job.data;
-    console.log('asking dispatch for location....')
+    console.log('asking dispatch for location....', new Date().toLocaleTimeString('en-GB'))
     app.service("requests").emit(textConstant.locationUpdateDispatch, {
       request,
       dispatch_who_accepted_user_id,
