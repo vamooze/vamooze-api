@@ -185,6 +185,7 @@ export class RequestsService<
           dispatch_who_accepted_user_id: dispatch.user_id,
           dispatch_pool: request.dispatch_pool,
           message: "Request accepted by dispatch",
+          requestDetails: updatedRequest
         });
 
         logger.info(`done returning a response: 10`);
@@ -196,7 +197,6 @@ export class RequestsService<
           "Successfully assigned to trip"
         );
       } catch (error) {
-        console.error("Error assigning dispatch to request:", error);
         throw new Error("Failed to assign dispatch to request");
       }
     }
@@ -234,9 +234,7 @@ export class RequestsService<
               })
               .returning("*");
 
-            await locationUpdateQueue.remove(
-              `location-update-${completedRequest.id}`
-            );
+            await locationUpdateQueue.removeRepeatableByKey(`location-update-${completedRequest.id}`);
 
             await trx("dispatch")
               .where({ id: completedRequest.dispatch })
@@ -287,14 +285,14 @@ export class RequestsService<
               message,
             });
 
-            // if (requesterUserDetail) {
-            //   await termii.sendSMS(
-            //     requesterUserDetail.phone_number,
-            //     message
-            //   );
-            // }
+            if (requesterUserDetail) {
+              await termii.sendSMS(
+                requesterUserDetail.phone_number,
+                message
+              );
+            }
 
-            console.log(completedRequest);
+          
             return completedRequest;
           });
 

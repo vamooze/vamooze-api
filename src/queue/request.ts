@@ -66,6 +66,7 @@ export const addLocationUpdateJob = async (data: {
     {
       repeat: {
         every: 10000,
+        key: `location-update-${data.request}`
       },
       removeOnComplete: true,
       removeOnFail: false,

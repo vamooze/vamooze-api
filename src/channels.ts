@@ -95,6 +95,8 @@ export const channels = (app: Application) => {
           request: data.request,
           //@ts-ignore
           ...data?.dispatchDetails,
+           //@ts-ignore
+          requestDetails: data?.requestDetails
         },
       };
       //@ts-ignore
