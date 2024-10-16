@@ -19,7 +19,7 @@ export async function up(knex: Knex): Promise<void> {
     .defaultTo(DispatchApprovalStatus.Pending);
     table.integer('approved_by').nullable();
     table.timestamp('approval_date').nullable();
-
+    table.string('profile_picture').nullable();
     table.string('next_of_kin_name').nullable();
     table.string('next_of_kin_relationship').nullable();
     table.string('next_of_kin_phone_number').nullable();

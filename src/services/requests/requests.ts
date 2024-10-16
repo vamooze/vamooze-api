@@ -333,6 +333,38 @@ export const requests = (app: Application) => {
       return await requestService.getByTrackingId(trackingId);
     },
   });
+
+ //@ts-ignore
+  app.get('request/package-types', (req, res) => {
+    const popularPackageTypes = [
+      { id: 1, name: 'Food', description: 'Meals, groceries, etc.' },
+      { id: 2, name: 'Perishables', description: 'Items that can spoil or decay' },
+      { id: 3, name: 'Gadgets', description: 'Electronics, phones, laptops, etc.' },
+      { id: 4, name: 'Documents', description: 'Papers, contracts, certificates' },
+      { id: 5, name: 'Clothing', description: 'Apparel and accessories' },
+      { id: 6, name: 'Fragile Items', description: 'Glassware, antiques, etc.' },
+      { id: 7, name: 'Medical Supplies', description: 'Medicines, equipment' },
+      { id: 8, name: 'Books', description: 'Textbooks, novels, magazines' },
+      { id: 9, name: 'Gifts', description: 'Presents, flowers, gift baskets' },
+      { id: 10, name: 'Other', description: 'Miscellaneous items' }
+    ];
+
+    try {
+      res.json({
+        status: 200,
+        success: true,
+        message: 'Package types retrieved successfully',
+        data: popularPackageTypes
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error retrieving package types',
+         //@ts-ignore
+        error: error?.message
+      });
+    }
+  });
 };
 
 // Add this service to the service type index

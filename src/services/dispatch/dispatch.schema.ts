@@ -44,6 +44,7 @@ export const dispatchSchema = Type.Object(
     preferred_delivery_locations: Type.Array(
       Type.Object({}, { minProperties: 1 })
     ),
+    profile_picture: Type.Optional(Type.String({ format: "uri" })),
     drivers_license: Type.String({ format: "uri" }),
     approval_status: Type.Enum(DispatchApprovalStatus),
     approved_by: Type.Optional(Type.Number()), // ID of the admin who approved/rejected
@@ -100,6 +101,7 @@ export const dispatchDataSchema = Type.Pick(
     "bank_account_number",
     "mobile_money_number",
     "quiz_responses",
+    "profile_picture",
     "has_watched_onboarding_video",
     "suspended",
     "suspended_at",
@@ -154,6 +156,7 @@ export const dispatchQueryProperties = Type.Pick(dispatchSchema, [
   "bank_account_number",
   "mobile_money_number",
   "quiz_responses",
+  "profile_picture",
   "has_watched_onboarding_video",
   "isAcceptingPickUps",
   "onTrip",
