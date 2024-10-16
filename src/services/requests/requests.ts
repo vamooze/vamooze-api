@@ -335,7 +335,7 @@ export const requests = (app: Application) => {
   });
 
  //@ts-ignore
-  app.get('request/package-types', (req, res) => {
+  app.get('/request-package-types', (req, res) => {
     const popularPackageTypes = [
       { id: 1, name: 'Food', description: 'Meals, groceries, etc.' },
       { id: 2, name: 'Perishables', description: 'Items that can spoil or decay' },
