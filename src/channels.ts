@@ -221,6 +221,7 @@ export const channels = (app: Application) => {
   app
     .service("requests")
     .publish(textConstant.locationUpdateRequester, (data, context) => {
+      console.log("****abiola......", data)
       //@ts-ignore
       const requesterId = data?.data?.requester;
       return [app.channel(`userIds/${requesterId}`)];
