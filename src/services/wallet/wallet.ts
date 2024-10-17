@@ -18,10 +18,7 @@ import {
   walletQueryResolver,
 } from "./wallet.schema";
 import { constants } from "../../helpers/constants";
-import {
-  sendEmail,
-  successResponse,
-} from "../../helpers/functions";
+import { sendEmail, successResponse } from "../../helpers/functions";
 import { TransactionStatus, TransactionType } from "../../interfaces/constants";
 import { logger } from "../../logger";
 import type { Application } from "../../declarations";
@@ -33,8 +30,80 @@ export * from "./wallet.class";
 export * from "./wallet.schema";
 import { Wallet } from "./wallet.schema";
 
+async function processPaystackEvent(app: any, event: any) {
+  // Extract necessary data from the Paystack event
+  const { event: eventType, data } = event;
+
+  logger.info({
+    message: `${eventType}`,
+    data,
+  });
+
+  // Handle successful payment event
+  if (eventType === "charge.success") {
+    const { amount, customer, reference, status } = data;
+
+    // Ensure payment status is successful
+    if (status === "success") {
+      //@ts-ignore
+      const knex = app.get("postgresqlClient");
+
+      // Find the user by email
+      const userResult = await knex("users")
+        .where({ phone_number: customer.phone })
+        .first();
+
+      if (!userResult) {
+        logger.warn(`User with phone number: ${customer.phone} not found.`);
+        return;
+      }
+
+      const transaction = await knex("transactions")
+        .select()
+        .where({ reference })
+        .first();
+
+   
+
+      if (!transaction) {
+        logger.warn(`Transaction with reference ${reference} not found.`);
+        return;
+      }
+     
+      if (transaction.status !== TransactionStatus.Pending) {
+        logger.info(
+          `Transaction ${reference} has already been processed or expired`
+        );
+        return;
+      }
+
+      try {
+        await knex.transaction(async (trx: any) => {
+          // Update the transaction status to 'Completed'
+
+          await knex("transactions")
+            .where("id", transaction.id)
+            .update({ status: TransactionStatus.Completed });
+
+          await knex("wallet")
+            .where({ id: transaction.wallet_id })
+            .increment("balance", amount / 100);
+        });
+
+        logger.info(
+          `User ${customer.email} wallet funded with ₦${amount / 100}`
+        );
+      } catch (error) {
+        logger.error(`Error processing transaction ${reference}:`, error);
+        throw new Error("Transaction failed. Rolling back.");
+      }
+    }
+  }
+}
+
 // A configure function that registers the service and its hooks via `app.configure`
 export const wallet = (app: Application) => {
+
   const options = getOptions(app);
   // Register our service on the Feathers application
   app.use(walletPath, new WalletService(options, app), {
@@ -56,11 +125,13 @@ export const wallet = (app: Application) => {
           const user = context.params.user;
           const knex = context.app.get("postgresqlClient");
 
-          let wallet = await knex("wallet").where({ user_id: user?.id }).first();
+          let wallet = await knex("wallet")
+            .where({ user_id: user?.id })
+            .first();
 
           if (!wallet) {
             [wallet] = await knex("wallet")
-              .insert({ user_id: user?.id, balance: 0.00 })
+              .insert({ user_id: user?.id, balance: 0.0 })
               .returning("*");
           }
 
@@ -68,7 +139,7 @@ export const wallet = (app: Application) => {
           context.params.query = {
             ...context.params.query,
             //@ts-ignore
-            user_id: user?.id
+            user_id: user?.id,
           };
           return context;
         },
@@ -165,12 +236,14 @@ export const wallet = (app: Application) => {
   //@ts-ignore for mobile use
   app.use("/transactions/initiate", {
     async create(data: any, param: any) {
-
-      console.log(data.amount, param.user.id)
+      console.log(data.amount, param.user.id);
       const walletService = app.service("wallet");
       //@ts-ignore
-      return await walletService.initializeTransaction(param.user.id ,data.amount);
-    }
+      return await walletService.initializeTransaction(
+        param.user.id,
+        data.amount
+      );
+    },
   });
 
   //@ts-ignore for mobile use
@@ -256,82 +329,6 @@ export const wallet = (app: Application) => {
       },
     });
   });
-
-  async function processPaystackEvent(app: any, event: any) {
-    // Extract necessary data from the Paystack event
-    const { event: eventType, data } = event;
-
-    logger.info({
-      message: `${eventType}`,
-      data,
-    });
-
-    // Handle successful payment event
-    if (eventType === "charge.success") {
-      const { amount, customer, reference, status, phone } = data;
-
-
-      // Ensure payment status is successful
-      if (status === "success") {
-        // Find the user by email
-        const userService = app.service("users");
-        const userResult = await userService.find({
-          query: { phone_number: customer.phone || phone },
-        });
-
-        console.log(userResult, '*******************', customer, '&&&&&&&&&', phone)
-
-        if (userResult.data.length === 0) {
-          logger.warn(`User with phone number: ${phone} not found.`);
-          return;
-        }
-
-        // Find the existing transaction using the Paystack reference
-        const transactionService = app.service("transactions");
-        const transactionResult = await transactionService.find({
-          query: { reference },
-        });
-
-        if (transactionResult.data.length === 0) {
-          logger.warn(`Transaction with reference ${reference} not found.`);
-          return;
-        }
-
-        const transaction = transactionResult.data[0];
-
-        if (transaction.status !== TransactionStatus.Pending) {
-          logger.info(
-            `Transaction ${reference} has already been processed or expired`
-          );
-          return;
-        }
-
-        const knex = app.get("postgresqlClient");
-
-        try {
-          await knex.transaction(async (trx: any) => {
-            // Update the transaction status to 'Completed'
-            await transactionService.patch(
-              transaction.id,
-              { status: TransactionStatus.Completed },
-              { trx }
-            );
-
-            await knex("wallet")
-              .where({ id: transaction.wallet_id })
-              .increment("balance", amount / 100);
-          });
-
-          logger.info(
-            `User ${customer.email} wallet funded with ₦${amount / 100}`
-          );
-        } catch (error) {
-          logger.error(`Error processing transaction ${reference}:`, error);
-          throw new Error("Transaction failed. Rolling back.");
-        }
-      }
-    }
-  }
 
   app.post("/webhook/paystack", async (req: Request, res: Response) => {
     logger.info({
