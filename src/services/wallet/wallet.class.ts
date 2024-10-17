@@ -30,8 +30,10 @@ export class WalletService<
   }
 
   async initializeTransaction(userId: number, amount: number) {
-    if (typeof amount !== "number" || amount < 2000) {
-      throw new BadRequest("Amount must be a number and at least 2000.");
+    const parsedAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+
+    if (isNaN(parsedAmount) || parsedAmount < 2000) {
+      throw new BadRequest("Amount must be a valid number and at least 2000.");
     }
 
     //@ts-ignore

@@ -270,13 +270,16 @@ export const wallet = (app: Application) => {
     if (eventType === "charge.success") {
       const { amount, customer, reference, status, phone } = data;
 
+
       // Ensure payment status is successful
       if (status === "success") {
         // Find the user by email
         const userService = app.service("users");
         const userResult = await userService.find({
-          query: { phone_number: phone },
+          query: { phone_number: customer.phone || phone },
         });
+
+        console.log(userResult, '*******************', customer, '&&&&&&&&&', phone)
 
         if (userResult.data.length === 0) {
           logger.warn(`User with phone number: ${phone} not found.`);
