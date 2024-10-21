@@ -28,57 +28,7 @@ export * from "./business-settings.schema";
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const businessSettings = (app: Application) => {
-  //@ts-ignore
-  app.use(`/business-signup-dashboard-customization`, {
-    async find(params: any) {
-      const { query } = params;
-      const { slug } = query;
 
-      const businessData = await app
-        .service("business")
-        .find({ query: { slug } });
-
-      if (!businessData || businessData.total === 0) {
-        return {
-          success: true,
-          code: 404,
-          message: "Business with slug not found",
-          data: [],
-        };
-      }
-
-      const business = businessData.data[0];
-      const businessSettingsData = await app
-        .service("business-settings")
-        .find({ query: { business: business.id } });
-
-      if (!businessSettingsData || businessSettingsData.total === 0) {
-        return {
-          success: true,
-          code: 404,
-          message: "Business settings attached to business  not found",
-          data: [],
-        };
-      }
-
-      const businessSettings = businessSettingsData.data[0];
-
-      const data = {
-        //@ts-ignore
-        name: business.name,
-        logo: businessSettings.logo,
-        cover_image: businessSettings.cover_image,
-        launcher_icon: businessSettings.launcher_icon,
-      };
-
-      return {
-        success: true,
-        code: 200,
-        message: "Customized business data retrieved successfully",
-        data,
-      };
-    },
-  });
 
   // Register our service on the Feathers application
   app.use(businessSettingsPath, new BusinessSettingsService(getOptions(app)), {

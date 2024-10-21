@@ -14,16 +14,15 @@ import {
   businessPatchResolver,
   businessQueryResolver,
 } from "./business.schema";
-import slugify from 'slugify';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
-
-import { HookContext } from "../../declarations";
 import type { Application } from "../../declarations";
 import { BusinessService, getOptions } from "./business.class";
 import { businessPath, businessMethods } from "./business.shared";
-import { OAuthTypes, Roles } from "../../interfaces/constants";
 import { getOtp, sendEmail, isVerified } from "../../helpers/functions";
+import { checkPermission } from "../../helpers/checkPermission";
+import { Roles } from "../../interfaces/constants";
+
 import { logger } from "../../logger";
 import { createValidator } from "express-joi-validation";
 import Joi from "joi";
@@ -61,124 +60,10 @@ const schemas = {
   }),
 };
 
-const generateUniqueSlug = async (name: string, app: Application) => {
-  let slug = slugify(name, { lower: true });
-  const existingBusiness = await app.service('business').find({
-    query: {
-      slug,
-      $limit: 1,
-    },
-  });
-
-  if (existingBusiness.total > 0) {
-    slug = `${slug}-${uuidv4()}`;
-  }
-
-  return slug;
-};
-
-// A configure function that registers the service and its hooks via `app.configure`
 export const business = (app: Application) => {
-
- 
-  app.post(
-    "/business/whitelabel/signup",
-    validator.body(schemas.signup),
-    async (req: any, res: any, next: any) => {
-      try {
-        const user = await app
-          .service("users")
-          .find({ query: { email: req.body.email } });
-
-        if (user?.data?.length > 0) {
-          return res.status(409).json({
-            status: 409,
-            message: "User with this email already exists",
-          });
-        }
-        const role = await app
-          .service("roles")
-          .find({ query: { $limit: 1, slug: Roles.BusinessOwner } });
-        if (role?.data?.length === 0) {
-          return res.status(404).json({
-            status: 404,
-            message: "Role does not exist",
-          });
-        }
-        req.body.role = role?.data[0]?.id;
-        req.body.otp = getOtp();
-        const result = await app.service('users').create(req.body);
-        res.json(result);
-      } catch (error: any) {
-        logger.error({
-          message: error.message,
-          stack: error.stack,
-          email: req.body.email,
-        });
-        next(error);
-      }
-    }
-  );
-
-  app.patch(
-    "/super-admin/activate-business",
-    async (req: Request, res: Response, next: NextFunction) => {
-      try {
-        const { businessId } = req.body;
-
-        const businessService = app.service("business");
-
-        const business = await businessService.get(businessId);
-
-        if (!business) {
-          return res.status(404).json({
-            status: 404,
-            message: "Business not found",
-          });
-        }
-
-        if (business.active === true) {
-          return res.status(400).json({
-            status: 400,
-            message: "Business is already active",
-          });
-        }
-
-        const updatedBusiness = await businessService.patch(businessId, {
-          active: true,
-        });
-
-        sendEmail({
-          //@ts-ignore
-          toEmail: updatedBusiness?.contact?.email,
-          subject: "Business Approval",
-          templateData: emailTemplates.businessApproval(),
-          //@ts-ignore
-          receiptName: updatedBusiness?.name,
-        });
-
-        return res.status(200).json({
-          status: 200,
-          message: "Business activated successfully",
-          data: updatedBusiness,
-        });
-      } catch (error: any) {
-        logger.error({
-          message: error.message,
-          stack: error.stack,
-        });
-
-        return res.status(500).json({
-          status: 500,
-          message: "An unexpected error occurred while activating the business",
-        });
-      }
-    }
-  );
-
-
-   // Register our service on the Feathers application
-   app.use(businessPath, new BusinessService(getOptions(app)), {
+  const options = getOptions(app);
+  // Register our service on the Feathers application
+  app.use(businessPath, new BusinessService(options, app), {
     // A list of all methods this service exposes externally
     methods: businessMethods,
     // You can add additional custom events to be sent to clients here
@@ -193,20 +78,21 @@ export const business = (app: Application) => {
         schemaHooks.validateQuery(businessQueryValidator),
         schemaHooks.resolveQuery(businessQueryResolver),
       ],
-      find: [],
+      find: [checkPermission([Roles.SuperAdmin, Roles.BusinessOwner])],
       get: [],
-      create: [   
+      create: [
         async (context) => {
-          const { data } = context; // Access the data object
+          const { data } = context;
          //@ts-ignore
           context.data = {
             ...context.data,
              //@ts-ignore
-            slug: slugify(data.name, { lower: true, strict: true })
+            slug: 'lol'
           };
           return context;
         },
-        schemaHooks.validateData(businessDataValidator),
+        checkPermission([Roles.SuperAdmin, Roles.BusinessOwner]),
+        schemaHooks.validateData(businessDataValidator), // validator needs a slug
         schemaHooks.resolveData(businessDataResolver),
       ],
       patch: [
@@ -222,6 +108,82 @@ export const business = (app: Application) => {
       all: [],
     },
   });
+
+  app.post(
+    "/business/whitelabel/signup",
+    validator.body(schemas.signup),
+    async (req: any, res: any) => {
+      try {
+        const businessService = app.service("business") as BusinessService;
+        const data = await businessService.signup(req.body);
+        return res.status(200).json({
+          status: 200,
+          success: true,
+          message: "Signup successful",
+          data,
+        });
+      } catch (error) {
+        if (error instanceof BadRequest) {
+          return res.status(400).json({
+            status: 400,
+            success: false,
+            message: error.message,
+          });
+        } else {
+          return res.status(500).json({
+            status: 500,
+            success: false,
+            message: "An unexpected error occurred",
+          });
+        }
+      }
+    }
+  );
+
+  //@ts-ignore
+  app.use(`business/:businessId/toggle-status`, {
+    async patch(id: string, data: any, params: any) {
+      const businessService = app.service("business") as BusinessService;
+      return await businessService.toggleStatus(data, params.route.businessId);
+    },
+  });
+
+  //@ts-ignore
+  app.service("business/:businessId/toggle-status").hooks({
+    before: {
+      all: [checkPermission(Roles.SuperAdmin)],
+    },
+  });
+
+   //@ts-ignore
+   app.use(`/business-signup-dashboard-customization`, {
+    async find(params: any) {
+      const { query } = params;
+      const { slug } = query;
+
+      const businessData = await app
+        .service("business")
+        .find({ query: { slug } });
+
+      if (!businessData || businessData.total === 0) {
+        return {
+          success: true,
+          code: 404,
+          message: "Business with slug not found",
+          data: [],
+        };
+      }
+
+      return {
+        success: true,
+        code: 200,
+        message: "Customized business data retrieved successfully",
+        data: businessData,
+      };
+    },
+  });
+
+
 };
 
 // Add this service to the service type index

@@ -122,6 +122,7 @@ export const user = (app: Application) => {
       all: [],
       create: [
         async (context) => {
+          console.log(context.error)
           const err = Object.keys(context.error.errors);
 
           if (context.error.code === 409 && err.includes("email")) {

@@ -138,6 +138,75 @@ const inHouseManagerInvite = (
 </html>`;
 };
 
-const emailTemplates = { otp, businessApproval, inHouseManagerInvite };
+const whiteLabelInviteBySuperAdmin = (
+    name: string,
+    email: string,
+    defaultPassword: string
+  ) => {
+    return `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Vamooze In-House Manager Invitation</title>
+      <style>
+          body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+          }
+          .email-container {
+              border: 1px solid #ddd;
+              border-radius: 5px;
+              padding: 20px;
+          }
+          h1 {
+              color: #4a4a4a;
+              text-align: center;
+          }
+          h2 {
+              color: #4CAF50;
+          }
+          .credentials {
+              background-color: #f2f2f2;
+              padding: 10px;
+              border-radius: 5px;
+              margin: 15px 0;
+          }
+          .warning {
+              color: #ff0000;
+              font-weight: bold;
+          }
+      </style>
+  </head>
+  <body>
+      <div class="email-container">
+          <h1>Vamooze Business Invitation</h1>
+          
+          <h2>Welcome, ${name}!</h2>
+          
+          <p>You have been invited to join as an Business owner.</p>
+          
+          <div class="credentials">
+              <p>Your login credentials are:</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Password:</strong> ${defaultPassword}</p>
+          </div>
+          
+          <p class="warning">Please log in and change your password immediately.</p>
+          
+          <p>If you didn't request this invitation, please ignore this email.</p>
+          
+          <p>Best regards,<br>The Vamooze Team</p>
+      </div>
+  </body>
+  </html>`;
+  };
+
+const emailTemplates = { otp, businessApproval, inHouseManagerInvite , whiteLabelInviteBySuperAdmin};
 
 export default emailTemplates;

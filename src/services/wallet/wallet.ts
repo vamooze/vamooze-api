@@ -250,7 +250,6 @@ export const wallet = (app: Application) => {
   app.use("/verify-transaction/:reference", {
     async find(params: any) {
       const reference = params.route.reference;
-      console.log(reference, "..reference...");
       const knex = app.get("postgresqlClient");
       const transactionService = app.service("transactions");
 
