@@ -2,7 +2,7 @@
 import type { Params } from "@feathersjs/feathers";
 import { KnexService } from "@feathersjs/knex";
 import type { KnexAdapterParams, KnexAdapterOptions } from "@feathersjs/knex";
-import { getOtp, sendEmail, isVerified , successResponse,} from "../../helpers/functions";
+import { getOtp, sendEmail, successResponseWithPagination , successResponse,} from "../../helpers/functions";
 import type { Application } from "../../declarations";
 import emailTemplates from "../../helpers/emailTemplates";
 import * as crypto from "crypto";
@@ -22,7 +22,6 @@ const {
   GeneralError,
   BadRequest,
   Forbidden,
-  InternalServerError,
   Conflict
 } = require("@feathersjs/errors");
 
@@ -37,6 +36,56 @@ export class BusinessService<
     //@ts-ignore
     this.app = app;
   }
+
+ //@ts-ignore
+ async find(params?: ServiceParams) {
+  //@ts-ignore
+  const knex: Knex = this.app.get("postgresqlClient");
+  const query = params?.query || {};
+  const { limit = 10, skip = 0, sort = {} } = query;
+
+  try {
+    const userRole = await this.getUserRole(params?.user?.role);
+
+    let businessQuery = knex("business").orderBy("created_at", "desc");
+
+    if (userRole.slug !== Roles.SuperAdmin) {
+      businessQuery = businessQuery.where({ owner: params?.user?.id });
+    }
+
+    const totalQuery = businessQuery.clone().count("* as count").first();
+    const dataQuery = businessQuery.limit(limit).offset(skip);
+
+ 
+
+    const [total, data] = await Promise.all([totalQuery, dataQuery]);
+
+  
+    const result = {
+      //@ts-ignore
+      total: parseInt(total.count),
+      limit: parseInt(limit),
+      skip: parseInt(skip),
+      data,
+    };
+
+    if (userRole.slug === Roles.SuperAdmin) {
+      return successResponseWithPagination(
+        result,
+        200,
+        "Business records retrieved successfully"
+      );
+    } else {
+      return successResponse(
+        data,
+        200,
+        "Business records retrieved successfully"
+      );
+    }
+  } catch (error) {
+    this.handleError(error);
+  }
+}
 
   async toggleStatus(data: any, id: number | string) {
     try {
@@ -183,7 +232,6 @@ export class BusinessService<
   }
 
   private async checkUniqueEmailAndPhone(email: string, phone: string): Promise<void> {
-    console.log(phone, '*******')
     //@ts-ignore
     const knex: Knex = this.app.get("postgresqlClient");
     const existingUser = await knex("users")

@@ -97,7 +97,6 @@ export const user = (app: Application) => {
             .get(context.result.role);
           if (
             role.slug === Roles.AssetOwner ||
-            role.slug === Roles.BusinessOwner ||
             role.slug === Roles.GuestUser
           ) {
             sendEmail({

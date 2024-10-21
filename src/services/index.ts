@@ -150,7 +150,6 @@ export const services = (app: Application) => {
   app.configure(dispatch)
   app.configure(requests)
   app.configure(businessDispatches)
-  app.configure(businessSettings)
   app.configure(businessTypes)
   app.configure(business)
   app.configure(maintenance)
