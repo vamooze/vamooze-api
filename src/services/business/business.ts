@@ -160,26 +160,49 @@ export const business = (app: Application) => {
     async find(params: any) {
       const { query } = params;
       const { slug } = query;
-
-      const businessData = await app
-        .service("business")
-        .find({ query: { slug } });
-
-      if (!businessData || businessData.total === 0) {
+  
+      //@ts-ignore
+      const knex: Knex = this.app.get("postgresqlClient");
+  
+      try {
+        // Fetch business data using Knex
+        let businessData;
+  
+        if (slug) {
+          businessData = await knex("business")
+            .where({ slug })
+            .orderBy("created_at", "desc")
+            .first();
+        } else {
+          businessData = await knex("business").orderBy("created_at", "desc");
+        }
+  
+        // If no business found, return 404 response
+        if (!businessData) {
+          return {
+            success: false,
+            code: 404,
+            message: "Business with slug not found",
+            data: [],
+          };
+        }
+  
+        // Return successful response with business data
         return {
           success: true,
-          code: 404,
-          message: "Business with slug not found",
-          data: [],
+          code: 200,
+          message: "Customized business data retrieved successfully",
+          data: businessData,
+        };
+      } catch (error) {
+        // Handle any errors during the query
+        return {
+          success: false,
+          code: 500,
+          message: "An error occurred while retrieving business data",
+          error: error.message,
         };
       }
-
-      return {
-        success: true,
-        code: 200,
-        message: "Customized business data retrieved successfully",
-        data: businessData,
-      };
     },
   });
 
