@@ -460,7 +460,7 @@ export class BusinessService<
       .insert(businessData)
       .returning("*");
 
-    successResponse(createdBusiness, 200, "Business successfully created");
+    return successResponse(createdBusiness, 200, "Business successfully created");
   }
 
   private handleError(error: any) {
