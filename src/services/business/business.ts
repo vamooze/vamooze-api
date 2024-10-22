@@ -58,6 +58,9 @@ const schemas = {
   activateBusiness: Joi.object().keys({
     businessId: Joi.number().required(),
   }),
+  createBusiness: Joi.object().keys({
+    phone_number: joi_phone_number_validator,
+  })
 };
 
 export const business = (app: Application) => {
@@ -81,13 +84,14 @@ export const business = (app: Application) => {
       find: [checkPermission([Roles.SuperAdmin, Roles.BusinessOwner])],
       get: [],
       create: [
+       
         async (context) => {
           const { data } = context;
          //@ts-ignore
           context.data = {
             ...context.data,
              //@ts-ignore
-            slug: 'lol'
+            slug: 'lol' // ensures the businessDataValidator doesn't complain about a slug
           };
           return context;
         },

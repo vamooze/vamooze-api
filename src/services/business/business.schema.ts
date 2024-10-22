@@ -7,6 +7,9 @@ import type { HookContext } from "../../declarations";
 import { dataValidator, queryValidator } from "../../validators";
 import type { BusinessService } from "./business.class";
 
+const PHONE_REGEX = "^\\+\\d{7,15}$";
+
+
 // Main data model schema
 export const businessSchema = Type.Object(
   {
@@ -16,8 +19,10 @@ export const businessSchema = Type.Object(
     trading_name: Type.Optional(Type.String()),
     address: Type.String(),
     business_type: Type.Number(),
-    phone_number: Type.String(),
-    email:  Type.String(),
+    phone_number: Type.String({ pattern: PHONE_REGEX, errorMessage: {
+      pattern: 'Phone number must start with "+" followed by 7 to 15 digits'
+    }}),
+    email: Type.String({ format: 'email' }),
     employee_count: Type.Optional(Type.Number()),
     date_established: Type.Optional(Type.String({ format: "date" })),
     url: Type.Optional(Type.String()),
