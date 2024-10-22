@@ -215,7 +215,7 @@ export class BusinessService<
       } else if (userRole.slug === Roles.BusinessOwner) {
         await this.checkUniqueEmailAndPhone(data.email, data.phone_number, 'business', params?.user?.id);
   
-        const  createdBusiness = this.createBusinessAsBusinessOwner(
+        const  createdBusiness = await this.createBusinessAsBusinessOwner(
           data,
           params?.user?.id,
           knex,
