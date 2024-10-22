@@ -214,13 +214,15 @@ export class BusinessService<
         );
       } else if (userRole.slug === Roles.BusinessOwner) {
         await this.checkUniqueEmailAndPhone(data.email, data.phone_number, 'business', params?.user?.id);
-
-        return this.createBusinessAsBusinessOwner(
+  
+        const  createdBusiness = this.createBusinessAsBusinessOwner(
           data,
           params?.user?.id,
           knex,
           slug
         );
+
+       return  successResponse(createdBusiness, 200, "Business successfully created"); 
       } else {
         throw new BadRequest("Unauthorized to create a business");
       }
@@ -460,7 +462,8 @@ export class BusinessService<
       .insert(businessData)
       .returning("*");
 
-    return successResponse(createdBusiness, 200, "Business successfully created");
+   
+    return createdBusiness
   }
 
   private handleError(error: any) {
