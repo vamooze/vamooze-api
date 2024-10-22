@@ -58,9 +58,6 @@ const schemas = {
   activateBusiness: Joi.object().keys({
     businessId: Joi.number().required(),
   }),
-  createBusiness: Joi.object().keys({
-    phone_number: joi_phone_number_validator,
-  })
 };
 
 export const business = (app: Application) => {
@@ -100,6 +97,7 @@ export const business = (app: Application) => {
         schemaHooks.resolveData(businessDataResolver),
       ],
       patch: [
+        checkPermission([Roles.SuperAdmin, Roles.BusinessOwner]),
         schemaHooks.validateData(businessPatchValidator),
         schemaHooks.resolveData(businessPatchResolver),
       ],

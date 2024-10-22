@@ -2,11 +2,16 @@
 import type { Params } from "@feathersjs/feathers";
 import { KnexService } from "@feathersjs/knex";
 import type { KnexAdapterParams, KnexAdapterOptions } from "@feathersjs/knex";
-import { getOtp, sendEmail, successResponseWithPagination , successResponse,} from "../../helpers/functions";
+import {
+  getOtp,
+  sendEmail,
+  successResponseWithPagination,
+  successResponse,
+} from "../../helpers/functions";
 import type { Application } from "../../declarations";
 import emailTemplates from "../../helpers/emailTemplates";
 import * as crypto from "crypto";
-import { Knex } from 'knex';
+import { Knex } from "knex";
 import type {
   Business,
   BusinessData,
@@ -22,7 +27,7 @@ const {
   GeneralError,
   BadRequest,
   Forbidden,
-  Conflict
+  Conflict,
 } = require("@feathersjs/errors");
 
 export interface BusinessParams extends KnexAdapterParams<BusinessQuery> {}
@@ -37,59 +42,59 @@ export class BusinessService<
     this.app = app;
   }
 
- //@ts-ignore
- async find(params?: ServiceParams) {
-     //@ts-ignore
-  const knex: Knex = this.app.get("postgresqlClient");
-  const query = params?.query || {};
-  const { limit = 10, skip = 0 } = query;
+  //@ts-ignore
+  async find(params?: ServiceParams) {
+    //@ts-ignore
+    const knex: Knex = this.app.get("postgresqlClient");
+    const query = params?.query || {};
+    const { limit = 10, skip = 0 } = query;
 
-  try {
-    const userRole = await this.getUserRole(params?.user?.role);
-    const isSuperAdmin = userRole.slug === Roles.SuperAdmin;
+    try {
+      const userRole = await this.getUserRole(params?.user?.role);
+      const isSuperAdmin = userRole.slug === Roles.SuperAdmin;
 
+      const baseConditions = !isSuperAdmin ? { owner: params?.user?.id } : {};
 
-    const baseConditions = !isSuperAdmin 
-    ? { owner: params?.user?.id }
-    : {};
+      // Count query without ORDER BY
+      const totalQuery = knex("business")
+        .where(baseConditions)
+        .count("* as count")
+        .first();
 
-     // Count query without ORDER BY
-     const totalQuery = knex("business")
-     .where(baseConditions)
-     .count("* as count")
-     .first();
+      // Data query with ORDER BY
+      const dataQuery = knex("business")
+        .where(baseConditions)
+        .orderBy("created_at", "desc")
+        .limit(limit)
+        .offset(skip);
 
-     // Data query with ORDER BY
-    const dataQuery = knex("business")
-    .where(baseConditions)
-    .orderBy("created_at", "desc")
-    .limit(limit)
-    .offset(skip);
+      // Execute both queries in parallel
+      const [totalResult, data] = await Promise.all([totalQuery, dataQuery]);
 
-    // Execute both queries in parallel
-    const [totalResult, data] = await Promise.all([totalQuery, dataQuery]);
-
-    // Parse total count safely
+      // Parse total count safely
       //@ts-ignore
-    const totalCount = parseInt(totalResult?.count) || 0;
+      const totalCount = parseInt(totalResult?.count) || 0;
 
-    // Prepare the result object
-    const result = {
-      total: totalCount,
-      limit: parseInt(limit),
-      skip: parseInt(skip),
-      data,
-    };
+      // Prepare the result object
+      const result = {
+        total: totalCount,
+        limit: parseInt(limit),
+        skip: parseInt(skip),
+        data,
+      };
 
-    // Return appropriate response based on user role
-    return isSuperAdmin 
-      ? successResponseWithPagination(result, 200, "Business records retrieved successfully")
-      : successResponse(data, 200, "Business records retrieved successfully");
-
-  } catch (error) {
-    this.handleError(error);
+      // Return appropriate response based on user role
+      return isSuperAdmin
+        ? successResponseWithPagination(
+            result,
+            200,
+            "Business records retrieved successfully"
+          )
+        : successResponse(data, 200, "Business records retrieved successfully");
+    } catch (error) {
+      this.handleError(error);
+    }
   }
-}
 
   async toggleStatus(data: any, id: number | string) {
     try {
@@ -114,7 +119,8 @@ export class BusinessService<
       return successResponse(
         updatedBusiness,
         200,
-        `Business status toggled to ${updatedBusiness.active ? "active" : "inactive"}`
+        //@ts-ignore
+        `Business status toggled to ${updatedBusiness?.active ? "active" : "inactive"}`
       );
     } catch (error) {
       if (error instanceof NotFound) {
@@ -182,9 +188,9 @@ export class BusinessService<
 
   //@ts-ignore
   async create(data: any, params?: ServiceParams) {
-     //@ts-ignore
+    //@ts-ignore
     const knex: Knex = this.app.get("postgresqlClient");
-     //@ts-ignore
+    //@ts-ignore
     const userService = this.app.service("users");
 
     try {
@@ -195,10 +201,21 @@ export class BusinessService<
       await this.checkUniqueEmailAndPhone(data.email, data.phone_number);
 
       if (userRole.slug === Roles.SuperAdmin) {
-        return this.createBusinessAsSuperAdmin(data, params?.user?.id, knex, userService, slug);
+        return this.createBusinessAsSuperAdmin(
+          data,
+          params?.user?.id,
+          knex,
+          userService,
+          slug
+        );
       } else if (userRole.slug === Roles.BusinessOwner) {
-        return this.createBusinessAsBusinessOwner(data, params?.user?.id, knex, slug);
-      } else { 
+        return this.createBusinessAsBusinessOwner(
+          data,
+          params?.user?.id,
+          knex,
+          slug
+        );
+      } else {
         throw new BadRequest("Unauthorized to create a business");
       }
     } catch (error) {
@@ -206,9 +223,78 @@ export class BusinessService<
     }
   }
 
+  //@ts-ignore
+  async patch(id: number | string, data: any, params?: ServiceParams) {
+    //@ts-ignore
+    const knex: Knex = this.app.get("postgresqlClient");
+
+    try {
+      const userRole = await this.getUserRole(params?.user?.role);
+
+      let existingBusiness;
+      if (userRole.slug == Roles.SuperAdmin) {
+         existingBusiness = await knex("business").where({ id }).first();
+
+        if (!existingBusiness) {
+          throw new NotFound("Business not found");
+        }
+      }
+
+      if (userRole.slug !== Roles.SuperAdmin) {
+         existingBusiness = await knex("business")
+          .where({ owner: params?.user?.id })
+          .first();
+
+        if (!existingBusiness) {
+          throw new NotFound("Business not found");
+        }
+      }
+
+      // Remove restricted fields from the update data
+      const restrictedFields = [
+        "name",
+        "slug",
+        "phone_number",
+        "created_by",
+        "owner",
+        "email",
+      ];
+      const sanitizedData = { ...data };
+
+      restrictedFields.forEach((field) => {
+        if (field in sanitizedData) {
+          delete sanitizedData[field];
+        }
+      });
+
+      // Only allow superadmin to update active status
+      if ("active" in sanitizedData && userRole.slug !== Roles.SuperAdmin) {
+        delete sanitizedData.active;
+      }
+
+      // If there's nothing left to update after sanitization, throw an error
+      if (Object.keys(sanitizedData).length === 0) {
+        throw new BadRequest("No valid fields to update");
+      }
+
+      // Perform the update
+      const [updatedBusiness] = await knex("business")
+        .where({ id : existingBusiness?.id })
+        .update(sanitizedData)
+        .returning("*");
+
+      return successResponse(
+        updatedBusiness,
+        200,
+        "Business updated successfully"
+      );
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
 
   private async getUserRole(roleId?: number) {
-      //@ts-ignore
+    //@ts-ignore
     const knex: Knex = this.app.get("postgresqlClient");
     const userRole = await knex("roles")
       .select("slug")
@@ -235,7 +321,10 @@ export class BusinessService<
     }
   }
 
-  private async checkUniqueEmailAndPhone(email: string, phone: string): Promise<void> {
+  private async checkUniqueEmailAndPhone(
+    email: string,
+    phone: string
+  ): Promise<void> {
     //@ts-ignore
     const knex: Knex = this.app.get("postgresqlClient");
     const existingUser = await knex("users")
@@ -252,31 +341,46 @@ export class BusinessService<
     }
   }
 
-  private async createBusinessAsSuperAdmin(data: any, superAdminUserId: number | undefined, knex: Knex, userService: any, slug: string) {
+  private async createBusinessAsSuperAdmin(
+    data: any,
+    superAdminUserId: number | undefined,
+    knex: Knex,
+    userService: any,
+    slug: string
+  ) {
     await this.checkUniqueEmailAndPhone(data.email, data.phone_number);
 
     return knex.transaction(async (trx) => {
       const defaultPassword = crypto.randomBytes(8).toString("hex");
-      const BusinessOwnerRole = await knex("roles").where({ slug: Roles.BusinessOwner }).select("id").first();
+      const BusinessOwnerRole = await knex("roles")
+        .where({ slug: Roles.BusinessOwner })
+        .select("id")
+        .first();
 
-      const newUser = await userService.create({
-        first_name: data.name,
-        last_name: data.name,
-        email: data.email,
-        password: defaultPassword,
-        phone_number: data.phone,
-        role: BusinessOwnerRole.id
-      }, { transaction: trx });
+      const newUser = await userService.create(
+        {
+          first_name: data.name,
+          last_name: data.name,
+          email: data.email,
+          password: defaultPassword,
+          phone_number: data.phone,
+          role: BusinessOwnerRole.id,
+        },
+        { transaction: trx }
+      );
 
       const businessData = {
         ...data,
         slug,
         owner: newUser.id,
         created_by: superAdminUserId,
-        active: false
-      }; 
+        active: false,
+      };
 
-      const [createdBusiness] = await knex("business").insert(businessData).transacting(trx).returning("*");
+      const [createdBusiness] = await knex("business")
+        .insert(businessData)
+        .transacting(trx)
+        .returning("*");
 
       await sendEmail({
         toEmail: data.email,
@@ -287,37 +391,48 @@ export class BusinessService<
           defaultPassword
         ),
         receiptName: data.name,
-      })
+      });
 
-   
-      return successResponse(createdBusiness, 200, 'Business and user successfully created');
+      return successResponse(
+        createdBusiness,
+        200,
+        "Business and user successfully created"
+      );
     });
   }
 
-
-  private async createBusinessAsBusinessOwner(data: any, userId: undefined | number, knex: Knex, slug: string) {
+  private async createBusinessAsBusinessOwner(
+    data: any,
+    userId: undefined | number,
+    knex: Knex,
+    slug: string
+  ) {
     const businessData = {
       ...data,
       slug,
       owner: userId,
       created_by: userId,
-      active: false
+      active: false,
     };
 
-    const [createdBusiness] = await knex("business").insert(businessData).returning("*");
-    
-    successResponse(createdBusiness, 200, 'Business successfully created');
+    const [createdBusiness] = await knex("business")
+      .insert(businessData)
+      .returning("*");
+
+    successResponse(createdBusiness, 200, "Business successfully created");
   }
 
-  
   private handleError(error: any) {
-    if (error instanceof BadRequest || error instanceof Conflict) {
+    if (
+      error instanceof BadRequest ||
+      error instanceof Conflict ||
+      error instanceof NotFound ||
+      error instanceof Forbidden
+    ) {
       throw error;
     }
-    throw new  GeneralError(`An unexpected error occurred: ${error?.message}`);
+    throw new GeneralError(`An unexpected error occurred: ${error?.message}`);
   }
-
- 
 }
 
 export const getOptions = (app: Application): KnexAdapterOptions => {
