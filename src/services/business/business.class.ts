@@ -39,49 +39,53 @@ export class BusinessService<
 
  //@ts-ignore
  async find(params?: ServiceParams) {
-  //@ts-ignore
+     //@ts-ignore
   const knex: Knex = this.app.get("postgresqlClient");
   const query = params?.query || {};
-  const { limit = 10, skip = 0, sort = {} } = query;
+  const { limit = 10, skip = 0 } = query;
 
   try {
     const userRole = await this.getUserRole(params?.user?.role);
+    const isSuperAdmin = userRole.slug === Roles.SuperAdmin;
 
-    let businessQuery = knex("business").orderBy("created_at", "desc");
 
-    if (userRole.slug !== Roles.SuperAdmin) {
-      businessQuery = businessQuery.where({ owner: params?.user?.id });
-    }
+    const baseConditions = !isSuperAdmin 
+    ? { owner: params?.user?.id }
+    : {};
 
-    const totalQuery = businessQuery.clone().count("* as count").first();
-    const dataQuery = businessQuery.limit(limit).offset(skip);
+     // Count query without ORDER BY
+     const totalQuery = knex("business")
+     .where(baseConditions)
+     .count("* as count")
+     .first();
 
- 
+     // Data query with ORDER BY
+    const dataQuery = knex("business")
+    .where(baseConditions)
+    .orderBy("created_at", "desc")
+    .limit(limit)
+    .offset(skip);
 
-    const [total, data] = await Promise.all([totalQuery, dataQuery]);
+    // Execute both queries in parallel
+    const [totalResult, data] = await Promise.all([totalQuery, dataQuery]);
 
-  
-    const result = {
+    // Parse total count safely
       //@ts-ignore
-      total: parseInt(total.count),
+    const totalCount = parseInt(totalResult?.count) || 0;
+
+    // Prepare the result object
+    const result = {
+      total: totalCount,
       limit: parseInt(limit),
       skip: parseInt(skip),
       data,
     };
 
-    if (userRole.slug === Roles.SuperAdmin) {
-      return successResponseWithPagination(
-        result,
-        200,
-        "Business records retrieved successfully"
-      );
-    } else {
-      return successResponse(
-        data,
-        200,
-        "Business records retrieved successfully"
-      );
-    }
+    // Return appropriate response based on user role
+    return isSuperAdmin 
+      ? successResponseWithPagination(result, 200, "Business records retrieved successfully")
+      : successResponse(data, 200, "Business records retrieved successfully");
+
   } catch (error) {
     this.handleError(error);
   }

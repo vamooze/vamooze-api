@@ -162,7 +162,7 @@ export const business = (app: Application) => {
       const { slug } = query;
   
       //@ts-ignore
-      const knex: Knex = this.app.get("postgresqlClient");
+      const knex: Knex = app.get("postgresqlClient");
   
       try {
         // Fetch business data using Knex
@@ -200,7 +200,8 @@ export const business = (app: Application) => {
           success: false,
           code: 500,
           message: "An error occurred while retrieving business data",
-          error: error.message,
+           //@ts-ignore
+          error: error?.message,
         };
       }
     },
