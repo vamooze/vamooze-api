@@ -97,7 +97,7 @@ export const user = (app: Application) => {
             .get(context.result.role);
           if (
             role.slug === Roles.AssetOwner ||
-            role.slug === Roles.GuestUser
+            role.slug === Roles.GuestUser //because a super admin can create a business/white label user i'm not including it here has password is sent
           ) {
             sendEmail({
               toEmail: context.result.email,

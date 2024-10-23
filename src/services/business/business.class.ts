@@ -1,5 +1,5 @@
-import { superAdmin } from './../../helpers/permissions';
-import { roles } from './../roles/roles';
+import { superAdmin } from "./../../helpers/permissions";
+import { roles } from "./../roles/roles";
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.class.html#database-services
 import type { Params } from "@feathersjs/feathers";
 import { KnexService } from "@feathersjs/knex";
@@ -31,7 +31,6 @@ const {
   Forbidden,
   Conflict,
 } = require("@feathersjs/errors");
-
 
 export interface BusinessParams extends KnexAdapterParams<BusinessQuery> {}
 
@@ -177,6 +176,15 @@ export class BusinessService<
       // Create the user
       const result = await userService.create(userData);
 
+      if (result) {
+        sendEmail({
+          toEmail: result.email,
+          subject: "Verify your email",
+          templateData: emailTemplates.otp(userData.otp),
+          receiptName: `${result.first_name} ${result.last_name}`,
+        });
+      }
+
       // Remove sensitive information from the result
       const { password, pin, ...sanitizedResult } = result;
 
@@ -203,7 +211,11 @@ export class BusinessService<
       await this.checkUniqueBusinessName(data.name);
 
       if (userRole.slug === Roles.SuperAdmin) {
-        await this.checkUniqueEmailAndPhone(data.email, data.phone_number, superAdmin);
+        await this.checkUniqueEmailAndPhone(
+          data.email,
+          data.phone_number,
+          superAdmin
+        );
 
         return this.createBusinessAsSuperAdmin(
           data,
@@ -213,16 +225,25 @@ export class BusinessService<
           slug
         );
       } else if (userRole.slug === Roles.BusinessOwner) {
-        await this.checkUniqueEmailAndPhone(data.email, data.phone_number, 'business', params?.user?.id);
-  
-        const  createdBusiness = await this.createBusinessAsBusinessOwner(
+        await this.checkUniqueEmailAndPhone(
+          data.email,
+          data.phone_number,
+          "business",
+          params?.user?.id
+        );
+
+        const createdBusiness = await this.createBusinessAsBusinessOwner(
           data,
           params?.user?.id,
           knex,
           slug
         );
 
-       return  successResponse(createdBusiness, 200, "Business successfully created"); 
+        return successResponse(
+          createdBusiness,
+          200,
+          "Business successfully created"
+        );
       } else {
         throw new BadRequest("Unauthorized to create a business");
       }
@@ -241,7 +262,7 @@ export class BusinessService<
 
       let existingBusiness;
       if (userRole.slug == Roles.SuperAdmin) {
-         existingBusiness = await knex("business").where({ id }).first();
+        existingBusiness = await knex("business").where({ id }).first();
 
         if (!existingBusiness) {
           throw new NotFound("Business not found");
@@ -249,7 +270,7 @@ export class BusinessService<
       }
 
       if (userRole.slug !== Roles.SuperAdmin) {
-         existingBusiness = await knex("business")
+        existingBusiness = await knex("business")
           .where({ owner: params?.user?.id })
           .first();
 
@@ -287,7 +308,7 @@ export class BusinessService<
 
       // Perform the update
       const [updatedBusiness] = await knex("business")
-        .where({ id : existingBusiness?.id })
+        .where({ id: existingBusiness?.id })
         .update(sanitizedData)
         .returning("*");
 
@@ -338,50 +359,51 @@ export class BusinessService<
     //@ts-ignore
     const knex: Knex = this.app.get("postgresqlClient");
 
-    if(role  === 'super-admin'){
+    if (role === "super-admin") {
       const existingUser = await knex("users")
-      .where({ email })
-      .orWhere({ phone_number: phone })
-      .first();
-    const existingBusinessContact = await knex("business")
-      .where({ email })
-      .orWhere({ phone_number: phone })
-      .first();
+        .where({ email })
+        .orWhere({ phone_number: phone })
+        .first();
+      const existingBusinessContact = await knex("business")
+        .where({ email })
+        .orWhere({ phone_number: phone })
+        .first();
 
-    if (existingUser || existingBusinessContact) {
-      throw new Conflict("Email or phone number already in use");
-    }
+      if (existingUser || existingBusinessContact) {
+        throw new Conflict("Email or phone number already in use");
+      }
     } else {
-
       const existingUserWithEmail = await knex("users")
-      .where({ email })
-      .first();
+        .where({ email })
+        .first();
 
-    if (existingUserWithEmail && existingUserWithEmail.id !== userId) {
-      throw new Conflict("Email is already associated with another user");
+      if (existingUserWithEmail && existingUserWithEmail.id !== userId) {
+        throw new Conflict("Email is already associated with another user");
+      }
+
+      // Check if phone exists in users table
+      const existingUserWithPhone = await knex("users")
+        .where({ phone_number: phone })
+        .first();
+
+      if (existingUserWithPhone && existingUserWithPhone.id !== userId) {
+        throw new Conflict(
+          "Phone number is already associated with another user"
+        );
+      }
+
+      // Check if email or phone exists in business table
+      const existingBusinessContact = await knex("business")
+        .where({ email })
+        .orWhere({ phone_number: phone })
+        .first();
+
+      if (existingBusinessContact) {
+        throw new Conflict(
+          "Email or phone number already used by another business"
+        );
+      }
     }
-
-    // Check if phone exists in users table
-    const existingUserWithPhone = await knex("users")
-      .where({ phone_number: phone })
-      .first();
-
-    if (existingUserWithPhone && existingUserWithPhone.id !== userId) {
-      throw new Conflict("Phone number is already associated with another user");
-    }
-
-    // Check if email or phone exists in business table
-    const existingBusinessContact = await knex("business")
-      .where({ email })
-      .orWhere({ phone_number: phone })
-      .first();
-
-    if (existingBusinessContact) {
-      throw new Conflict("Email or phone number already used by another business");
-    }
-
-    }
-
   }
 
   private async createBusinessAsSuperAdmin(
@@ -391,7 +413,11 @@ export class BusinessService<
     userService: any,
     slug: string
   ) {
-    await this.checkUniqueEmailAndPhone(data.email, data.phone_number, superAdmin);
+    await this.checkUniqueEmailAndPhone(
+      data.email,
+      data.phone_number,
+      superAdmin
+    );
 
     return knex.transaction(async (trx) => {
       const defaultPassword = crypto.randomBytes(8).toString("hex");
@@ -462,8 +488,7 @@ export class BusinessService<
       .insert(businessData)
       .returning("*");
 
-   
-    return createdBusiness
+    return createdBusiness;
   }
 
   private handleError(error: any) {
