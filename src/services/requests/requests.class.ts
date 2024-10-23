@@ -43,58 +43,48 @@ export class RequestsService<
     this.app = app;
   }
 
+//@ts-ignore
+async find(params: ServiceParams) {
   //@ts-ignore
-  async find(params: ServiceParams) {
-    //@ts-ignore
-    const knex = this.app.get("postgresqlClient");
+  const knex = this.app.get("postgresqlClient");
 
-    const limit = params?.query?.limit ?? 10;
-    const skip = params?.query?.skip ?? 0;
-    const requester = params?.query?.requester ?? 0;
-    const status = params?.query?.status;  // Get status from query params
+  const limit = params?.query?.limit ?? 10;
+  const skip = params?.query?.skip ?? 0;
+  const requester = params?.query?.requester ?? 0;
 
+  const requests = await knex("requests")
+    .leftJoin("dispatch", "requests.dispatch", "dispatch.id")
+    .leftJoin("users", "dispatch.user_id", "users.id")
+    .select(
+      "requests.*",
+      "users.first_name AS dispatch_first_name",
+      "users.last_name AS dispatch_last_name",
+      "users.phone_number AS dispatch_phone_number"
+    )
+    .where("requests.requester", requester)
+    .orderBy("requests.created_at", "DESC") // Sort by creation date
+    .limit(limit) // Handle pagination
+    .offset(skip);
 
-    let query = await knex("requests")
-      .leftJoin("dispatch", "requests.dispatch", "dispatch.id")
-      .leftJoin("users", "dispatch.user_id", "users.id")
-      .select(
-        "requests.*",
-        "users.first_name AS dispatch_first_name",
-        "users.last_name AS dispatch_last_name",
-        "users.phone_number AS dispatch_phone_number"
-      )
-      .where("requests.requester", requester);
+  const total = await knex("requests")
+    .where("requester", requester)
+    .count("* as count")
+    .first();
 
-      if (status) {
-        query = query.where("requests.status", status);
-      }
-  
-      const requests = await query.orderBy("requests.created_at", "DESC") // Sort by creation date
-      .limit(limit) 
-      .offset(skip);
+  const result = {
+    total: Number(total.count),
+    limit: Number(limit),
+    skip: Number(skip),
+    data: requests,
+  };
 
-      let totalQuery = knex("requests").where("requester", requester);
+  return successResponseWithPagination(
+    result,
+    200,
+    "Requests retrieved successfully"
+  );
+}
 
-      if (status) {
-        totalQuery = totalQuery.where("status", status);
-      }
-
-    const total = await totalQuery.count("* as count").first();
-
-
-    const result = {
-      total: Number(total.count),
-      limit: Number(limit),
-      skip: Number(skip),
-      data: requests,
-    };
-
-    return successResponseWithPagination(
-      result,
-      200,
-      "Requests retrieved successfully"
-    );
-  }
 
   //@ts-ignore
   async patch(id: Id, data: any, params: Params) {
