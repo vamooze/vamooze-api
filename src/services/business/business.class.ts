@@ -129,7 +129,7 @@ export class BusinessService<
         updatedBusiness,
         200,
         //@ts-ignore
-        data?.active ? `Business  approved`: `Business  Un approved`
+        data?.active ? `Business  approved`: `Business  Un-approved`
       );
     } catch (error) {
       if (error instanceof NotFound || error instanceof BadRequest) {

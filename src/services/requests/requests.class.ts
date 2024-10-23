@@ -51,8 +51,10 @@ export class RequestsService<
     const limit = params?.query?.limit ?? 10;
     const skip = params?.query?.skip ?? 0;
     const requester = params?.query?.requester ?? 0;
+    const status = params?.query?.status;  // Get status from query params
 
-    const requests = await knex("requests")
+
+    let query = await knex("requests")
       .leftJoin("dispatch", "requests.dispatch", "dispatch.id")
       .leftJoin("users", "dispatch.user_id", "users.id")
       .select(
@@ -61,15 +63,24 @@ export class RequestsService<
         "users.last_name AS dispatch_last_name",
         "users.phone_number AS dispatch_phone_number"
       )
-      .where("requests.requester", requester)
-      .orderBy("requests.created_at", "DESC") // Sort by creation date
-      .limit(limit) // Handle pagination
+      .where("requests.requester", requester);
+
+      if (status) {
+        query = query.where("requests.status", status);
+      }
+  
+      const requests = await query.orderBy("requests.created_at", "DESC") // Sort by creation date
+      .limit(limit) 
       .offset(skip);
 
-    const total = await knex("requests")
-      .where("requester", requester)
-      .count("* as count")
-      .first();
+      let totalQuery = knex("requests").where("requester", requester);
+
+      if (status) {
+        totalQuery = totalQuery.where("status", status);
+      }
+
+    const total = await totalQuery.count("* as count").first();
+
 
     const result = {
       total: Number(total.count),
