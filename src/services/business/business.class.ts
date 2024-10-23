@@ -115,17 +115,24 @@ export class BusinessService<
       if (!business) {
         throw new NotFound("Business not found");
       }
+      //@ts-ignore
+      const knex: Knex = this.app.get("postgresqlClient");
 
-      const updatedBusiness = await this.patch(id, data);
+        // Perform the update
+        const [updatedBusiness] = await knex("business")
+        .where({ id: business?.id })
+        .update(data)
+        .returning("*");
 
+   
       return successResponse(
         updatedBusiness,
         200,
         //@ts-ignore
-        `Business status toggled to ${updatedBusiness?.active ? "active" : "inactive"}`
+        data?.active ? `Business  approved`: `Business  Un approved`
       );
     } catch (error) {
-      if (error instanceof NotFound) {
+      if (error instanceof NotFound || error instanceof BadRequest) {
         throw error;
       }
       throw new GeneralError(
