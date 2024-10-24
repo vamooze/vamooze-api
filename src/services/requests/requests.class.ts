@@ -254,7 +254,9 @@ export class RequestsService<
       }
 
       if (data.status === RequestStatus.CompletePickUp) {
-        data.dispatch_to_drop_off_time = new Date().toISOString();
+        const dispatch_pickup_time =  new Date().toISOString()
+        data.dispatch_pickup_time = dispatch_pickup_time
+        data.dispatch_to_drop_off_time = dispatch_pickup_time
       }
 
       delete data.requestId; // have efe remove requestId from handler
@@ -369,6 +371,7 @@ export class RequestsService<
           }
 
           if (newStatus === RequestStatus.CompletePickUp) {
+           
             message =
               "Your delivery item has been picked an enroute for delivery";
           }
