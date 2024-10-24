@@ -43,48 +43,83 @@ export class RequestsService<
     this.app = app;
   }
 
-//@ts-ignore
-async find(params: ServiceParams) {
   //@ts-ignore
-  const knex = this.app.get("postgresqlClient");
+  async find(params: ServiceParams) {
+    //@ts-ignore
+    const knex = this.app.get("postgresqlClient");
 
-  const limit = params?.query?.limit ?? 10;
-  const skip = params?.query?.skip ?? 0;
-  const requester = params?.query?.requester ?? 0;
+    const limit = params?.query?.limit ?? 10;
+    const skip = params?.query?.skip ?? 0;
+    const status = params?.query?.status; // Extract status from query parameters
 
-  const requests = await knex("requests")
-    .leftJoin("dispatch", "requests.dispatch", "dispatch.id")
-    .leftJoin("users", "dispatch.user_id", "users.id")
-    .select(
-      "requests.*",
-      "users.first_name AS dispatch_first_name",
-      "users.last_name AS dispatch_last_name",
-      "users.phone_number AS dispatch_phone_number"
-    )
-    .where("requests.requester", requester)
-    .orderBy("requests.created_at", "DESC") // Sort by creation date
-    .limit(limit) // Handle pagination
-    .offset(skip);
+    const requester = params?.query?.requester ?? 0;
 
-  const total = await knex("requests")
-    .where("requester", requester)
-    .count("* as count")
-    .first();
+    const query = knex("requests")
+      .leftJoin("dispatch", "requests.dispatch", "dispatch.id")
+      .leftJoin("users", "dispatch.user_id", "users.id")
+      .select(
+        "requests.*",
+        "users.first_name AS dispatch_first_name",
+        "users.last_name AS dispatch_last_name",
+        "users.phone_number AS dispatch_phone_number"
+      )
+      .where("requests.requester", requester)
+      .orderBy("requests.created_at", "DESC") // Sort by creation date
+      .limit(limit) // Handle pagination
+      .offset(skip);
 
-  const result = {
-    total: Number(total.count),
-    limit: Number(limit),
-    skip: Number(skip),
-    data: requests,
-  };
+    if (status) {
+      if (status === "active") {
+        query.whereIn("requests.status", [
+          RequestStatus.Pending,
+          RequestStatus.Accepted,
+          RequestStatus.EnrouteToPickUp,
+          RequestStatus.CompletePickUp,
+        ]);
+      } else {
+        query.andWhere("requests.status", status);
+      }
+    }
 
-  return successResponseWithPagination(
-    result,
-    200,
-    "Requests retrieved successfully"
-  );
-}
+    const requests = await query
+      .orderBy("requests.created_at", "DESC") // Sort by creation date
+      .limit(limit) // Handle pagination
+      .offset(skip);
 
+    const totalQuery = knex("requests").where("requester", requester);
+
+    if (status) {
+      totalQuery.andWhere("requests.status", status);
+    }
+
+    if (status) {
+      if (status === "active") {
+        totalQuery.whereIn("requests.status", [
+          RequestStatus.Pending,
+          RequestStatus.Accepted,
+          RequestStatus.EnrouteToPickUp,
+          RequestStatus.CompletePickUp,
+        ]);
+      } else {
+        totalQuery.andWhere("requests.status", status);
+      }
+    }
+
+    const total = await totalQuery.count("* as count").first();
+
+    const result = {
+      total: Number(total.count),
+      limit: Number(limit),
+      skip: Number(skip),
+      data: requests,
+    };
+
+    return successResponseWithPagination(
+      result,
+      200,
+      "Requests retrieved successfully"
+    );
+  }
 
   //@ts-ignore
   async patch(id: Id, data: any, params: Params) {
@@ -186,7 +221,7 @@ async find(params: ServiceParams) {
           dispatch_who_accepted_user_id: dispatch.user_id,
           dispatch_pool: request.dispatch_pool,
           message: "Request accepted by dispatch",
-          requestDetails: updatedRequest
+          requestDetails: updatedRequest,
         });
 
         logger.info(`done returning a response: 10`);
@@ -235,7 +270,9 @@ async find(params: ServiceParams) {
               })
               .returning("*");
 
-            await locationUpdateQueue.removeRepeatableByKey(`location-update-${completedRequest.id}`);
+            await locationUpdateQueue.removeRepeatableByKey(
+              `location-update-${completedRequest.id}`
+            );
 
             await trx("dispatch")
               .where({ id: completedRequest.dispatch })
@@ -287,13 +324,9 @@ async find(params: ServiceParams) {
             });
 
             if (requesterUserDetail) {
-              await termii.sendSMS(
-                requesterUserDetail.phone_number,
-                message
-              );
+              await termii.sendSMS(requesterUserDetail.phone_number, message);
             }
 
-          
             return completedRequest;
           });
 
