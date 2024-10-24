@@ -62,7 +62,7 @@ export enum Roles {
   Dispatch = "dispatch",
   SuperAdmin = "super-admin",
   BusinessOwner = "business-owner",
-  GuestUser = "guest-user",
+  B2B = "business-to-business",
   InHouseManager = "manager"
 }
 

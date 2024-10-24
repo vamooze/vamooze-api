@@ -6,8 +6,8 @@ const roles = [
     { id: 4, name: 'Super-admin', slug: Roles.SuperAdmin, description: 'Administrator role with full permissions' },
     //white label buinsess 
     { id: 5, name: 'Business-owner', slug: Roles.BusinessOwner, description: 'Business owner role with full permission over a business' },
-   
-    { id: 6, name: 'Guest-user', slug: Roles.GuestUser, description: 'Guest users who require delivery services' },
+   // B2B signup under a white label buisness
+    { id: 6, name: 'B2B', slug: Roles.B2B, description: 'Users under whitelabel' },
     { id: 7, name: 'In-House Manager', slug: Roles.InHouseManager, description: 'Inhose managers invited by B2B admin' }
 ];
 

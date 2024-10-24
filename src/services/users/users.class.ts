@@ -177,8 +177,7 @@ export class UserService<
         role: role.data[0].id,
         is_verified: true,
         phone_number,
-        is_inhouse_invitee_default_password: true,
-        in_house_inviter: buisness_user_inviting_Id,
+        invited_by: buisness_user_inviting_Id,
       });
 
       // Send invitation email

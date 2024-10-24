@@ -29,10 +29,7 @@ export const userSchema = Type.Object(
     one_signal_player_id: Type.Optional(Type.String()),
     one_signal_alias: Type.Optional(Type.String()),
     otp: Type.Optional(Type.Number()),
-    is_inhouse_invitee_default_password: Type.Optional(
-      Type.Boolean({ default: false })
-    ),
-    in_house_inviter: Type.Optional(Type.Number()),
+    invited_by: Type.Optional(Type.Number()),
     timezone: Type.Optional(Type.String()),
   },
   { $id: "User", additionalProperties: false }
@@ -66,8 +63,7 @@ export const userDataSchema = Type.Pick(
     "one_signal_player_id",
     "one_signal_alias",
     "otp",
-    "is_inhouse_invitee_default_password",
-    "in_house_inviter",
+    "invited_by",
     "timezone",
   ],
   {
@@ -104,8 +100,7 @@ export const userQueryProperties = Type.Pick(userSchema, [
   "otp",
   "phone_number",
   "one_signal_alias",
-  "is_inhouse_invitee_default_password",
-  "in_house_inviter",
+  "invited_by",
   "timezone",
 ]);
 export const userQuerySchema = Type.Intersect(
